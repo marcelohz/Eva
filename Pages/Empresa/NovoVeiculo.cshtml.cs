@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Eva.Data;
 using Eva.Models;
 using Eva.Models.ViewModels;
+using Eva.Services;
 using System.Security.Claims;
 
 namespace Eva.Pages.Empresa
@@ -13,10 +14,12 @@ namespace Eva.Pages.Empresa
     public class NovoVeiculoModel : PageModel
     {
         private readonly EvaDbContext _context;
+        private readonly PendenciaService _pendenciaService;
 
-        public NovoVeiculoModel(EvaDbContext context)
+        public NovoVeiculoModel(EvaDbContext context, PendenciaService pendenciaService)
         {
             _context = context;
+            _pendenciaService = pendenciaService;
         }
 
         [BindProperty]
@@ -50,6 +53,9 @@ namespace Eva.Pages.Empresa
 
             _context.Veiculos.Add(novoVeiculo);
             await _context.SaveChangesAsync();
+
+            // Fire the workflow trigger!
+            await _pendenciaService.AvancarEntidadeAsync("VEICULO", novoVeiculo.Placa);
 
             return RedirectToPage("./MeusVeiculos");
         }

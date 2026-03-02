@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Eva.Data;
 using Eva.Models;
 using Eva.Models.ViewModels;
+using Eva.Services;
 using System.Security.Claims;
 
 namespace Eva.Pages.Empresa
@@ -13,10 +14,12 @@ namespace Eva.Pages.Empresa
     public class EditarVeiculoModel : PageModel
     {
         private readonly EvaDbContext _context;
+        private readonly PendenciaService _pendenciaService;
 
-        public EditarVeiculoModel(EvaDbContext context)
+        public EditarVeiculoModel(EvaDbContext context, PendenciaService pendenciaService)
         {
             _context = context;
+            _pendenciaService = pendenciaService;
         }
 
         [BindProperty]
@@ -59,7 +62,6 @@ namespace Eva.Pages.Empresa
             var userEmail = User.FindFirstValue(ClaimTypes.Email);
             var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == userEmail);
 
-            // Added this safety check to satisfy the compiler and protect the app
             if (user == null || string.IsNullOrEmpty(user.EmpresaCnpj)) return RedirectToPage("/Login");
 
             var vehicleInDb = await _context.Veiculos
@@ -77,6 +79,10 @@ namespace Eva.Pages.Empresa
             vehicleInDb.ModeloAno = Input.ModeloAno;
 
             await _context.SaveChangesAsync();
+
+            // Fire the workflow trigger!
+            await _pendenciaService.AvancarEntidadeAsync("VEICULO", vehicleInDb.Placa);
+
             return RedirectToPage("./MeusVeiculos");
         }
     }

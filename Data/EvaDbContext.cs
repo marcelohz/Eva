@@ -13,12 +13,8 @@ namespace Eva.Data
         public EvaDbContext(DbContextOptions<EvaDbContext> options, IHttpContextAccessor httpContextAccessor)
             : base(options)
         {
-            // Intercept the current web request to find out who is making the database query
             var user = httpContextAccessor.HttpContext?.User;
-
             _isAnalista = user?.IsInRole("ANALISTA") ?? false;
-
-            // We look for a custom claim containing the CNPJ
             _empresaCnpj = user?.FindFirstValue("EmpresaCnpj");
         }
 
@@ -27,33 +23,26 @@ namespace Eva.Data
         public DbSet<Empresa> Empresas { get; set; }
         public DbSet<Veiculo> Veiculos { get; set; }
         public DbSet<Motorista> Motoristas { get; set; }
+        public DbSet<FluxoPendencia> FluxoPendencias { get; set; }
+        public DbSet<VPendenciaAtual> VPendenciasAtuais { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // Default schema for web-related tables
             modelBuilder.HasDefaultSchema("web");
 
-            // Define Papel primary key
-            modelBuilder.Entity<Papel>()
-                .HasKey(p => p.Nome);
+            modelBuilder.Entity<Papel>().HasKey(p => p.Nome);
+            modelBuilder.Entity<Empresa>().ToTable("empresa", "geral");
+            modelBuilder.Entity<Veiculo>().ToTable("veiculo", "geral");
+            modelBuilder.Entity<Motorista>().ToTable("motorista", "eventual");
 
-            // Map entities to their specific schemas
-            modelBuilder.Entity<Empresa>()
-                .ToTable("empresa", "geral");
+            // Register the View
+            modelBuilder.Entity<VPendenciaAtual>()
+                .ToView("v_pendencia_atual", "eventual")
+                .HasKey(v => v.Id);
 
-            modelBuilder.Entity<Veiculo>()
-                .ToTable("veiculo", "geral");
-
-            modelBuilder.Entity<Motorista>()
-                .ToTable("motorista", "eventual");
-
-            // =========================================================
-            // GLOBAL QUERY FILTERS (The Magic Multi-Tenant Security)
-            // =========================================================
-
-            // Entity Framework will invisibly append this WHERE clause to EVERY query
+            // GLOBAL QUERY FILTERS
             modelBuilder.Entity<Veiculo>()
                 .HasQueryFilter(v => _isAnalista || v.EmpresaCnpj == _empresaCnpj);
 

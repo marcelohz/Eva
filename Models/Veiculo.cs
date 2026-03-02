@@ -18,7 +18,6 @@ namespace Eva.Models
         [Column("renavan")]
         public string? Renavan { get; set; }
 
-        // REMOVED [Required] so EF Core allows NULLs from the database
         [Column("modelo")]
         public string? Modelo { get; set; }
 
@@ -52,5 +51,8 @@ namespace Eva.Models
 
         [Column("data_inclusao_eventual")]
         public DateOnly? DataInclusaoEventual { get; set; }
+
+        [Column("eventual_status")]
+        public string? EventualStatus { get; set; }
     }
 }

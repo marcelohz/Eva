@@ -1,15 +1,20 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Eva.Data;
+using Eva.Services;
+using System; // Required for AppContext
+
+// ADDED: Fixes the PostgreSQL timestamp with/without time zone mapping error globally
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRazorPages();
-
-// ADD THIS: Allows EvaDbContext to read the current user's session (Claims/Cookies)
 builder.Services.AddHttpContextAccessor();
 
-// 1. Configure Cookie Authentication
+// Register our new workflow orchestrator
+builder.Services.AddScoped<PendenciaService>();
+
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -36,7 +41,6 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-// 2. Add these two in this specific order
 app.UseAuthentication();
 app.UseAuthorization();
 
