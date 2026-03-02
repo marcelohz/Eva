@@ -63,7 +63,6 @@ namespace Eva.Pages.Empresa
         {
             if (!ModelState.IsValid) return Page();
 
-            // The Backend Safety Lock
             var status = await _pendenciaService.GetStatusAsync("VEICULO", Input.Placa);
             if (status == "EM_ANALISE")
             {
@@ -91,9 +90,14 @@ namespace Eva.Pages.Empresa
             vehicleInDb.AnoFabricacao = Input.AnoFabricacao;
             vehicleInDb.ModeloAno = Input.ModeloAno;
 
-            await _context.SaveChangesAsync();
+            // THE DIRTY CHECK: Only hit the database and create a ticket if something actually changed
+            bool hasChanges = _context.ChangeTracker.HasChanges();
 
-            await _pendenciaService.AvancarEntidadeAsync("VEICULO", vehicleInDb.Placa);
+            if (hasChanges)
+            {
+                await _context.SaveChangesAsync();
+                await _pendenciaService.AvancarEntidadeAsync("VEICULO", vehicleInDb.Placa);
+            }
 
             return RedirectToPage("./MeusVeiculos");
         }

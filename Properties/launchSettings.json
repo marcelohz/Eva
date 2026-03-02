@@ -6,7 +6,7 @@
       "dotnetRunMessages": true,
       "launchBrowser": true,
       "applicationUrl": "http://localhost:5103",
-      "launchUrl": "Login",
+      "launchUrl": "Empresa/MinhaEmpresa",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
@@ -16,7 +16,7 @@
       "dotnetRunMessages": true,
       "launchBrowser": true,
       "applicationUrl": "https://localhost:7143;http://localhost:5103",
-      "launchUrl": "Login",
+      "launchUrl": "Empresa/MinhaEmpresa",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }

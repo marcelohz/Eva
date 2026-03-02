@@ -27,7 +27,6 @@ namespace Eva.Pages.Empresa
 
         public async Task<IActionResult> OnGetAsync(int id)
         {
-            // The Global Query Filter securely handles the CNPJ check for us!
             Motorista = (await _context.Motoristas.FirstOrDefaultAsync(m => m.Id == id))!;
 
             if (Motorista == null) return NotFound();
@@ -41,7 +40,6 @@ namespace Eva.Pages.Empresa
         {
             if (!ModelState.IsValid) return Page();
 
-            // The Backend Safety Lock
             var status = await _pendenciaService.GetStatusAsync("MOTORISTA", Motorista.Id.ToString());
             if (status == "EM_ANALISE")
             {
@@ -59,12 +57,16 @@ namespace Eva.Pages.Empresa
             motoristaInDb.Cnh = Motorista.Cnh;
             motoristaInDb.Email = Motorista.Email;
 
+            // THE DIRTY CHECK: Verify if EF Core detected any actual property modifications
+            bool hasChanges = _context.ChangeTracker.HasChanges();
+
             try
             {
-                await _context.SaveChangesAsync();
-
-                // Fire the workflow trigger!
-                await _pendenciaService.AvancarEntidadeAsync("MOTORISTA", motoristaInDb.Id.ToString());
+                if (hasChanges)
+                {
+                    await _context.SaveChangesAsync();
+                    await _pendenciaService.AvancarEntidadeAsync("MOTORISTA", motoristaInDb.Id.ToString());
+                }
             }
             catch (DbUpdateConcurrencyException)
             {
