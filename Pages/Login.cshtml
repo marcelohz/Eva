@@ -1,0 +1,49 @@
+﻿@page
+@model Eva.Pages.LoginModel
+@{
+    ViewData["Title"] = "Login";
+}
+
+<div class="vh-100 bg-light d-flex flex-column align-items-center justify-content-center p-4">
+    <div class="container shadow p-5 bg-white rounded" style="max-width: 500px;">
+        <div class="text-center mb-4">
+            <h1 class="display-6 fw-bold text-primary">METROPLAN!</h1>
+            <p class="text-muted">Portal de Transporte Metropolitano</p>
+        </div>
+
+        <form method="post" class="space-y-3">
+            <h3 class="h5 text-center mb-4">Faça login para acessar o sistema</h3>
+
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger">
+                    <div asp-validation-summary="All" class="small"></div>
+                </div>
+            }
+
+            <div class="mb-3">
+                <label asp-for="Input.Email" class="form-label">Email</label>
+                <input asp-for="Input.Email" class="form-control" placeholder="Digite seu email" required />
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Input.Password" class="form-label">Senha</label>
+                <input asp-for="Input.Password" type="password" class="form-control" placeholder="Digite sua senha" required />
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 py-2 mb-3">
+                Entrar
+            </button>
+
+            <a href="/CadastroEmpresa" class="btn btn-outline-primary w-100 py-2">
+                Cadastrar Empresa
+            </a>
+        </form>
+
+        <div class="mt-4 text-center">
+            <a href="/PesquisaCompetencia" class="text-decoration-none small">
+                🔍 Pesquisar Viagem - Verificar Competência
+            </a>
+        </div>
+    </div>
+</div>

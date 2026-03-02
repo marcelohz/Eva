@@ -1,0 +1,77 @@
+﻿@page "{id}"
+@model Eva.Pages.Empresa.EditarVeiculoModel
+@{
+    ViewData["Title"] = "Editar Veículo - Eva";
+}
+
+<div class="container mt-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="/Empresa/MeusVeiculos">Meus Veículos</a></li>
+            <li class="breadcrumb-item active">Editar</li>
+        </ol>
+    </nav>
+
+    <div class="card shadow">
+        <div class="card-header bg-dark text-white">
+            <h1 class="h4 mb-0">Editar Veículo: @Model.Veiculo.Placa</h1>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Veiculo.Placa" class="form-label">Placa</label>
+                        <input asp-for="Veiculo.Placa" class="form-control bg-light" readonly />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Veiculo.Modelo" class="form-label">Modelo / Marca</label>
+                        <input asp-for="Veiculo.Modelo" class="form-control" />
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Veiculo.ChassiNumero" class="form-label">Chassi</label>
+                        <input asp-for="Veiculo.ChassiNumero" class="form-control" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Veiculo.Renavan" class="form-label">Renavam</label>
+                        <input asp-for="Veiculo.Renavan" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="Veiculo.AnoFabricacao" class="form-label">Ano Fabricação</label>
+                        <input asp-for="Veiculo.AnoFabricacao" type="number" class="form-control" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="Veiculo.ModeloAno" class="form-label">Ano Modelo</label>
+                        <input asp-for="Veiculo.ModeloAno" type="number" class="form-control" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="Veiculo.NumeroLugares" class="form-label">Nº de Lugares</label>
+                        <input asp-for="Veiculo.NumeroLugares" type="number" class="form-control" />
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Veiculo.VeiculoCombustivelNome" class="form-label">Combustível</label>
+                        <select asp-for="Veiculo.VeiculoCombustivelNome" class="form-select">
+                            <option value="">Selecione...</option>
+                            <option value="DIESEL">Diesel</option>
+                            <option value="GASOLINA">Gasolina</option>
+                            <option value="ALCOOL">Álcool</option>
+                            <option value="ELETRICO">Elétrico</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Veiculo.CorPrincipalNome" class="form-label">Cor Principal</label>
+                        <input asp-for="Veiculo.CorPrincipalNome" class="form-control" />
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <a href="/Empresa/MeusVeiculos" class="btn btn-outline-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-primary px-4">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,63 @@
+﻿@page "{id:int}"
+@model Eva.Pages.Empresa.EditarMotoristaModel
+@{
+    ViewData["Title"] = "Editar Motorista - Eva";
+}
+
+<div class="container mt-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="/Empresa/MeusMotoristas">Meus Motoristas</a></li>
+            <li class="breadcrumb-item active">Editar</li>
+        </ol>
+    </nav>
+
+    <div class="card shadow">
+        <div class="card-header bg-dark text-white">
+            <h1 class="h4 mb-0"><i class="bi bi-pencil-square"></i> Editar Motorista: @Model.Motorista.Nome</h1>
+        </div>
+        <div class="card-body p-4">
+            <form method="post">
+                <input type="hidden" asp-for="Motorista.Id" />
+
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label asp-for="Motorista.Nome" class="form-label fw-bold">Nome Completo</label>
+                        <input asp-for="Motorista.Nome" class="form-control" required />
+                        <span asp-validation-for="Motorista.Nome" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Motorista.Cpf" class="form-label fw-bold">CPF</label>
+                        <input asp-for="Motorista.Cpf" class="form-control" required />
+                        <span asp-validation-for="Motorista.Cpf" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Motorista.Cnh" class="form-label fw-bold">Nº da CNH</label>
+                        <input asp-for="Motorista.Cnh" class="form-control" required />
+                        <span asp-validation-for="Motorista.Cnh" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-12 mb-3">
+                        <label asp-for="Motorista.Email" class="form-label fw-bold">Email</label>
+                        <input asp-for="Motorista.Email" type="email" class="form-control" />
+                        <span asp-validation-for="Motorista.Email" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <a href="/Empresa/MeusMotoristas" class="btn btn-outline-secondary px-4">Cancelar</a>
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="bi bi-save"></i> Salvar Alterações
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

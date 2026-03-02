@@ -1,0 +1,65 @@
+﻿@page
+@model Eva.Pages.Empresa.NovoMotoristaModel
+@{
+    ViewData["Title"] = "Novo Motorista - Eva";
+}
+
+<div class="container mt-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="/Empresa/MeusMotoristas">Meus Motoristas</a></li>
+            <li class="breadcrumb-item active">Novo</li>
+        </ol>
+    </nav>
+
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h1 class="h4 mb-0"><i class="bi bi-person-plus-fill"></i> Cadastrar Novo Motorista</h1>
+        </div>
+        <div class="card-body p-4">
+            @* 'novalidate' prevents the browser from showing its own English tooltips *@
+            <form method="post" id="motoristaForm" novalidate>
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label asp-for="Motorista.Nome" class="form-label fw-bold">Nome Completo</label>
+                        <input asp-for="Motorista.Nome" class="form-control" placeholder="Digite o nome completo" />
+                        <span asp-validation-for="Motorista.Nome" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Motorista.Cpf" class="form-label fw-bold">CPF</label>
+                        <input asp-for="Motorista.Cpf" class="form-control" placeholder="000.000.000-00" />
+                        <span asp-validation-for="Motorista.Cpf" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Motorista.Cnh" class="form-label fw-bold">Nº da CNH</label>
+                        <input asp-for="Motorista.Cnh" class="form-control" />
+                        <span asp-validation-for="Motorista.Cnh" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-12 mb-3">
+                        <label asp-for="Motorista.Email" class="form-label fw-bold">Email (Opcional)</label>
+                        <input asp-for="Motorista.Email" type="email" class="form-control" placeholder="exemplo@email.com" />
+                        <span asp-validation-for="Motorista.Email" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <a href="/Empresa/MeusMotoristas" class="btn btn-outline-secondary px-4">Cancelar</a>
+                    <button type="submit" class="btn btn-success px-4">
+                        <i class="bi bi-save"></i> Salvar Motorista
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @* Loads the scripts that make the Portuguese messages appear instantly *@
+    <partial name="_ValidationScriptsPartial" />
+}

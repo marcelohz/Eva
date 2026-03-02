@@ -1,0 +1,53 @@
+﻿@page
+@model Eva.Pages.Empresa.MinhaEmpresaModel
+@{
+    ViewData["Title"] = "Dashboard - Eva";
+}
+
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <div>
+            <h1 class="h2">Painel da Empresa</h1>
+            <p class="text-muted">Bem-vindo, @User.Identity?.Name</p>
+        </div>
+        <a href="/Logout" class="btn btn-outline-danger">Sair do Sistema</a>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm border-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title text-primary mb-0">Veículos</h5>
+                        <span class="badge bg-primary rounded-pill">@Model.TotalVeiculos</span>
+                    </div>
+                    <p class="card-text mt-3 text-muted">Gerencie a frota cadastrada no sistema.</p>
+                    <a href="/Empresa/MeusVeiculos" class="btn btn-primary w-100">Acessar Frota</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm border-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title text-primary mb-0">Motoristas</h5>
+                        <span class="badge bg-primary rounded-pill">@Model.TotalMotoristas</span>
+                    </div>
+                    <p class="card-text mt-3 text-muted">Controle o cadastro e documentos de condutores.</p>
+                    <a href="/Empresa/MeusMotoristas" class="btn btn-primary w-100">Acessar Cadastros</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title text-muted mb-0">Viagens</h5>
+                    <p class="card-text mt-3 text-muted">Módulo em desenvolvimento.</p>
+                    <button class="btn btn-secondary w-100" disabled>Em Breve</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

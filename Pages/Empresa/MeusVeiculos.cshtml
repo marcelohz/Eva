@@ -1,0 +1,63 @@
+﻿@page
+@model Eva.Pages.Empresa.MeusVeiculosModel
+@{
+    ViewData["Title"] = "Meus Veículos - Eva";
+}
+
+<div class="container mt-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Meus Veículos</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">Minha Frota</h1>
+        <a href="/Empresa/NovoVeiculo" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> Novo Veículo
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Placa</th>
+                            <th>Modelo</th>
+                            <th>Ano</th>
+                            <th>Capacidade</th>
+                            <th>Combustível</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Veiculos.Any())
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    Nenhum veículo encontrado para sua empresa.
+                                </td>
+                            </tr>
+                        }
+                        @foreach (var v in Model.Veiculos)
+                        {
+                            <tr>
+                                <td class="fw-bold">@v.Placa</td>
+                                <td>@v.Modelo</td>
+                                <td>@v.AnoFabricacao/@v.ModeloAno</td>
+                                <td>@v.NumeroLugares lugares</td>
+                                <td>@v.VeiculoCombustivelNome</td>
+                                <td class="text-end">
+                                    <a href="/Empresa/EditarVeiculo/@v.Placa" class="btn btn-sm btn-outline-secondary">Editar</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

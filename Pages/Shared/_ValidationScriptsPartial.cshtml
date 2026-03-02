@@ -1,0 +1,24 @@
+﻿<script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+
+<script>
+    /* Force jQuery Validation to use Portuguese defaults if no message is provided */
+    if ($.validator) {
+        $.extend($.validator.messages, {
+            required: "Este campo é obrigatório.",
+            remote: "Por favor, corrija este campo.",
+            email: "Por favor, forneça um endereço de email válido.",
+            url: "Por favor, forneça uma URL válida.",
+            date: "Por favor, forneça uma data válida.",
+            number: "Por favor, forneça um número válido.",
+            digits: "Por favor, forneça somente dígitos.",
+            equalTo: "Por favor, forneça o mesmo valor novamente.",
+            maxlength: $.validator.format("Por favor, forneça não mais que {0} caracteres."),
+            minlength: $.validator.format("Por favor, forneça ao menos {0} caracteres."),
+            rangelength: $.validator.format("Por favor, forneça um valor entre {0} e {1} caracteres de comprimento."),
+            range: $.validator.format("Por favor, forneça um valor entre {0} e {1}."),
+            max: $.validator.format("Por favor, forneça um valor menor ou igual a {0}."),
+            min: $.validator.format("Por favor, forneça um valor maior ou igual a {0}.")
+        });
+    }
+</script>
