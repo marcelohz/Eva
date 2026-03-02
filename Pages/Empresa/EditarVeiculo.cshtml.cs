@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Eva.Data;
 using Eva.Models;
+using Eva.Models.ViewModels;
 using System.Security.Claims;
 
 namespace Eva.Pages.Empresa
@@ -19,7 +20,7 @@ namespace Eva.Pages.Empresa
         }
 
         [BindProperty]
-        public Veiculo Veiculo { get; set; } = null!;
+        public VeiculoVM Input { get; set; } = new();
 
         public async Task<IActionResult> OnGetAsync(string id)
         {
@@ -30,11 +31,23 @@ namespace Eva.Pages.Empresa
 
             if (user == null) return RedirectToPage("/Login");
 
-            // We fetch by Placa (id) and ensure it belongs to this user's company
-            Veiculo = await _context.Veiculos
+            var vehicleInDb = await _context.Veiculos
                 .FirstOrDefaultAsync(v => v.Placa == id && v.EmpresaCnpj == user.EmpresaCnpj);
 
-            if (Veiculo == null) return NotFound();
+            if (vehicleInDb == null) return NotFound();
+
+            Input = new VeiculoVM
+            {
+                Placa = vehicleInDb.Placa,
+                Modelo = vehicleInDb.Modelo ?? "",
+                ChassiNumero = vehicleInDb.ChassiNumero,
+                Renavan = vehicleInDb.Renavan,
+                PotenciaMotor = vehicleInDb.PotenciaMotor,
+                VeiculoCombustivelNome = vehicleInDb.VeiculoCombustivelNome,
+                NumeroLugares = vehicleInDb.NumeroLugares,
+                AnoFabricacao = vehicleInDb.AnoFabricacao,
+                ModeloAno = vehicleInDb.ModeloAno
+            };
 
             return Page();
         }
@@ -43,41 +56,28 @@ namespace Eva.Pages.Empresa
         {
             if (!ModelState.IsValid) return Page();
 
-            // Check if vehicle exists and belongs to user
             var userEmail = User.FindFirstValue(ClaimTypes.Email);
             var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == userEmail);
 
+            // Added this safety check to satisfy the compiler and protect the app
+            if (user == null || string.IsNullOrEmpty(user.EmpresaCnpj)) return RedirectToPage("/Login");
+
             var vehicleInDb = await _context.Veiculos
-                .FirstOrDefaultAsync(v => v.Placa == Veiculo.Placa && v.EmpresaCnpj == user.EmpresaCnpj);
+                .FirstOrDefaultAsync(v => v.Placa == Input.Placa && v.EmpresaCnpj == user.EmpresaCnpj);
 
             if (vehicleInDb == null) return NotFound();
 
-            // Update only the fields we allow
-            vehicleInDb.Modelo = Veiculo.Modelo;
-            vehicleInDb.ChassiNumero = Veiculo.ChassiNumero;
-            vehicleInDb.Renavan = Veiculo.Renavan;
-            vehicleInDb.AnoFabricacao = Veiculo.AnoFabricacao;
-            vehicleInDb.ModeloAno = Veiculo.ModeloAno;
-            vehicleInDb.NumeroLugares = Veiculo.NumeroLugares;
-            vehicleInDb.VeiculoCombustivelNome = Veiculo.VeiculoCombustivelNome;
-            vehicleInDb.CorPrincipalNome = Veiculo.CorPrincipalNome;
+            vehicleInDb.Modelo = Input.Modelo;
+            vehicleInDb.ChassiNumero = Input.ChassiNumero;
+            vehicleInDb.Renavan = Input.Renavan;
+            vehicleInDb.PotenciaMotor = Input.PotenciaMotor;
+            vehicleInDb.VeiculoCombustivelNome = Input.VeiculoCombustivelNome;
+            vehicleInDb.NumeroLugares = Input.NumeroLugares;
+            vehicleInDb.AnoFabricacao = Input.AnoFabricacao;
+            vehicleInDb.ModeloAno = Input.ModeloAno;
 
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!VeiculoExists(Veiculo.Placa)) return NotFound();
-                else throw;
-            }
-
+            await _context.SaveChangesAsync();
             return RedirectToPage("./MeusVeiculos");
-        }
-
-        private bool VeiculoExists(string placa)
-        {
-            return _context.Veiculos.Any(e => e.Placa == placa);
         }
     }
 }

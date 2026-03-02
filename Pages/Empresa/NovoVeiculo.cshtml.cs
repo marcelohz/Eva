@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Eva.Data;
 using Eva.Models;
+using Eva.Models.ViewModels;
 using System.Security.Claims;
 
 namespace Eva.Pages.Empresa
@@ -19,11 +20,9 @@ namespace Eva.Pages.Empresa
         }
 
         [BindProperty]
-        public Veiculo Veiculo { get; set; } = new();
+        public VeiculoVM Input { get; set; } = new();
 
-        public void OnGet()
-        {
-        }
+        public void OnGet() { }
 
         public async Task<IActionResult> OnPostAsync()
         {
@@ -32,19 +31,24 @@ namespace Eva.Pages.Empresa
             var userEmail = User.FindFirstValue(ClaimTypes.Email);
             var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == userEmail);
 
-            if (user == null || string.IsNullOrEmpty(user.EmpresaCnpj))
+            if (user == null || string.IsNullOrEmpty(user.EmpresaCnpj)) return RedirectToPage("/Login");
+
+            var novoVeiculo = new Veiculo
             {
-                return RedirectToPage("/Login");
-            }
+                Placa = Input.Placa.ToUpper().Replace("-", "").Trim(),
+                Modelo = Input.Modelo,
+                ChassiNumero = Input.ChassiNumero,
+                Renavan = Input.Renavan,
+                PotenciaMotor = Input.PotenciaMotor,
+                VeiculoCombustivelNome = Input.VeiculoCombustivelNome,
+                NumeroLugares = Input.NumeroLugares,
+                AnoFabricacao = Input.AnoFabricacao,
+                ModeloAno = Input.ModeloAno,
+                EmpresaCnpj = user.EmpresaCnpj,
+                DataInclusaoEventual = DateOnly.FromDateTime(DateTime.Now)
+            };
 
-            // Clean plate and assign company
-            Veiculo.EmpresaCnpj = user.EmpresaCnpj;
-            Veiculo.Placa = Veiculo.Placa.ToUpper().Replace("-", "").Trim();
-
-            // Your schema uses DateOnly for data_inclusao_eventual
-            Veiculo.DataInclusaoEventual = DateOnly.FromDateTime(DateTime.Now);
-
-            _context.Veiculos.Add(Veiculo);
+            _context.Veiculos.Add(novoVeiculo);
             await _context.SaveChangesAsync();
 
             return RedirectToPage("./MeusVeiculos");

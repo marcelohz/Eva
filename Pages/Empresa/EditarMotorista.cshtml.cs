@@ -26,11 +26,11 @@ namespace Eva.Pages.Empresa
             var userEmail = User.FindFirstValue(ClaimTypes.Email);
             var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == userEmail);
 
-            if (user == null) return RedirectToPage("/Login");
+            if (user == null || string.IsNullOrEmpty(user.EmpresaCnpj)) return RedirectToPage("/Login");
 
-            // Fetch and verify ownership
-            Motorista = await _context.Motoristas
-                .FirstOrDefaultAsync(m => m.Id == id && m.EmpresaCnpj == user.EmpresaCnpj);
+            // Fetch and verify ownership, using the null-forgiving operator (!)
+            Motorista = (await _context.Motoristas
+                .FirstOrDefaultAsync(m => m.Id == id && m.EmpresaCnpj == user.EmpresaCnpj))!;
 
             if (Motorista == null) return NotFound();
 
@@ -43,6 +43,8 @@ namespace Eva.Pages.Empresa
 
             var userEmail = User.FindFirstValue(ClaimTypes.Email);
             var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == userEmail);
+
+            if (user == null || string.IsNullOrEmpty(user.EmpresaCnpj)) return RedirectToPage("/Login");
 
             // Fetch the existing record to update
             var motoristaInDb = await _context.Motoristas

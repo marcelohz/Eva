@@ -9,8 +9,6 @@ namespace Eva.Models
     public class Veiculo
     {
         [Key]
-        [Required(ErrorMessage = "A Placa é obrigatória")]
-        [StringLength(7, MinimumLength = 7, ErrorMessage = "A placa deve ter 7 caracteres")]
         [Column("placa")]
         public string Placa { get; set; } = string.Empty;
 
@@ -20,9 +18,9 @@ namespace Eva.Models
         [Column("renavan")]
         public string? Renavan { get; set; }
 
-        [Required(ErrorMessage = "O Modelo é obrigatório")]
+        // REMOVED [Required] so EF Core allows NULLs from the database
         [Column("modelo")]
-        public string? Modelo { get; set; } // Matches your nullable DDL
+        public string? Modelo { get; set; }
 
         [Column("fretamento_veiculo_tipo_nome")]
         public string? FretamentoVeiculoTipoNome { get; set; }
@@ -36,7 +34,6 @@ namespace Eva.Models
         [Column("numero_lugares")]
         public int? NumeroLugares { get; set; }
 
-        [ValidateNever]
         [Column("empresa_cnpj")]
         public string? EmpresaCnpj { get; set; }
 
@@ -53,8 +50,7 @@ namespace Eva.Models
         [Column("veiculo_combustivel_nome")]
         public string? VeiculoCombustivelNome { get; set; }
 
-        [ValidateNever]
         [Column("data_inclusao_eventual")]
-        public DateOnly? DataInclusaoEventual { get; set; } // Changed to nullable DateOnly
+        public DateOnly? DataInclusaoEventual { get; set; }
     }
 }
