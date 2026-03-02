@@ -72,6 +72,12 @@ namespace Eva.Pages
                 new Claim(ClaimTypes.Role, user.PapelNome)
             };
 
+            // ADDED: Inject the CNPJ into the secure cookie for the Global Query Filters
+            if (!string.IsNullOrEmpty(user.EmpresaCnpj))
+            {
+                claims.Add(new Claim("EmpresaCnpj", user.EmpresaCnpj));
+            }
+
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
 
             await HttpContext.SignInAsync(

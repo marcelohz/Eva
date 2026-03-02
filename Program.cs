@@ -1,10 +1,13 @@
-using Microsoft.AspNetCore.Authentication.Cookies; // Add this
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Eva.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRazorPages();
+
+// ADD THIS: Allows EvaDbContext to read the current user's session (Claims/Cookies)
+builder.Services.AddHttpContextAccessor();
 
 // 1. Configure Cookie Authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

@@ -38,5 +38,28 @@ namespace Eva.Pages.Empresa
 
             return Page();
         }
+
+        public async Task<IActionResult> OnPostDeleteAsync(string placa)
+        {
+            if (string.IsNullOrEmpty(placa)) return RedirectToPage();
+
+            var userEmail = User.FindFirstValue(ClaimTypes.Email);
+            var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == userEmail);
+
+            if (user == null || string.IsNullOrEmpty(user.EmpresaCnpj)) return RedirectToPage("/Login");
+
+            // Fetch the vehicle ensuring it belongs to the current user's company
+            var veiculoInDb = await _context.Veiculos
+                .FirstOrDefaultAsync(v => v.Placa == placa && v.EmpresaCnpj == user.EmpresaCnpj);
+
+            if (veiculoInDb != null)
+            {
+                _context.Veiculos.Remove(veiculoInDb);
+                await _context.SaveChangesAsync();
+            }
+
+            // Refresh the page to show the updated list
+            return RedirectToPage();
+        }
     }
 }

@@ -75,8 +75,7 @@
                                             <a href="/Empresa/EditarVeiculo/@v.Placa" class="btn btn-sm btn-outline-primary" title="Editar">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
-                                            @* We'll implement the Delete action next *@
-                                            <button type="button" class="btn btn-sm btn-outline-danger" title="Excluir" disabled>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" title="Excluir" data-bs-toggle="modal" data-bs-target="#deleteModal" data-placa="@v.Placa">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </div>
@@ -90,3 +89,46 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteModalLabel"><i class="bi bi-exclamation-triangle-fill"></i> Confirmar Exclusão</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir o veículo de placa <strong id="modalVeiculoPlaca"></strong>?</p>
+                <p class="text-danger small mb-0">Esta ação não pode ser desfeita.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="post" asp-page-handler="Delete">
+                    <input type="hidden" name="placa" id="modalInputPlaca" value="" />
+                    <button type="submit" class="btn btn-danger">Sim, Excluir</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Listen for the modal to open
+        var deleteModal = document.getElementById('deleteModal')
+        deleteModal.addEventListener('show.bs.modal', function (event) {
+            // Button that triggered the modal
+            var button = event.relatedTarget
+
+            // Extract info from data-placa attribute
+            var placa = button.getAttribute('data-placa')
+
+            // Update the modal's text and hidden input value
+            var modalPlacaText = deleteModal.querySelector('#modalVeiculoPlaca')
+            var modalInputPlaca = deleteModal.querySelector('#modalInputPlaca')
+
+            modalPlacaText.textContent = placa
+            modalInputPlaca.value = placa
+        })
+    </script>
+}
