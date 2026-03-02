@@ -25,7 +25,27 @@ namespace Eva.Models
         [Column("telefone")]
         public string? Telefone { get; set; }
 
-        // ADDED: The missing property so PendenciaService can sync the status
+        [Column("endereco")]
+        public string? Endereco { get; set; }
+
+        [Column("cep")]
+        public string? Cep { get; set; }
+
+        [Column("endereco_numero")]
+        public string? EnderecoNumero { get; set; }
+
+        [Column("endereco_complemento")]
+        public string? EnderecoComplemento { get; set; }
+
+        [Column("bairro")]
+        public string? Bairro { get; set; }
+
+        [Column("cidade")]
+        public string? Cidade { get; set; }
+
+        [Column("estado")]
+        public string? Estado { get; set; }
+
         [Column("eventual_status")]
         public string? EventualStatus { get; set; }
 
