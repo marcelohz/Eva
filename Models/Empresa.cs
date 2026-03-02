@@ -13,7 +13,7 @@ namespace Eva.Models
         public string Cnpj { get; set; } = string.Empty;
 
         [Required]
-        [Column("nome")] // Fixed: Maps to 'nome' in geral.empresa
+        [Column("nome")]
         public string Nome { get; set; } = string.Empty;
 
         [Column("nome_fantasia")]
@@ -24,6 +24,10 @@ namespace Eva.Models
 
         [Column("telefone")]
         public string? Telefone { get; set; }
+
+        // ADDED: The missing property so PendenciaService can sync the status
+        [Column("eventual_status")]
+        public string? EventualStatus { get; set; }
 
         // Navigation properties
         public virtual ICollection<Usuario> Usuarios { get; set; } = new List<Usuario>();

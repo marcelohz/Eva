@@ -13,6 +13,14 @@
         </ol>
     </nav>
 
+    @if (Model.PendenciaStatus == "EM_ANALISE")
+    {
+        <div class="alert alert-warning mb-4 shadow-sm" role="alert">
+            <i class="bi bi-lock-fill me-2"></i>
+            <strong>Acesso Bloqueado:</strong> Este veículo está atualmente em análise por um analista e não pode ser alterado ou excluído no momento.
+        </div>
+    }
+
     <div class="card shadow">
         <div class="card-header bg-dark text-white">
             <h1 class="h4 mb-0">Editar Veículo: @Model.Input.Placa</h1>
@@ -20,47 +28,53 @@
         <div class="card-body">
             <form method="post" novalidate>
                 <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="Input.Placa" class="form-label fw-bold">Placa</label>
-                        <input asp-for="Input.Placa" class="form-control bg-light" readonly />
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="Input.Modelo" class="form-label fw-bold">Modelo / Marca</label>
-                        <input asp-for="Input.Modelo" class="form-control" />
-                        <span asp-validation-for="Input.Modelo" class="text-danger small"></span>
+
+                <fieldset disabled="@(Model.PendenciaStatus == "EM_ANALISE" ? "disabled" : null)">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Input.Placa" class="form-label fw-bold">Placa</label>
+                            <input asp-for="Input.Placa" class="form-control bg-light" readonly />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Input.Modelo" class="form-label fw-bold">Modelo / Marca</label>
+                            <input asp-for="Input.Modelo" class="form-control" />
+                            <span asp-validation-for="Input.Modelo" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="Input.PotenciaMotor" class="form-label fw-bold">Potência (cv)</label>
+                            <input asp-for="Input.PotenciaMotor" type="number" class="form-control" />
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="Input.VeiculoCombustivelNome" class="form-label fw-bold">Combustível</label>
+                            <input asp-for="Input.VeiculoCombustivelNome" class="form-control" />
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="Input.NumeroLugares" class="form-label fw-bold">Nº de Lugares</label>
+                            <input asp-for="Input.NumeroLugares" type="number" class="form-control" />
+                            <span asp-validation-for="Input.NumeroLugares" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Input.AnoFabricacao" class="form-label fw-bold">Ano Fabricação</label>
+                            <input asp-for="Input.AnoFabricacao" type="number" class="form-control" />
+                            <span asp-validation-for="Input.AnoFabricacao" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Input.ModeloAno" class="form-label fw-bold">Ano Modelo</label>
+                            <input asp-for="Input.ModeloAno" type="number" class="form-control" />
+                            <span asp-validation-for="Input.ModeloAno" class="text-danger small"></span>
+                        </div>
                     </div>
 
-                    <div class="col-md-4 mb-3">
-                        <label asp-for="Input.PotenciaMotor" class="form-label fw-bold">Potência (cv)</label>
-                        <input asp-for="Input.PotenciaMotor" type="number" class="form-control" />
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a href="/Empresa/MeusVeiculos" class="btn btn-outline-secondary">Voltar</a>
+                        @if (Model.PendenciaStatus != "EM_ANALISE")
+                        {
+                            <button type="submit" class="btn btn-primary px-4">Salvar Alterações</button>
+                        }
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label asp-for="Input.VeiculoCombustivelNome" class="form-label fw-bold">Combustível</label>
-                        <input asp-for="Input.VeiculoCombustivelNome" class="form-control" />
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label asp-for="Input.NumeroLugares" class="form-label fw-bold">Nº de Lugares</label>
-                        <input asp-for="Input.NumeroLugares" type="number" class="form-control" />
-                        <span asp-validation-for="Input.NumeroLugares" class="text-danger small"></span>
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="Input.AnoFabricacao" class="form-label fw-bold">Ano Fabricação</label>
-                        <input asp-for="Input.AnoFabricacao" type="number" class="form-control" />
-                        <span asp-validation-for="Input.AnoFabricacao" class="text-danger small"></span>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="Input.ModeloAno" class="form-label fw-bold">Ano Modelo</label>
-                        <input asp-for="Input.ModeloAno" type="number" class="form-control" />
-                        <span asp-validation-for="Input.ModeloAno" class="text-danger small"></span>
-                    </div>
-                </div>
-
-                <div class="d-flex justify-content-end gap-2 mt-4">
-                    <a href="/Empresa/MeusVeiculos" class="btn btn-outline-secondary">Cancelar</a>
-                    <button type="submit" class="btn btn-primary px-4">Salvar Alterações</button>
-                </div>
+                </fieldset>
             </form>
         </div>
     </div>

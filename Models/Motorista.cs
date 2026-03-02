@@ -38,6 +38,10 @@ namespace Eva.Models
         [Column("data_cadastro")]
         public DateTime DataCadastro { get; set; } = DateTime.UtcNow;
 
+        // ADDED: The missing property so PendenciaService can sync the status
+        [Column("eventual_status")]
+        public string? EventualStatus { get; set; }
+
         [ValidateNever]
         [ForeignKey("EmpresaCnpj")]
         public virtual Empresa? Empresa { get; set; }

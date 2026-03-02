@@ -30,9 +30,9 @@
                         <tr>
                             <th class="ps-4">Placa</th>
                             <th>Modelo / Marca</th>
-                            <th>Ano (Fab/Mod)</th>
                             <th>Lugares</th>
                             <th>Cor</th>
+                            <th>Status</th>
                             <th class="text-end pe-4">Ações</th>
                         </tr>
                     </thead>
@@ -50,6 +50,8 @@
                         {
                             @foreach (var v in Model.Veiculos)
                             {
+                                var isLocked = v.EventualStatus == "EM_ANALISE";
+
                                 <tr>
                                     <td class="ps-4">
                                         <span class="badge bg-dark text-uppercase p-2" style="letter-spacing: 1px;">
@@ -60,9 +62,6 @@
                                         @(v.Modelo ?? "Não informado")
                                     </td>
                                     <td>
-                                        @(v.AnoFabricacao?.ToString() ?? "-") / @(v.ModeloAno?.ToString() ?? "-")
-                                    </td>
-                                    <td>
                                         <span class="badge bg-light text-dark border">
                                             @(v.NumeroLugares?.ToString() ?? "0")
                                         </span>
@@ -70,12 +69,32 @@
                                     <td>
                                         @(v.CorPrincipalNome ?? "-")
                                     </td>
+                                    <td>
+                                        @switch (v.EventualStatus)
+                                        {
+                                            case "AGUARDANDO_ANALISE":
+                                                <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split"></i> Aguardando</span>
+                                                break;
+                                            case "EM_ANALISE":
+                                                <span class="badge bg-info text-dark"><i class="bi bi-search"></i> Em Análise</span>
+                                                break;
+                                            case "APROVADO":
+                                                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Aprovado</span>
+                                                break;
+                                            case "REJEITADO":
+                                                <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Rejeitado</span>
+                                                break;
+                                            default:
+                                                <span class="badge bg-secondary"><i class="bi bi-file-earmark"></i> Pendente</span>
+                                                break;
+                                        }
+                                    </td>
                                     <td class="text-end pe-4">
                                         <div class="btn-group">
-                                            <a href="/Empresa/EditarVeiculo/@v.Placa" class="btn btn-sm btn-outline-primary" title="Editar">
+                                            <a href="/Empresa/EditarVeiculo/@v.Placa" class="btn btn-sm btn-outline-primary @(isLocked ? "disabled" : "")" title="Editar">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
-                                            <button type="button" class="btn btn-sm btn-outline-danger" title="Excluir" data-bs-toggle="modal" data-bs-target="#deleteModal" data-placa="@v.Placa">
+                                            <button type="button" class="btn btn-sm btn-outline-danger" title="Excluir" data-bs-toggle="modal" data-bs-target="#deleteModal" data-placa="@v.Placa" @(isLocked ? "disabled" : "")>
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </div>
@@ -114,16 +133,11 @@
 
 @section Scripts {
     <script>
-        // Listen for the modal to open
         var deleteModal = document.getElementById('deleteModal')
         deleteModal.addEventListener('show.bs.modal', function (event) {
-            // Button that triggered the modal
             var button = event.relatedTarget
-
-            // Extract info from data-placa attribute
             var placa = button.getAttribute('data-placa')
 
-            // Update the modal's text and hidden input value
             var modalPlacaText = deleteModal.querySelector('#modalVeiculoPlaca')
             var modalInputPlaca = deleteModal.querySelector('#modalInputPlaca')
 

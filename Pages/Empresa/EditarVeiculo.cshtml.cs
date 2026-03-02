@@ -25,6 +25,8 @@ namespace Eva.Pages.Empresa
         [BindProperty]
         public VeiculoVM Input { get; set; } = new();
 
+        public string? PendenciaStatus { get; set; }
+
         public async Task<IActionResult> OnGetAsync(string id)
         {
             if (string.IsNullOrEmpty(id)) return NotFound();
@@ -52,12 +54,23 @@ namespace Eva.Pages.Empresa
                 ModeloAno = vehicleInDb.ModeloAno
             };
 
+            PendenciaStatus = await _pendenciaService.GetStatusAsync("VEICULO", vehicleInDb.Placa);
+
             return Page();
         }
 
         public async Task<IActionResult> OnPostAsync()
         {
             if (!ModelState.IsValid) return Page();
+
+            // The Backend Safety Lock
+            var status = await _pendenciaService.GetStatusAsync("VEICULO", Input.Placa);
+            if (status == "EM_ANALISE")
+            {
+                PendenciaStatus = status;
+                ModelState.AddModelError(string.Empty, "Este registro está atualmente em análise e não pode ser alterado no momento.");
+                return Page();
+            }
 
             var userEmail = User.FindFirstValue(ClaimTypes.Email);
             var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == userEmail);
@@ -80,7 +93,6 @@ namespace Eva.Pages.Empresa
 
             await _context.SaveChangesAsync();
 
-            // Fire the workflow trigger!
             await _pendenciaService.AvancarEntidadeAsync("VEICULO", vehicleInDb.Placa);
 
             return RedirectToPage("./MeusVeiculos");

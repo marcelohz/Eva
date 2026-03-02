@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Eva.Data;
 using Eva.Models;
-using System.Security.Claims;
+using Eva.Services;
 
 namespace Eva.Pages.Empresa
 {
@@ -12,27 +12,27 @@ namespace Eva.Pages.Empresa
     public class EditarMotoristaModel : PageModel
     {
         private readonly EvaDbContext _context;
+        private readonly PendenciaService _pendenciaService;
 
-        public EditarMotoristaModel(EvaDbContext context)
+        public EditarMotoristaModel(EvaDbContext context, PendenciaService pendenciaService)
         {
             _context = context;
+            _pendenciaService = pendenciaService;
         }
 
         [BindProperty]
         public Motorista Motorista { get; set; } = null!;
 
+        public string? PendenciaStatus { get; set; }
+
         public async Task<IActionResult> OnGetAsync(int id)
         {
-            var userEmail = User.FindFirstValue(ClaimTypes.Email);
-            var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == userEmail);
-
-            if (user == null || string.IsNullOrEmpty(user.EmpresaCnpj)) return RedirectToPage("/Login");
-
-            // Fetch and verify ownership, using the null-forgiving operator (!)
-            Motorista = (await _context.Motoristas
-                .FirstOrDefaultAsync(m => m.Id == id && m.EmpresaCnpj == user.EmpresaCnpj))!;
+            // The Global Query Filter securely handles the CNPJ check for us!
+            Motorista = (await _context.Motoristas.FirstOrDefaultAsync(m => m.Id == id))!;
 
             if (Motorista == null) return NotFound();
+
+            PendenciaStatus = await _pendenciaService.GetStatusAsync("MOTORISTA", Motorista.Id.ToString());
 
             return Page();
         }
@@ -41,18 +41,19 @@ namespace Eva.Pages.Empresa
         {
             if (!ModelState.IsValid) return Page();
 
-            var userEmail = User.FindFirstValue(ClaimTypes.Email);
-            var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == userEmail);
+            // The Backend Safety Lock
+            var status = await _pendenciaService.GetStatusAsync("MOTORISTA", Motorista.Id.ToString());
+            if (status == "EM_ANALISE")
+            {
+                PendenciaStatus = status;
+                ModelState.AddModelError(string.Empty, "Este registro está atualmente em análise e não pode ser alterado no momento.");
+                return Page();
+            }
 
-            if (user == null || string.IsNullOrEmpty(user.EmpresaCnpj)) return RedirectToPage("/Login");
-
-            // Fetch the existing record to update
-            var motoristaInDb = await _context.Motoristas
-                .FirstOrDefaultAsync(m => m.Id == Motorista.Id && m.EmpresaCnpj == user.EmpresaCnpj);
+            var motoristaInDb = await _context.Motoristas.FirstOrDefaultAsync(m => m.Id == Motorista.Id);
 
             if (motoristaInDb == null) return NotFound();
 
-            // Update allowed fields
             motoristaInDb.Nome = Motorista.Nome;
             motoristaInDb.Cpf = Motorista.Cpf;
             motoristaInDb.Cnh = Motorista.Cnh;
@@ -61,6 +62,9 @@ namespace Eva.Pages.Empresa
             try
             {
                 await _context.SaveChangesAsync();
+
+                // Fire the workflow trigger!
+                await _pendenciaService.AvancarEntidadeAsync("MOTORISTA", motoristaInDb.Id.ToString());
             }
             catch (DbUpdateConcurrencyException)
             {

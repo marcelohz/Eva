@@ -4,35 +4,28 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Eva.Data;
 using Eva.Models;
+using Eva.Services;
 using System.Security.Claims;
 
 namespace Eva.Pages.Empresa
 {
-    [Authorize(Roles = "EMPRESA")]
+    [Authorize(Roles = "EMPRESA,ANALISTA")]
     public class MeusVeiculosModel : PageModel
     {
         private readonly EvaDbContext _context;
+        private readonly PendenciaService _pendenciaService;
 
-        public MeusVeiculosModel(EvaDbContext context)
+        public MeusVeiculosModel(EvaDbContext context, PendenciaService pendenciaService)
         {
             _context = context;
+            _pendenciaService = pendenciaService;
         }
 
         public List<Veiculo> Veiculos { get; set; } = new();
 
         public async Task<IActionResult> OnGetAsync()
         {
-            var userEmail = User.FindFirstValue(ClaimTypes.Email);
-            var user = await _context.Usuarios
-                .FirstOrDefaultAsync(u => u.Email == userEmail);
-
-            if (user == null || string.IsNullOrEmpty(user.EmpresaCnpj))
-            {
-                return RedirectToPage("/Login");
-            }
-
             Veiculos = await _context.Veiculos
-                .Where(v => v.EmpresaCnpj == user.EmpresaCnpj)
                 .OrderBy(v => v.Placa)
                 .ToListAsync();
 
@@ -43,14 +36,11 @@ namespace Eva.Pages.Empresa
         {
             if (string.IsNullOrEmpty(placa)) return RedirectToPage();
 
-            var userEmail = User.FindFirstValue(ClaimTypes.Email);
-            var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == userEmail);
+            // Safety lock against deleting while analyzing
+            var status = await _pendenciaService.GetStatusAsync("VEICULO", placa);
+            if (status == "EM_ANALISE") return RedirectToPage();
 
-            if (user == null || string.IsNullOrEmpty(user.EmpresaCnpj)) return RedirectToPage("/Login");
-
-            // Fetch the vehicle ensuring it belongs to the current user's company
-            var veiculoInDb = await _context.Veiculos
-                .FirstOrDefaultAsync(v => v.Placa == placa && v.EmpresaCnpj == user.EmpresaCnpj);
+            var veiculoInDb = await _context.Veiculos.FirstOrDefaultAsync(v => v.Placa == placa);
 
             if (veiculoInDb != null)
             {
@@ -58,7 +48,6 @@ namespace Eva.Pages.Empresa
                 await _context.SaveChangesAsync();
             }
 
-            // Refresh the page to show the updated list
             return RedirectToPage();
         }
     }
