@@ -22,7 +22,7 @@ namespace Eva.Models
 
         [Required(ErrorMessage = "O Modelo é obrigatório")]
         [Column("modelo")]
-        public string? Modelo { get; set; }
+        public string? Modelo { get; set; } // Matches your nullable DDL
 
         [Column("fretamento_veiculo_tipo_nome")]
         public string? FretamentoVeiculoTipoNome { get; set; }
@@ -33,7 +33,6 @@ namespace Eva.Models
         [Column("cor_principal_nome")]
         public string? CorPrincipalNome { get; set; }
 
-        [Range(1, 100, ErrorMessage = "O número de lugares deve ser entre 1 e 100")]
         [Column("numero_lugares")]
         public int? NumeroLugares { get; set; }
 
@@ -45,11 +44,9 @@ namespace Eva.Models
         [ForeignKey("EmpresaCnpj")]
         public virtual Empresa? Empresa { get; set; }
 
-        [Range(1900, 2100, ErrorMessage = "Ano inválido")]
         [Column("ano_fabricacao")]
         public int? AnoFabricacao { get; set; }
 
-        [Range(1900, 2100, ErrorMessage = "Ano inválido")]
         [Column("modelo_ano")]
         public int? ModeloAno { get; set; }
 
@@ -58,6 +55,6 @@ namespace Eva.Models
 
         [ValidateNever]
         [Column("data_inclusao_eventual")]
-        public DateOnly DataInclusaoEventual { get; set; }
+        public DateOnly? DataInclusaoEventual { get; set; } // Changed to nullable DateOnly
     }
 }

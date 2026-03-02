@@ -18,52 +18,40 @@
             <h1 class="h4 mb-0">Cadastrar Novo Veículo</h1>
         </div>
         <div class="card-body">
-            <form method="post">
+            <form method="post" novalidate>
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <label asp-for="Veiculo.Placa" class="form-label">Placa</label>
-                        <input asp-for="Veiculo.Placa" class="form-control text-uppercase" placeholder="ABC1234" required />
+                        <label asp-for="Veiculo.Placa" class="form-label fw-bold">Placa</label>
+                        <input asp-for="Veiculo.Placa" class="form-control text-uppercase" placeholder="ABC1234" />
+                        <span asp-validation-for="Veiculo.Placa" class="text-danger small"></span>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label asp-for="Veiculo.Modelo" class="form-label">Modelo / Marca</label>
-                        <input asp-for="Veiculo.Modelo" class="form-control" placeholder="Ex: Marcopolo Paradiso" />
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="Veiculo.ChassiNumero" class="form-label">Chassi</label>
-                        <input asp-for="Veiculo.ChassiNumero" class="form-control" />
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="Veiculo.Renavan" class="form-label">Renavam</label>
-                        <input asp-for="Veiculo.Renavan" class="form-control" />
+                        <label asp-for="Veiculo.Modelo" class="form-label fw-bold">Modelo / Marca</label>
+                        <input asp-for="Veiculo.Modelo" class="form-control" />
+                        <span asp-validation-for="Veiculo.Modelo" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-4 mb-3">
-                        <label asp-for="Veiculo.AnoFabricacao" class="form-label">Ano Fabricação</label>
-                        <input asp-for="Veiculo.AnoFabricacao" type="number" class="form-control" />
+                        <label asp-for="Veiculo.PotenciaMotor" class="form-label fw-bold">Potência (cv)</label>
+                        <input asp-for="Veiculo.PotenciaMotor" type="number" class="form-control" />
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label asp-for="Veiculo.ModeloAno" class="form-label">Ano Modelo</label>
-                        <input asp-for="Veiculo.ModeloAno" type="number" class="form-control" />
+                        <label asp-for="Veiculo.VeiculoCombustivelNome" class="form-label fw-bold">Combustível</label>
+                        <input asp-for="Veiculo.VeiculoCombustivelNome" class="form-control" placeholder="DIESEL, FLEX, etc" />
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label asp-for="Veiculo.NumeroLugares" class="form-label">Nº de Lugares</label>
+                        <label asp-for="Veiculo.NumeroLugares" class="form-label fw-bold">Nº de Lugares</label>
                         <input asp-for="Veiculo.NumeroLugares" type="number" class="form-control" />
                     </div>
 
                     <div class="col-md-6 mb-3">
-                        <label asp-for="Veiculo.VeiculoCombustivelNome" class="form-label">Combustível</label>
-                        <select asp-for="Veiculo.VeiculoCombustivelNome" class="form-select">
-                            <option value="">Selecione...</option>
-                            <option value="DIESEL">Diesel</option>
-                            <option value="GASOLINA">Gasolina</option>
-                            <option value="ALCOOL">Álcool</option>
-                            <option value="ELETRICO">Elétrico</option>
-                        </select>
+                        <label asp-for="Veiculo.AnoFabricacao" class="form-label fw-bold">Ano Fabricação</label>
+                        <input asp-for="Veiculo.AnoFabricacao" type="number" class="form-control" />
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label asp-for="Veiculo.CorPrincipalNome" class="form-label">Cor Principal</label>
-                        <input asp-for="Veiculo.CorPrincipalNome" class="form-control" />
+                        <label asp-for="Veiculo.ModeloAno" class="form-label fw-bold">Ano Modelo</label>
+                        <input asp-for="Veiculo.ModeloAno" type="number" class="form-control" />
                     </div>
                 </div>
 
@@ -75,3 +63,7 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

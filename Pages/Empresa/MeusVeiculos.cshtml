@@ -13,47 +13,76 @@
     </nav>
 
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3">Minha Frota</h1>
+        <div>
+            <h1 class="h3 mb-0">Frota de Veículos</h1>
+            <p class="text-muted">Gerencie os veículos cadastrados na sua empresa.</p>
+        </div>
         <a href="/Empresa/NovoVeiculo" class="btn btn-primary">
-            <i class="bi bi-plus-lg"></i> Novo Veículo
+            <i class="bi bi-plus-circle"></i> Novo Veículo
         </a>
     </div>
 
-    <div class="card shadow-sm">
+    <div class="card shadow-sm border-0">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover mb-0">
+                <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>Placa</th>
-                            <th>Modelo</th>
-                            <th>Ano</th>
-                            <th>Capacidade</th>
-                            <th>Combustível</th>
-                            <th class="text-end">Ações</th>
+                            <th class="ps-4">Placa</th>
+                            <th>Modelo / Marca</th>
+                            <th>Ano (Fab/Mod)</th>
+                            <th>Lugares</th>
+                            <th>Cor</th>
+                            <th class="text-end pe-4">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @if (!Model.Veiculos.Any())
+                        @if (Model.Veiculos == null || !Model.Veiculos.Any())
                         {
                             <tr>
-                                <td colspan="6" class="text-center py-4 text-muted">
-                                    Nenhum veículo encontrado para sua empresa.
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    <i class="bi bi-truck display-4 d-block mb-2"></i>
+                                    Nenhum veículo encontrado.
                                 </td>
                             </tr>
                         }
-                        @foreach (var v in Model.Veiculos)
+                        else
                         {
-                            <tr>
-                                <td class="fw-bold">@v.Placa</td>
-                                <td>@v.Modelo</td>
-                                <td>@v.AnoFabricacao/@v.ModeloAno</td>
-                                <td>@v.NumeroLugares lugares</td>
-                                <td>@v.VeiculoCombustivelNome</td>
-                                <td class="text-end">
-                                    <a href="/Empresa/EditarVeiculo/@v.Placa" class="btn btn-sm btn-outline-secondary">Editar</a>
-                                </td>
-                            </tr>
+                            @foreach (var v in Model.Veiculos)
+                            {
+                                <tr>
+                                    <td class="ps-4">
+                                        <span class="badge bg-dark text-uppercase p-2" style="letter-spacing: 1px;">
+                                            @v.Placa
+                                        </span>
+                                    </td>
+                                    <td class="fw-bold text-secondary">
+                                        @(v.Modelo ?? "Não informado")
+                                    </td>
+                                    <td>
+                                        @(v.AnoFabricacao?.ToString() ?? "-") / @(v.ModeloAno?.ToString() ?? "-")
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border">
+                                            @(v.NumeroLugares?.ToString() ?? "0")
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @(v.CorPrincipalNome ?? "-")
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <div class="btn-group">
+                                            <a href="/Empresa/EditarVeiculo/@v.Placa" class="btn btn-sm btn-outline-primary" title="Editar">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            @* We'll implement the Delete action next *@
+                                            <button type="button" class="btn btn-sm btn-outline-danger" title="Excluir" disabled>
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
                         }
                     </tbody>
                 </table>
