@@ -30,8 +30,9 @@ namespace Eva.Pages.Empresa
         [BindProperty]
         public IFormFile? UploadArquivo { get; set; }
 
+        // FIXED: Changed to nullable string? so it doesn't block the main Save action
         [BindProperty]
-        public string TipoDocumentoUpload { get; set; } = string.Empty;
+        public string? TipoDocumentoUpload { get; set; }
 
         public string? PendenciaStatus { get; set; }
 
@@ -78,7 +79,7 @@ namespace Eva.Pages.Empresa
                 .Select(dv => dv.Documento)
                 .ToListAsync();
 
-            // Filter into specific buckets
+            // Filter into buckets
             Crlvs = allDocs.Where(d => d.DocumentoTipoNome == "CRLV").OrderByDescending(d => d.DataUpload).ToList();
             Laudos = allDocs.Where(d => d.DocumentoTipoNome == "LAUDO_INSPECAO").OrderByDescending(d => d.DataUpload).ToList();
             Apolices = allDocs.Where(d => d.DocumentoTipoNome == "APOLICE_SEGURO").OrderByDescending(d => d.DataUpload).ToList();
@@ -89,6 +90,7 @@ namespace Eva.Pages.Empresa
 
         public async Task<IActionResult> OnPostAsync()
         {
+            // Now this will be VALID because TipoDocumentoUpload is optional
             if (!ModelState.IsValid) return await ReloadPage(Input.Placa);
 
             var status = await _pendenciaService.GetStatusAsync("VEICULO", Input.Placa);
@@ -103,6 +105,7 @@ namespace Eva.Pages.Empresa
 
             if (vehicleInDb == null) return NotFound();
 
+            // Update
             vehicleInDb.Modelo = Input.Modelo;
             vehicleInDb.ChassiNumero = Input.ChassiNumero;
             vehicleInDb.Renavan = Input.Renavan;
@@ -120,7 +123,8 @@ namespace Eva.Pages.Empresa
                 await _pendenciaService.AvancarEntidadeAsync("VEICULO", vehicleInDb.Placa);
             }
 
-            return RedirectToPage("./MeusVeiculos");
+            // Redirect back to the list
+            return RedirectToPage("/Empresa/MeusVeiculos");
         }
 
         public async Task<IActionResult> OnPostUploadAsync()
@@ -143,6 +147,7 @@ namespace Eva.Pages.Empresa
 
             var userEmail = User.FindFirstValue(ClaimTypes.Email);
             var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == userEmail);
+            if (user == null) return RedirectToPage("/Login");
 
             var docLink = await _context.DocumentoVeiculos
                 .Include(dv => dv.Documento)
