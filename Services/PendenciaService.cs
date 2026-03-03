@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Eva.Data;
 using Eva.Models;
+using System.Linq;
 
 namespace Eva.Services
 {
@@ -22,7 +24,7 @@ namespace Eva.Services
 
             if (atual != null && atual.Status == "EM_ANALISE")
             {
-                throw new InvalidOperationException("Não é possível avançar uma entidade que está em análise.");
+                throw new InvalidOperationException("Não é possível alterar uma entidade que está em análise.");
             }
 
             if (atual == null || atual.Status == "APROVADO" || atual.Status == "REJEITADO")
@@ -35,12 +37,43 @@ namespace Eva.Services
                 };
 
                 _context.FluxoPendencias.Add(novaPendencia);
-
-                // Keep the UI fast by syncing the status directly to the entity
                 await SyncEntityStatusAsync(entidadeTipo, entidadeId, "AGUARDANDO_ANALISE");
-
                 await _context.SaveChangesAsync();
             }
+        }
+
+        // --- NEW ANALYST METHODS ---
+
+        public async Task IniciarAnaliseAsync(string entidadeTipo, string entidadeId, string analista)
+        {
+            var novaPendencia = new FluxoPendencia { EntidadeTipo = entidadeTipo, EntidadeId = entidadeId, Status = "EM_ANALISE", Analista = analista };
+            _context.FluxoPendencias.Add(novaPendencia);
+            await SyncEntityStatusAsync(entidadeTipo, entidadeId, "EM_ANALISE");
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task AprovarAsync(string entidadeTipo, string entidadeId, string analista)
+        {
+            var novaPendencia = new FluxoPendencia { EntidadeTipo = entidadeTipo, EntidadeId = entidadeId, Status = "APROVADO", Analista = analista };
+            _context.FluxoPendencias.Add(novaPendencia);
+            await SyncEntityStatusAsync(entidadeTipo, entidadeId, "APROVADO");
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task RejeitarAsync(string entidadeTipo, string entidadeId, string analista, string motivo)
+        {
+            var novaPendencia = new FluxoPendencia { EntidadeTipo = entidadeTipo, EntidadeId = entidadeId, Status = "REJEITADO", Analista = analista, Motivo = motivo };
+            _context.FluxoPendencias.Add(novaPendencia);
+            await SyncEntityStatusAsync(entidadeTipo, entidadeId, "REJEITADO");
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<List<FluxoPendencia>> GetHistoricoAsync(string entidadeTipo, string entidadeId)
+        {
+            return await _context.FluxoPendencias
+                .Where(p => p.EntidadeTipo == entidadeTipo && p.EntidadeId == entidadeId)
+                .OrderByDescending(p => p.CriadoEm)
+                .ToListAsync();
         }
 
         public async Task<string?> GetStatusAsync(string entidadeTipo, string entidadeId)

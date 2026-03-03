@@ -62,19 +62,17 @@ namespace Eva.Pages.Empresa
             var userCnpj = User.FindFirstValue("EmpresaCnpj");
             if (string.IsNullOrEmpty(userCnpj)) return RedirectToPage("/Login");
 
-            // Workflow Safety Lock
             var status = await _pendenciaService.GetStatusAsync("EMPRESA", userCnpj);
             if (status == "EM_ANALISE")
             {
                 PendenciaStatus = status;
-                ModelState.AddModelError(string.Empty, "O perfil da sua empresa está em análise e não pode ser alterado no momento.");
+                ModelState.AddModelError(string.Empty, "O cadastro da sua empresa está em análise e não pode ser alterado no momento.");
                 return Page();
             }
 
             var empresaInDb = await _context.Empresas.FirstOrDefaultAsync(e => e.Cnpj == userCnpj);
             if (empresaInDb == null) return NotFound();
 
-            // Apply modifications
             empresaInDb.Nome = Input.Nome;
             empresaInDb.NomeFantasia = Input.NomeFantasia;
             empresaInDb.Endereco = Input.Endereco;
@@ -87,7 +85,6 @@ namespace Eva.Pages.Empresa
             empresaInDb.Email = Input.Email;
             empresaInDb.Telefone = Input.Telefone;
 
-            // Dirty Checking
             bool hasChanges = _context.ChangeTracker.HasChanges();
 
             if (hasChanges)

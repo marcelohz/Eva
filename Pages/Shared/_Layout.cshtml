@@ -20,7 +20,7 @@
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
-                        @if (User.Identity?.IsAuthenticated == true)
+                        @if (User.IsInRole("EMPRESA"))
                         {
                             <li class="nav-item">
                                 <a class="nav-link text-white" href="/Empresa/MinhaEmpresa">Dashboard</a>
@@ -32,7 +32,14 @@
                                 <a class="nav-link text-white" href="/Empresa/MeusMotoristas">Motoristas</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link text-white" href="/Empresa/EditarEmpresa">Perfil da Empresa</a>
+                                <a class="nav-link text-white" href="/Empresa/EditarEmpresa">Empresa</a>
+                            </li>
+                        }
+
+                        @if (User.IsInRole("ANALISTA"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-white fw-bold" href="/Metroplan/Analista"><i class="bi bi-inboxes-fill"></i> Fila de Análise</a>
                             </li>
                         }
                     </ul>

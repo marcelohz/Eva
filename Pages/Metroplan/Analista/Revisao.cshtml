@@ -1,0 +1,173 @@
+﻿@page
+@model Eva.Pages.Metroplan.Analista.RevisaoModel
+@{
+    ViewData["Title"] = "Revisão de Ticket - Eva";
+}
+
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a href="/Metroplan/Analista" class="btn btn-outline-secondary btn-sm mb-2"><i class="bi bi-arrow-left"></i> Voltar à Fila</a>
+            <h1 class="h3 mb-0">Auditoria: @Model.Tipo</h1>
+            <p class="text-muted">ID do Registro: <span class="fw-bold">@Model.Id</span></p>
+        </div>
+
+        @if (Model.IsLockedByOther)
+        {
+            <div class="alert alert-danger mb-0 py-2">
+                <i class="bi bi-person-fill-lock"></i> <strong>Bloqueado:</strong> Em análise por @Model.Ticket?.Analista
+            </div>
+        }
+        else if (Model.Ticket?.Status == "AGUARDANDO_ANALISE")
+        {
+            <form method="post" asp-page-handler="Iniciar">
+                <input type="hidden" asp-for="Tipo" />
+                <input type="hidden" asp-for="Id" />
+                <button type="submit" class="btn btn-primary btn-lg shadow">
+                    <i class="bi bi-play-circle"></i> Iniciar Análise
+                </button>
+            </form>
+        }
+        else if (Model.IsLockedByMe)
+        {
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-danger btn-lg shadow" data-bs-toggle="modal" data-bs-target="#modalRejeitar">
+                    <i class="bi bi-x-circle"></i> Rejeitar
+                </button>
+                <form method="post" asp-page-handler="Aprovar">
+                    <input type="hidden" asp-for="Tipo" />
+                    <input type="hidden" asp-for="Id" />
+                    <button type="submit" class="btn btn-success btn-lg shadow">
+                        <i class="bi bi-check-circle"></i> Aprovar Cadastro
+                    </button>
+                </form>
+            </div>
+        }
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Dados Preenchidos pela Empresa</h5>
+                </div>
+                <div class="card-body bg-light">
+                    @if (Model.Tipo == "VEICULO" && Model.Veiculo != null)
+                    {
+                        <div class="row">
+                            <div class="col-md-6 mb-3"><strong>Empresa:</strong> @Model.Veiculo.Empresa?.Nome (@Model.Veiculo.EmpresaCnpj)</div>
+                            <div class="col-md-6 mb-3"><strong>Placa:</strong> @Model.Veiculo.Placa</div>
+                            <div class="col-md-6 mb-3"><strong>Modelo:</strong> @Model.Veiculo.Modelo</div>
+                            <div class="col-md-6 mb-3"><strong>Chassi:</strong> @Model.Veiculo.ChassiNumero</div>
+                            <div class="col-md-4 mb-3"><strong>Renavam:</strong> @Model.Veiculo.Renavan</div>
+                            <div class="col-md-4 mb-3"><strong>Ano Fab.:</strong> @Model.Veiculo.AnoFabricacao</div>
+                            <div class="col-md-4 mb-3"><strong>Lugares:</strong> @Model.Veiculo.NumeroLugares</div>
+                        </div>
+                    }
+                    else if (Model.Tipo == "MOTORISTA" && Model.Motorista != null)
+                    {
+                        <div class="row">
+                            <div class="col-md-12 mb-3"><strong>Empresa:</strong> @Model.Motorista.Empresa?.Nome (@Model.Motorista.EmpresaCnpj)</div>
+                            <div class="col-md-6 mb-3"><strong>Nome:</strong> @Model.Motorista.Nome</div>
+                            <div class="col-md-6 mb-3"><strong>CPF:</strong> @Model.Motorista.Cpf</div>
+                            <div class="col-md-6 mb-3"><strong>CNH:</strong> @Model.Motorista.Cnh</div>
+                            <div class="col-md-6 mb-3"><strong>E-mail:</strong> @Model.Motorista.Email</div>
+                        </div>
+                    }
+                    else if (Model.Tipo == "EMPRESA" && Model.Empresa != null)
+                    {
+                        <div class="row">
+                            <div class="col-md-6 mb-3"><strong>CNPJ:</strong> @Model.Empresa.Cnpj</div>
+                            <div class="col-md-6 mb-3"><strong>Razão Social:</strong> @Model.Empresa.Nome</div>
+                            <div class="col-md-6 mb-3"><strong>Nome Fantasia:</strong> @Model.Empresa.NomeFantasia</div>
+                            <div class="col-md-6 mb-3"><strong>E-mail:</strong> @Model.Empresa.Email</div>
+                            <div class="col-md-12 mb-3"><strong>Endereço:</strong> @Model.Empresa.Endereco, @Model.Empresa.EnderecoNumero - @Model.Empresa.Cidade/@Model.Empresa.Estado</div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="alert alert-info border-info border-2">
+                <i class="bi bi-file-earmark-pdf-fill fs-4 float-start me-3"></i>
+                <div class="pt-1">
+                    <strong>Anexos e Documentos</strong><br>
+                    O módulo de visualização de PDFs será integrado em breve.
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-clock-history"></i> Histórico do Registro</h5>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        @foreach (var h in Model.Historico)
+                        {
+                            <li class="list-group-item pt-3 pb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <small class="text-muted fw-bold">@h.CriadoEm.ToString("dd/MM/yyyy HH:mm")</small>
+                                    @switch (h.Status)
+                                    {
+                                        case "AGUARDANDO_ANALISE":
+                                            <span class="badge bg-warning text-dark border">Atualizado</span>
+                                            break;
+                                        case "EM_ANALISE":
+                                            <span class="badge bg-info text-dark">Em Análise</span>
+                                            break;
+                                        case "APROVADO":
+                                            <span class="badge bg-success">Aprovado</span>
+                                            break;
+                                        case "REJEITADO":
+                                            <span class="badge bg-danger">Rejeitado</span>
+                                            break;
+                                    }
+                                </div>
+                                <div class="small text-secondary">
+                                    @if (!string.IsNullOrEmpty(h.Analista))
+                                    {
+                                        <span>Por: @h.Analista</span>
+                                    }
+                                </div>
+                                @if (!string.IsNullOrEmpty(h.Motivo))
+                                {
+                                    <div class="mt-2 p-2 bg-light border-start border-danger border-3 small">
+                                        <strong>Motivo:</strong> @h.Motivo
+                                    </div>
+                                }
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalRejeitar" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Rejeitar Cadastro</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-page-handler="Rejeitar">
+                <div class="modal-body">
+                    <input type="hidden" asp-for="Tipo" />
+                    <input type="hidden" asp-for="Id" />
+
+                    <div class="mb-3">
+                        <label asp-for="MotivoRejeicao" class="form-label fw-bold">Motivo da Rejeição (obrigatório)</label>
+                        <textarea asp-for="MotivoRejeicao" class="form-control" rows="4" required placeholder="Ex: O número do chassi não confere com o documento anexado."></textarea>
+                    </div>
+                    <p class="text-muted small">Este motivo será exibido para a empresa para que ela possa corrigir o problema.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">Confirmar Rejeição</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
