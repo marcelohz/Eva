@@ -2,83 +2,173 @@
 @model Eva.Pages.Empresa.EditarVeiculoModel
 @{
     ViewData["Title"] = "Editar Veículo - Eva";
+    bool isLocked = Model.PendenciaStatus == "EM_ANALISE";
 }
 
-<div class="container mt-5">
+<div class="container mt-5 mb-5">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="/Empresa/MeusVeiculos">Meus Veículos</a></li>
+            <li class="breadcrumb-item"><a href="/Empresa/MeusVeiculos">Meus Veiculos</a></li>
             <li class="breadcrumb-item active">Editar</li>
         </ol>
     </nav>
 
-    @if (Model.PendenciaStatus == "EM_ANALISE")
+    @if (isLocked)
     {
         <div class="alert alert-warning mb-4 shadow-sm" role="alert">
             <i class="bi bi-lock-fill me-2"></i>
-            <strong>Acesso Bloqueado:</strong> Este veículo está atualmente em análise por um analista e não pode ser alterado ou excluído no momento.
+            <strong>Acesso Bloqueado:</strong> Este veículo está em análise por um analista e não pode ser alterado no momento.
         </div>
     }
 
-    <div class="card shadow">
-        <div class="card-header bg-dark text-white">
-            <h1 class="h4 mb-0">Editar Veículo: @Model.Input.Placa</h1>
+    <div class="row">
+        <div class="col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Dados do Veículo</h5>
+                    @switch (Model.PendenciaStatus)
+                    {
+                        case "AGUARDANDO_ANALISE":
+                            <span class="badge bg-warning text-dark border border-light"><i class="bi bi-hourglass-split"></i> Aguardando</span>
+                            break;
+                        case "EM_ANALISE":
+                            <span class="badge bg-info text-dark border border-light"><i class="bi bi-search"></i> Em Análise</span>
+                            break;
+                        case "APROVADO":
+                            <span class="badge bg-success border border-light"><i class="bi bi-check-circle"></i> Aprovado</span>
+                            break;
+                        case "REJEITADO":
+                            <span class="badge bg-danger border border-light"><i class="bi bi-x-circle"></i> Rejeitado</span>
+                            break;
+                    }
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                        <input type="hidden" asp-for="Input.Placa" />
+
+                        <fieldset disabled="@(isLocked ? "disabled" : null)">
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label asp-for="Input.Placa" class="form-label fw-bold">Placa</label>
+                                    <input asp-for="Input.Placa" class="form-control bg-light" readonly />
+                                </div>
+                                <div class="col-md-8 mb-3">
+                                    <label asp-for="Input.Modelo" class="form-label fw-bold">Modelo / Carroceria</label>
+                                    <input asp-for="Input.Modelo" class="form-control" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="Input.ChassiNumero" class="form-label fw-bold">Chassi</label>
+                                    <input asp-for="Input.ChassiNumero" class="form-control" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="Input.Renavan" class="form-label fw-bold">Renavam</label>
+                                    <input asp-for="Input.Renavan" class="form-control" />
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label asp-for="Input.AnoFabricacao" class="form-label fw-bold">Ano Fab.</label>
+                                    <input asp-for="Input.AnoFabricacao" type="number" class="form-control" />
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label asp-for="Input.ModeloAno" class="form-label fw-bold">Ano Mod.</label>
+                                    <input asp-for="Input.ModeloAno" type="number" class="form-control" />
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label asp-for="Input.NumeroLugares" class="form-label fw-bold">Lugares</label>
+                                    <input asp-for="Input.NumeroLugares" type="number" class="form-control" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="Input.VeiculoCombustivelNome" class="form-label fw-bold">Combustível</label>
+                                    <select asp-for="Input.VeiculoCombustivelNome" class="form-select">
+                                        <option value="DIESEL">Diesel</option>
+                                        <option value="GASOLINA">Gasolina</option>
+                                        <option value="FLEX">Flex</option>
+                                        <option value="ALCOOL">Álcool</option>
+                                        <option value="GNV">GNV</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="Input.PotenciaMotor" class="form-label fw-bold">Potência (CV)</label>
+                                    <input asp-for="Input.PotenciaMotor" class="form-control" />
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-end gap-2 mt-4 border-top pt-3">
+                                <a href="/Empresa/MeusVeiculos" class="btn btn-outline-secondary">Voltar</a>
+                                @if (!isLocked)
+                                {
+                                    <button type="submit" class="btn btn-primary px-4">Salvar Alterações</button>
+                                }
+                            </div>
+                        </fieldset>
+                    </form>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            <form method="post" novalidate>
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-                <fieldset disabled="@(Model.PendenciaStatus == "EM_ANALISE" ? "disabled" : null)">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label asp-for="Input.Placa" class="form-label fw-bold">Placa</label>
-                            <input asp-for="Input.Placa" class="form-control bg-light" readonly />
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label asp-for="Input.Modelo" class="form-label fw-bold">Modelo / Marca</label>
-                            <input asp-for="Input.Modelo" class="form-control" />
-                            <span asp-validation-for="Input.Modelo" class="text-danger small"></span>
-                        </div>
-
-                        <div class="col-md-4 mb-3">
-                            <label asp-for="Input.PotenciaMotor" class="form-label fw-bold">Potência (cv)</label>
-                            <input asp-for="Input.PotenciaMotor" type="number" class="form-control" />
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label asp-for="Input.VeiculoCombustivelNome" class="form-label fw-bold">Combustível</label>
-                            <input asp-for="Input.VeiculoCombustivelNome" class="form-control" />
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label asp-for="Input.NumeroLugares" class="form-label fw-bold">Nº de Lugares</label>
-                            <input asp-for="Input.NumeroLugares" type="number" class="form-control" />
-                            <span asp-validation-for="Input.NumeroLugares" class="text-danger small"></span>
+        <div class="col-lg-5">
+            <div class="card shadow border-0">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-file-earmark-pdf me-2"></i>Documentação do Veículo</h5>
+                </div>
+                <div class="card-body bg-light">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="fw-bold text-secondary mb-0">CRLV (Documento do Veículo)</h6>
+                            @if (!isLocked)
+                            {
+                                <button class="btn btn-sm btn-outline-primary" onclick="document.getElementById('fileInput').click()">
+                                    <i class="bi bi-upload"></i> Enviar Novo
+                                </button>
+                            }
                         </div>
 
-                        <div class="col-md-6 mb-3">
-                            <label asp-for="Input.AnoFabricacao" class="form-label fw-bold">Ano Fabricação</label>
-                            <input asp-for="Input.AnoFabricacao" type="number" class="form-control" />
-                            <span asp-validation-for="Input.AnoFabricacao" class="text-danger small"></span>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label asp-for="Input.ModeloAno" class="form-label fw-bold">Ano Modelo</label>
-                            <input asp-for="Input.ModeloAno" type="number" class="form-control" />
-                            <span asp-validation-for="Input.ModeloAno" class="text-danger small"></span>
-                        </div>
-                    </div>
-
-                    <div class="d-flex justify-content-end gap-2 mt-4">
-                        <a href="/Empresa/MeusVeiculos" class="btn btn-outline-secondary">Voltar</a>
-                        @if (Model.PendenciaStatus != "EM_ANALISE")
+                        @if (!Model.Crlvs.Any())
                         {
-                            <button type="submit" class="btn btn-primary px-4">Salvar Alterações</button>
+                            <div class="alert alert-light border border-dashed text-center text-muted">
+                                <i class="bi bi-cloud-upload display-6 d-block mb-2"></i>
+                                Nenhum documento anexado.
+                            </div>
+                        }
+                        else
+                        {
+                            <ul class="list-group list-group-flush shadow-sm rounded">
+                                @foreach (var doc in Model.Crlvs)
+                                {
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div class="text-truncate me-2" title="@doc.NomeArquivo">
+                                            <i class="bi bi-file-earmark-check text-success me-1"></i>
+                                            <small class="fw-bold">@doc.NomeArquivo</small>
+                                            <div class="text-muted" style="font-size: 0.75rem">
+                                                @doc.DataUpload.ToString("dd/MM/yyyy HH:mm")
+                                            </div>
+                                        </div>
+                                        @if (!isLocked)
+                                        {
+                                            <form method="post" asp-page-handler="DeleteDoc" class="d-inline">
+                                                <input type="hidden" name="id" value="@doc.Id" />
+                                                <input type="hidden" asp-for="Input.Placa" />
+                                                <button type="submit" class="btn btn-link text-danger p-0 border-0" title="Excluir">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                    </li>
+                                }
+                            </ul>
                         }
                     </div>
-                </fieldset>
-            </form>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<form id="uploadForm" method="post" enctype="multipart/form-data" asp-page-handler="Upload" style="display:none">
+    <input type="hidden" asp-for="Input.Placa" />
+    <input type="file" asp-for="UploadArquivo" id="fileInput" accept=".pdf" onchange="document.getElementById('uploadForm').submit()" />
+</form>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

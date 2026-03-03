@@ -2,9 +2,10 @@
 @model Eva.Pages.Empresa.EditarEmpresaModel
 @{
     ViewData["Title"] = "Empresa - Eva";
+    bool isLocked = Model.PendenciaStatus == "EM_ANALISE";
 }
 
-<div class="container mt-5">
+<div class="container mt-5 mb-5">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Dashboard</a></li>
@@ -12,7 +13,7 @@
         </ol>
     </nav>
 
-    @if (Model.PendenciaStatus == "EM_ANALISE")
+    @if (isLocked)
     {
         <div class="alert alert-warning mb-4 shadow-sm" role="alert">
             <i class="bi bi-lock-fill me-2"></i>
@@ -20,105 +21,194 @@
         </div>
     }
 
-    <div class="card shadow">
-        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-            <h1 class="h4 mb-0">Dados da Empresa</h1>
-            @switch (Model.PendenciaStatus)
-            {
-                case "AGUARDANDO_ANALISE":
-                    <span class="badge bg-warning text-dark border border-light"><i class="bi bi-hourglass-split"></i> Aguardando Análise</span>
-                    break;
-                case "EM_ANALISE":
-                    <span class="badge bg-info text-dark border border-light"><i class="bi bi-search"></i> Em Análise</span>
-                    break;
-                case "APROVADO":
-                    <span class="badge bg-success border border-light"><i class="bi bi-check-circle"></i> Aprovado</span>
-                    break;
-                case "REJEITADO":
-                    <span class="badge bg-danger border border-light"><i class="bi bi-x-circle"></i> Rejeitado</span>
-                    break;
-            }
+    <div class="row">
+        <div class="col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Dados Cadastrais</h5>
+                    @switch (Model.PendenciaStatus)
+                    {
+                        case "AGUARDANDO_ANALISE":
+                            <span class="badge bg-warning text-dark border border-light"><i class="bi bi-hourglass-split"></i> Aguardando</span>
+                            break;
+                        case "EM_ANALISE":
+                            <span class="badge bg-info text-dark border border-light"><i class="bi bi-search"></i> Em Análise</span>
+                            break;
+                        case "APROVADO":
+                            <span class="badge bg-success border border-light"><i class="bi bi-check-circle"></i> Aprovado</span>
+                            break;
+                        case "REJEITADO":
+                            <span class="badge bg-danger border border-light"><i class="bi bi-x-circle"></i> Rejeitado</span>
+                            break;
+                    }
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                        <fieldset disabled="@(isLocked ? "disabled" : null)">
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label asp-for="Input.Cnpj" class="form-label fw-bold">CNPJ</label>
+                                    <input asp-for="Input.Cnpj" class="form-control bg-light" readonly />
+                                </div>
+                                <div class="col-md-8 mb-3">
+                                    <label asp-for="Input.Nome" class="form-label fw-bold">Razão Social</label>
+                                    <input asp-for="Input.Nome" class="form-control" />
+                                    <span asp-validation-for="Input.Nome" class="text-danger small"></span>
+                                </div>
+
+                                <div class="col-md-12 mb-3">
+                                    <label asp-for="Input.NomeFantasia" class="form-label fw-bold">Nome Fantasia</label>
+                                    <input asp-for="Input.NomeFantasia" class="form-control" />
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label asp-for="Input.Cep" class="form-label fw-bold">CEP</label>
+                                    <input asp-for="Input.Cep" class="form-control" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="Input.Endereco" class="form-label fw-bold">Endereço</label>
+                                    <input asp-for="Input.Endereco" class="form-control" />
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <label asp-for="Input.EnderecoNumero" class="form-label fw-bold">Número</label>
+                                    <input asp-for="Input.EnderecoNumero" class="form-control" />
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label asp-for="Input.Bairro" class="form-label fw-bold">Bairro</label>
+                                    <input asp-for="Input.Bairro" class="form-control" />
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label asp-for="Input.EnderecoComplemento" class="form-label fw-bold">Complemento</label>
+                                    <input asp-for="Input.EnderecoComplemento" class="form-control" />
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label asp-for="Input.Cidade" class="form-label fw-bold">Cidade</label>
+                                    <input asp-for="Input.Cidade" class="form-control" />
+                                </div>
+                                <div class="col-md-1 mb-3">
+                                    <label asp-for="Input.Estado" class="form-label fw-bold">UF</label>
+                                    <select asp-for="Input.Estado" class="form-select">
+                                        <option value=""></option>
+                                        <option value="RS">RS</option>
+                                        <option value="SC">SC</option>
+                                        <option value="PR">PR</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="Input.Email" class="form-label fw-bold">E-mail</label>
+                                    <input asp-for="Input.Email" type="email" class="form-control" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="Input.Telefone" class="form-label fw-bold">Telefone</label>
+                                    <input asp-for="Input.Telefone" class="form-control" />
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-end gap-2 mt-4 border-top pt-3">
+                                <a href="/Empresa/MinhaEmpresa" class="btn btn-outline-secondary">Voltar</a>
+                                @if (!isLocked)
+                                {
+                                    <button type="submit" class="btn btn-primary px-4">Salvar Dados</button>
+                                }
+                            </div>
+                        </fieldset>
+                    </form>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            <form method="post" novalidate>
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-                <fieldset disabled="@(Model.PendenciaStatus == "EM_ANALISE" ? "disabled" : null)">
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label asp-for="Input.Cnpj" class="form-label fw-bold">CNPJ</label>
-                            <input asp-for="Input.Cnpj" class="form-control bg-light" readonly />
-                        </div>
-                        <div class="col-md-8 mb-3">
-                            <label asp-for="Input.Nome" class="form-label fw-bold">Razão Social</label>
-                            <input asp-for="Input.Nome" class="form-control" />
-                            <span asp-validation-for="Input.Nome" class="text-danger small"></span>
-                        </div>
-
-                        <div class="col-md-12 mb-3">
-                            <label asp-for="Input.NomeFantasia" class="form-label fw-bold">Nome Fantasia</label>
-                            <input asp-for="Input.NomeFantasia" class="form-control" />
-                        </div>
-
-                        <div class="col-md-4 mb-3">
-                            <label asp-for="Input.Cep" class="form-label fw-bold">CEP</label>
-                            <input asp-for="Input.Cep" class="form-control" />
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label asp-for="Input.Endereco" class="form-label fw-bold">Endereço</label>
-                            <input asp-for="Input.Endereco" class="form-control" />
-                        </div>
-                        <div class="col-md-2 mb-3">
-                            <label asp-for="Input.EnderecoNumero" class="form-label fw-bold">Número</label>
-                            <input asp-for="Input.EnderecoNumero" class="form-control" />
-                        </div>
-
-                        <div class="col-md-4 mb-3">
-                            <label asp-for="Input.Bairro" class="form-label fw-bold">Bairro</label>
-                            <input asp-for="Input.Bairro" class="form-control" />
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label asp-for="Input.EnderecoComplemento" class="form-label fw-bold">Complemento</label>
-                            <input asp-for="Input.EnderecoComplemento" class="form-control" />
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label asp-for="Input.Cidade" class="form-label fw-bold">Cidade</label>
-                            <input asp-for="Input.Cidade" class="form-control" />
-                        </div>
-                        <div class="col-md-1 mb-3">
-                            <label asp-for="Input.Estado" class="form-label fw-bold">UF</label>
-                            <select asp-for="Input.Estado" class="form-select">
-                                <option value=""></option>
-                                <option value="RS">RS</option>
-                                <option value="SC">SC</option>
-                                <option value="PR">PR</option>
-                            </select>
-                        </div>
-
-                        <div class="col-md-6 mb-3">
-                            <label asp-for="Input.Email" class="form-label fw-bold">E-mail</label>
-                            <input asp-for="Input.Email" type="email" class="form-control" />
-                            <span asp-validation-for="Input.Email" class="text-danger small"></span>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label asp-for="Input.Telefone" class="form-label fw-bold">Telefone</label>
-                            <input asp-for="Input.Telefone" class="form-control" />
-                        </div>
-                    </div>
-
-                    <div class="d-flex justify-content-end gap-2 mt-4 border-top pt-3">
-                        <a href="/Empresa/MinhaEmpresa" class="btn btn-outline-secondary">Voltar</a>
-                        @if (Model.PendenciaStatus != "EM_ANALISE")
+        <div class="col-lg-5">
+            <div class="card shadow border-0">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-folder2-open me-2"></i>Documentação</h5>
+                </div>
+                <div class="card-body bg-light">
+                    @* Helper function to render a document section *@
+                    @{
+                        async Task RenderDocSection(string title, string type, List<Eva.Models.Documento> docs, bool allowMultiple)
                         {
-                            <button type="submit" class="btn btn-primary px-4">Salvar Dados da Empresa</button>
+                            <div class="mb-4 pb-3 border-bottom">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="fw-bold text-secondary mb-0">@title</h6>
+                                    @if (!isLocked && (allowMultiple || !docs.Any()))
+                                    {
+                                        <button class="btn btn-sm btn-outline-primary" onclick="triggerUpload('@type')">
+                                            <i class="bi bi-upload"></i> Enviar
+                                        </button>
+                                    }
+                                </div>
+
+                                @if (!docs.Any())
+                                {
+                                    <div class="text-muted small fst-italic"><i class="bi bi-exclamation-circle"></i> Pendente de envio</div>
+                                }
+                                else
+                                {
+                                    <ul class="list-group list-group-flush shadow-sm rounded">
+                                        @foreach (var doc in docs)
+                                        {
+                                            <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                                                <div class="text-truncate me-2" title="@doc.NomeArquivo">
+                                                    <i class="bi bi-file-earmark-pdf text-danger me-1"></i>
+                                                    <small class="fw-bold">@doc.NomeArquivo</small>
+                                                    <div class="text-muted" style="font-size: 0.75rem">
+                                                        @doc.DataUpload.ToString("dd/MM/yyyy HH:mm")
+                                                    </div>
+                                                </div>
+                                                @if (!isLocked)
+                                                {
+                                                    <form method="post" asp-page-handler="DeleteDoc" class="d-inline">
+                                                        <input type="hidden" name="id" value="@doc.Id" />
+                                                        <button type="submit" class="btn btn-link text-danger p-0 border-0" title="Excluir">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                }
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                            </div>
                         }
-                    </div>
-                </fieldset>
-            </form>
+                    }
+
+                    @{
+                        await RenderDocSection("Contrato Social", "CONTRATO_SOCIAL", Model.Contratos, false);
+                    }
+                    @{
+                        await RenderDocSection("Cartão CNPJ", "CARTAO_CNPJ", Model.CartoesCnpj, false);
+                    }
+                    @{
+                        await RenderDocSection("Alvará", "ALVARA", Model.Alvaras, false);
+                    }
+                    @{
+                        await RenderDocSection("CNAE Fiscal", "CNAE_FISCAL", Model.Cnaes, false);
+                    }
+                    @{
+                        await RenderDocSection("Identidade dos Sócios", "IDENTIDADE_SOCIO", Model.IdentidadesSocios, true);
+                    }
+
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
+<form id="uploadForm" method="post" enctype="multipart/form-data" asp-page-handler="Upload" style="display:none">
+    <input type="hidden" asp-for="TipoDocumentoUpload" id="tipoDocInput" />
+    <input type="file" asp-for="UploadArquivo" id="fileInput" accept=".pdf" onchange="document.getElementById('uploadForm').submit()" />
+</form>
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        function triggerUpload(type) {
+            document.getElementById('tipoDocInput').value = type;
+            document.getElementById('fileInput').click();
+        }
+    </script>
 }

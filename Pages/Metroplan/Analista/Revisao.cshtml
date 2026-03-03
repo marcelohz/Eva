@@ -4,7 +4,7 @@
     ViewData["Title"] = "Revisão de Ticket - Eva";
 }
 
-<div class="container mt-5">
+<div class="container mt-5 mb-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <a href="/Metroplan/Analista" class="btn btn-outline-secondary btn-sm mb-2"><i class="bi bi-arrow-left"></i> Voltar à Fila</a>
@@ -14,7 +14,7 @@
 
         @if (Model.IsLockedByOther)
         {
-            <div class="alert alert-danger mb-0 py-2">
+            <div class="alert alert-danger mb-0 py-2 shadow-sm">
                 <i class="bi bi-person-fill-lock"></i> <strong>Bloqueado:</strong> Em análise por @Model.Ticket?.Analista
             </div>
         }
@@ -87,19 +87,60 @@
                 </div>
             </div>
 
-            <div class="alert alert-info border-info border-2">
-                <i class="bi bi-file-earmark-pdf-fill fs-4 float-start me-3"></i>
-                <div class="pt-1">
-                    <strong>Anexos e Documentos</strong><br>
-                    O módulo de visualização de PDFs será integrado em breve.
+            <div class="card shadow-sm border-secondary">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>Documentos Anexados</h5>
+                </div>
+                <div class="card-body p-0">
+                    @if (!Model.Documentos.Any())
+                    {
+                        <div class="p-4 text-center text-muted">
+                            <i class="bi bi-file-earmark-x display-6"></i>
+                            <p class="mt-2 mb-0">Nenhum documento foi anexado para este registro.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach (var doc in Model.Documentos)
+                            {
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-bold text-dark">
+                                            @doc.DocumentoTipoNome.Replace("_", " ")
+                                        </div>
+                                        <div class="small text-muted">
+                                            <i class="bi bi-file-earmark-pdf text-danger"></i> @doc.NomeArquivo
+                                            <span class="mx-1">•</span>
+                                            @doc.DataUpload.ToString("dd/MM/yyyy HH:mm")
+                                        </div>
+                                    </div>
+
+                                    <div class="btn-group" role="group">
+                                        <a href="/Metroplan/Analista/Revisao?handler=Visualizar&docId=@doc.Id"
+                                           target="_blank"
+                                           class="btn btn-sm btn-outline-primary"
+                                           title="Abrir em nova guia">
+                                            <i class="bi bi-eye"></i> Visualizar
+                                        </a>
+                                        <a href="/Metroplan/Analista/Revisao?handler=Download&docId=@doc.Id"
+                                           class="btn btn-sm btn-outline-primary"
+                                           title="Baixar arquivo">
+                                            <i class="bi bi-download"></i> Baixar
+                                        </a>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
                 </div>
             </div>
         </div>
 
         <div class="col-lg-4">
-            <div class="card shadow-sm">
-                <div class="card-header bg-secondary text-white">
-                    <h5 class="mb-0"><i class="bi bi-clock-history"></i> Histórico do Registro</h5>
+            <div class="card shadow-sm sticky-top" style="top: 20px; z-index: 0;">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0 text-secondary"><i class="bi bi-clock-history"></i> Histórico</h5>
                 </div>
                 <div class="card-body p-0">
                     <ul class="list-group list-group-flush">
@@ -159,7 +200,7 @@
 
                     <div class="mb-3">
                         <label asp-for="MotivoRejeicao" class="form-label fw-bold">Motivo da Rejeição (obrigatório)</label>
-                        <textarea asp-for="MotivoRejeicao" class="form-control" rows="4" required placeholder="Ex: O número do chassi não confere com o documento anexado."></textarea>
+                        <textarea asp-for="MotivoRejeicao" class="form-control" rows="4" required placeholder="Ex: O documento anexado está ilegível."></textarea>
                     </div>
                     <p class="text-muted small">Este motivo será exibido para a empresa para que ela possa corrigir o problema.</p>
                 </div>

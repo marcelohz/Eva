@@ -26,6 +26,12 @@ namespace Eva.Data
         public DbSet<FluxoPendencia> FluxoPendencias { get; set; }
         public DbSet<VPendenciaAtual> VPendenciasAtuais { get; set; }
 
+        // --- NEW DOCUMENT DBSETS ---
+        public DbSet<Documento> Documentos { get; set; }
+        public DbSet<DocumentoEmpresa> DocumentoEmpresas { get; set; }
+        public DbSet<DocumentoVeiculo> DocumentoVeiculos { get; set; }
+        public DbSet<DocumentoMotorista> DocumentoMotoristas { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -37,7 +43,6 @@ namespace Eva.Data
             modelBuilder.Entity<Veiculo>().ToTable("veiculo", "geral");
             modelBuilder.Entity<Motorista>().ToTable("motorista", "eventual");
 
-            // Register the View
             modelBuilder.Entity<VPendenciaAtual>()
                 .ToView("v_pendencia_atual", "eventual")
                 .HasKey(v => v.Id);
@@ -51,6 +56,9 @@ namespace Eva.Data
 
             modelBuilder.Entity<Empresa>()
                 .HasQueryFilter(e => _isAnalista || e.Cnpj == _empresaCnpj);
+
+            // Note: We generally don't apply Global Query Filters to Documentos directly
+            // because they are accessed via the parent entity (Veiculo/Empresa) which is already filtered.
         }
     }
 }

@@ -2,9 +2,9 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Eva.Data;
 using Eva.Services;
-using System; // Required for AppContext
+using System;
 
-// ADDED: Fixes the PostgreSQL timestamp with/without time zone mapping error globally
+// Fixes the PostgreSQL timestamp with/without time zone mapping error globally
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,8 +12,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorPages();
 builder.Services.AddHttpContextAccessor();
 
-// Register our new workflow orchestrator
+// REGISTER SERVICES
 builder.Services.AddScoped<PendenciaService>();
+builder.Services.AddScoped<ArquivoService>(); // <-- Added this
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>

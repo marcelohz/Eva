@@ -38,7 +38,12 @@ namespace Eva.Pages.Metroplan.Analista
         // Data Models
         public Veiculo? Veiculo { get; set; }
         public Motorista? Motorista { get; set; }
+
+        // FIXED: Explicit namespace to avoid conflict with "Pages/Empresa" folder
         public Eva.Models.Empresa? Empresa { get; set; }
+
+        // Documents List
+        public List<Documento> Documentos { get; set; } = new();
 
         public async Task<IActionResult> OnGetAsync()
         {
@@ -55,34 +60,62 @@ namespace Eva.Pages.Metroplan.Analista
 
             Historico = await _pendenciaService.GetHistoricoAsync(Tipo, Id);
 
-            // Fetch specific entity data ignoring Global Query Filters since Analyst needs to see it
+            // Fetch specific entity data and related documents
             if (Tipo == "VEICULO")
-                Veiculo = await _context.Veiculos.IgnoreQueryFilters().Include(v => v.Empresa).FirstOrDefaultAsync(v => v.Placa == Id);
+            {
+                Veiculo = await _context.Veiculos.IgnoreQueryFilters()
+                    .Include(v => v.Empresa)
+                    .FirstOrDefaultAsync(v => v.Placa == Id);
+
+                Documentos = await _context.DocumentoVeiculos
+                    .Where(dv => dv.VeiculoPlaca == Id)
+                    .Include(dv => dv.Documento)
+                    .Select(dv => dv.Documento)
+                    .OrderByDescending(d => d.DataUpload)
+                    .ToListAsync();
+            }
             else if (Tipo == "MOTORISTA" && int.TryParse(Id, out int mId))
-                Motorista = await _context.Motoristas.IgnoreQueryFilters().Include(m => m.Empresa).FirstOrDefaultAsync(m => m.Id == mId);
+            {
+                Motorista = await _context.Motoristas.IgnoreQueryFilters()
+                    .Include(m => m.Empresa)
+                    .FirstOrDefaultAsync(m => m.Id == mId);
+
+                Documentos = await _context.DocumentoMotoristas
+                    .Where(dm => dm.MotoristaId == mId)
+                    .Include(dm => dm.Documento)
+                    .Select(dm => dm.Documento)
+                    .OrderByDescending(d => d.DataUpload)
+                    .ToListAsync();
+            }
             else if (Tipo == "EMPRESA")
-                Empresa = await _context.Empresas.IgnoreQueryFilters().FirstOrDefaultAsync(e => e.Cnpj == Id);
+            {
+                Empresa = await _context.Empresas.IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(e => e.Cnpj == Id);
+
+                Documentos = await _context.DocumentoEmpresas
+                    .Where(de => de.EmpresaCnpj == Id)
+                    .Include(de => de.Documento)
+                    .Select(de => de.Documento)
+                    .OrderByDescending(d => d.DataUpload)
+                    .ToListAsync();
+            }
 
             return Page();
         }
 
+        // --- ACTIONS ---
+
         public async Task<IActionResult> OnPostIniciarAsync()
         {
             var email = User.FindFirstValue(ClaimTypes.Email);
-            if (email != null)
-            {
-                await _pendenciaService.IniciarAnaliseAsync(Tipo, Id, email);
-            }
+            if (email != null) await _pendenciaService.IniciarAnaliseAsync(Tipo, Id, email);
             return RedirectToPage(new { tipo = Tipo, id = Id });
         }
 
         public async Task<IActionResult> OnPostAprovarAsync()
         {
             var email = User.FindFirstValue(ClaimTypes.Email);
-            if (email != null)
-            {
-                await _pendenciaService.AprovarAsync(Tipo, Id, email);
-            }
+            if (email != null) await _pendenciaService.AprovarAsync(Tipo, Id, email);
             return RedirectToPage("./Index");
         }
 
@@ -94,6 +127,24 @@ namespace Eva.Pages.Metroplan.Analista
                 await _pendenciaService.RejeitarAsync(Tipo, Id, email, MotivoRejeicao);
             }
             return RedirectToPage("./Index");
+        }
+
+        // --- FILE HANDLERS ---
+
+        public async Task<IActionResult> OnGetDownloadAsync(int docId)
+        {
+            var doc = await _context.Documentos.FindAsync(docId);
+            if (doc == null) return NotFound();
+
+            return File(doc.Conteudo, doc.ContentType, doc.NomeArquivo);
+        }
+
+        public async Task<IActionResult> OnGetVisualizarAsync(int docId)
+        {
+            var doc = await _context.Documentos.FindAsync(docId);
+            if (doc == null) return NotFound();
+
+            return File(doc.Conteudo, doc.ContentType);
         }
     }
 }
