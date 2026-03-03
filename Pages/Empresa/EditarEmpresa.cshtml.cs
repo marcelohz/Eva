@@ -30,12 +30,12 @@ namespace Eva.Pages.Empresa
         [BindProperty]
         public IFormFile? UploadArquivo { get; set; }
 
+        // FIXED: Made nullable to prevent ModelState invalidation during main save
         [BindProperty]
-        public string TipoDocumentoUpload { get; set; } = string.Empty;
+        public string? TipoDocumentoUpload { get; set; }
 
         public string? PendenciaStatus { get; set; }
 
-        // Lists to hold the uploaded documents
         public List<Documento> Contratos { get; set; } = new();
         public List<Documento> IdentidadesSocios { get; set; } = new();
         public List<Documento> CartoesCnpj { get; set; } = new();
@@ -50,7 +50,6 @@ namespace Eva.Pages.Empresa
             var empresaInDb = await _context.Empresas.FirstOrDefaultAsync(e => e.Cnpj == userCnpj);
             if (empresaInDb == null) return NotFound();
 
-            // 1. Populate Text Form
             Input = new EmpresaVM
             {
                 Cnpj = empresaInDb.Cnpj,
@@ -69,7 +68,6 @@ namespace Eva.Pages.Empresa
 
             PendenciaStatus = await _pendenciaService.GetStatusAsync("EMPRESA", empresaInDb.Cnpj);
 
-            // 2. Fetch Documents
             var docs = await _context.DocumentoEmpresas
                 .Where(de => de.EmpresaCnpj == userCnpj)
                 .Include(de => de.Documento)
@@ -87,19 +85,19 @@ namespace Eva.Pages.Empresa
 
         public async Task<IActionResult> OnPostAsync()
         {
-            // Validating logic for the text form...
+            // This will now pass because TipoDocumentoUpload is optional
             if (!ModelState.IsValid) return await ReloadPage();
 
             var userCnpj = User.FindFirstValue("EmpresaCnpj");
             if (string.IsNullOrEmpty(userCnpj)) return RedirectToPage("/Login");
 
-            // Lock Check
             var status = await _pendenciaService.GetStatusAsync("EMPRESA", userCnpj);
             if (status == "EM_ANALISE") return await ReloadPageWithLockError();
 
             var empresaInDb = await _context.Empresas.FirstOrDefaultAsync(e => e.Cnpj == userCnpj);
             if (empresaInDb == null) return NotFound();
 
+            // Update Fields
             empresaInDb.Nome = Input.Nome;
             empresaInDb.NomeFantasia = Input.NomeFantasia;
             empresaInDb.Endereco = Input.Endereco;
@@ -119,7 +117,8 @@ namespace Eva.Pages.Empresa
                 await _pendenciaService.AvancarEntidadeAsync("EMPRESA", empresaInDb.Cnpj);
             }
 
-            return RedirectToPage();
+            // FIXED: Redirect to Dashboard instead of reloading page
+            return RedirectToPage("/Empresa/MinhaEmpresa");
         }
 
         public async Task<IActionResult> OnPostUploadAsync()
@@ -127,17 +126,15 @@ namespace Eva.Pages.Empresa
             var userCnpj = User.FindFirstValue("EmpresaCnpj");
             if (string.IsNullOrEmpty(userCnpj)) return RedirectToPage("/Login");
 
-            // Lock Check
             var status = await _pendenciaService.GetStatusAsync("EMPRESA", userCnpj);
             if (status == "EM_ANALISE") return await ReloadPageWithLockError();
 
             if (UploadArquivo != null && UploadArquivo.Length > 0 && !string.IsNullOrEmpty(TipoDocumentoUpload))
             {
-                // If single-file type, optionally delete old ones here (logic omitted for simplicity/safety)
-
                 await _arquivoService.SalvarDocumentoAsync(UploadArquivo, TipoDocumentoUpload, "EMPRESA", userCnpj);
             }
 
+            // Uploads still reload the current page to show the file
             return RedirectToPage();
         }
 
@@ -149,7 +146,6 @@ namespace Eva.Pages.Empresa
             var status = await _pendenciaService.GetStatusAsync("EMPRESA", userCnpj);
             if (status == "EM_ANALISE") return await ReloadPageWithLockError();
 
-            // Verify ownership before deleting!
             var link = await _context.DocumentoEmpresas
                 .FirstOrDefaultAsync(de => de.Id == id && de.EmpresaCnpj == userCnpj);
 
@@ -161,7 +157,6 @@ namespace Eva.Pages.Empresa
             return RedirectToPage();
         }
 
-        // Helper to reload page data when returning an error/view
         private async Task<IActionResult> ReloadPage()
         {
             await OnGetAsync();
