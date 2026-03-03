@@ -113,52 +113,70 @@
                     <h5 class="mb-0"><i class="bi bi-file-earmark-pdf me-2"></i>Documentação do Veículo</h5>
                 </div>
                 <div class="card-body bg-light">
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 class="fw-bold text-secondary mb-0">CRLV (Documento do Veículo)</h6>
-                            @if (!isLocked)
-                            {
-                                <button class="btn btn-sm btn-outline-primary" onclick="document.getElementById('fileInput').click()">
-                                    <i class="bi bi-upload"></i> Enviar Novo
-                                </button>
-                            }
-                        </div>
 
-                        @if (!Model.Crlvs.Any())
+                    @* Reusable Razor Function to render document sections *@
+                    @{
+                        async Task RenderDocSection(string title, string type, List<Eva.Models.Documento> docs)
                         {
-                            <div class="alert alert-light border border-dashed text-center text-muted">
-                                <i class="bi bi-cloud-upload display-6 d-block mb-2"></i>
-                                Nenhum documento anexado.
+                            <div class="mb-4 pb-3 border-bottom">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="fw-bold text-secondary mb-0">@title</h6>
+                                    @if (!isLocked)
+                                    {
+                                        <button class="btn btn-sm btn-outline-primary" onclick="triggerUpload('@type')">
+                                            <i class="bi bi-upload"></i> Enviar Novo
+                                        </button>
+                                    }
+                                </div>
+
+                                @if (!docs.Any())
+                                {
+                                    <div class="text-muted small fst-italic ms-1"><i class="bi bi-exclamation-circle"></i> Pendente de envio</div>
+                                }
+                                else
+                                {
+                                    <ul class="list-group list-group-flush shadow-sm rounded">
+                                        @foreach (var doc in docs)
+                                        {
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                <div class="text-truncate me-2" title="@doc.NomeArquivo">
+                                                    <i class="bi bi-file-earmark-check text-success me-1"></i>
+                                                    <small class="fw-bold">@doc.NomeArquivo</small>
+                                                    <div class="text-muted" style="font-size: 0.75rem">
+                                                        @doc.DataUpload.ToString("dd/MM/yyyy HH:mm")
+                                                    </div>
+                                                </div>
+                                                @if (!isLocked)
+                                                {
+                                                    <form method="post" asp-page-handler="DeleteDoc" class="d-inline">
+                                                        <input type="hidden" name="id" value="@doc.Id" />
+                                                        <input type="hidden" asp-for="Input.Placa" />
+                                                        <button type="submit" class="btn btn-link text-danger p-0 border-0" title="Excluir">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                }
+                                            </li>
+                                        }
+                                    </ul>
+                                }
                             </div>
                         }
-                        else
-                        {
-                            <ul class="list-group list-group-flush shadow-sm rounded">
-                                @foreach (var doc in Model.Crlvs)
-                                {
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        <div class="text-truncate me-2" title="@doc.NomeArquivo">
-                                            <i class="bi bi-file-earmark-check text-success me-1"></i>
-                                            <small class="fw-bold">@doc.NomeArquivo</small>
-                                            <div class="text-muted" style="font-size: 0.75rem">
-                                                @doc.DataUpload.ToString("dd/MM/yyyy HH:mm")
-                                            </div>
-                                        </div>
-                                        @if (!isLocked)
-                                        {
-                                            <form method="post" asp-page-handler="DeleteDoc" class="d-inline">
-                                                <input type="hidden" name="id" value="@doc.Id" />
-                                                <input type="hidden" asp-for="Input.Placa" />
-                                                <button type="submit" class="btn btn-link text-danger p-0 border-0" title="Excluir">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </form>
-                                        }
-                                    </li>
-                                }
-                            </ul>
-                        }
-                    </div>
+                    }
+
+                    @{
+                        await RenderDocSection("CRLV (Documento)", "CRLV", Model.Crlvs);
+                    }
+                    @{
+                        await RenderDocSection("Apólice de Seguro", "APOLICE_SEGURO", Model.Apolices);
+                    }
+                    @{
+                        await RenderDocSection("Laudo de Inspeção", "LAUDO_INSPECAO", Model.Laudos);
+                    }
+                    @{
+                        await RenderDocSection("Comprovante de Pagamento", "COMPROVANTE_PAGAMENTO", Model.Comprovantes);
+                    }
+
                 </div>
             </div>
         </div>
@@ -167,9 +185,16 @@
 
 <form id="uploadForm" method="post" enctype="multipart/form-data" asp-page-handler="Upload" style="display:none">
     <input type="hidden" asp-for="Input.Placa" />
+    <input type="hidden" asp-for="TipoDocumentoUpload" id="tipoDocInput" />
     <input type="file" asp-for="UploadArquivo" id="fileInput" accept=".pdf" onchange="document.getElementById('uploadForm').submit()" />
 </form>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        function triggerUpload(type) {
+            document.getElementById('tipoDocInput').value = type;
+            document.getElementById('fileInput').click();
+        }
+    </script>
 }

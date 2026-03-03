@@ -30,8 +30,16 @@ namespace Eva.Pages.Empresa
         [BindProperty]
         public IFormFile? UploadArquivo { get; set; }
 
+        [BindProperty]
+        public string TipoDocumentoUpload { get; set; } = string.Empty;
+
         public string? PendenciaStatus { get; set; }
+
+        // Document Lists
         public List<Documento> Crlvs { get; set; } = new();
+        public List<Documento> Laudos { get; set; } = new();
+        public List<Documento> Apolices { get; set; } = new();
+        public List<Documento> Comprovantes { get; set; } = new();
 
         public async Task<IActionResult> OnGetAsync(string id)
         {
@@ -63,14 +71,18 @@ namespace Eva.Pages.Empresa
 
             PendenciaStatus = await _pendenciaService.GetStatusAsync("VEICULO", vehicleInDb.Placa);
 
-            // Fetch Documents (CRLV)
-            Crlvs = await _context.DocumentoVeiculos
+            // Fetch All Documents for this Vehicle
+            var allDocs = await _context.DocumentoVeiculos
                 .Where(dv => dv.VeiculoPlaca == id)
                 .Include(dv => dv.Documento)
                 .Select(dv => dv.Documento)
-                .Where(d => d.DocumentoTipoNome == "CRLV")
-                .OrderByDescending(d => d.DataUpload)
                 .ToListAsync();
+
+            // Filter into specific buckets
+            Crlvs = allDocs.Where(d => d.DocumentoTipoNome == "CRLV").OrderByDescending(d => d.DataUpload).ToList();
+            Laudos = allDocs.Where(d => d.DocumentoTipoNome == "LAUDO_INSPECAO").OrderByDescending(d => d.DataUpload).ToList();
+            Apolices = allDocs.Where(d => d.DocumentoTipoNome == "APOLICE_SEGURO").OrderByDescending(d => d.DataUpload).ToList();
+            Comprovantes = allDocs.Where(d => d.DocumentoTipoNome == "COMPROVANTE_PAGAMENTO").OrderByDescending(d => d.DataUpload).ToList();
 
             return Page();
         }
@@ -79,7 +91,6 @@ namespace Eva.Pages.Empresa
         {
             if (!ModelState.IsValid) return await ReloadPage(Input.Placa);
 
-            // Lock Check
             var status = await _pendenciaService.GetStatusAsync("VEICULO", Input.Placa);
             if (status == "EM_ANALISE") return await ReloadPageWithLockError(Input.Placa);
 
@@ -92,7 +103,6 @@ namespace Eva.Pages.Empresa
 
             if (vehicleInDb == null) return NotFound();
 
-            // Update Fields
             vehicleInDb.Modelo = Input.Modelo;
             vehicleInDb.ChassiNumero = Input.ChassiNumero;
             vehicleInDb.Renavan = Input.Renavan;
@@ -115,38 +125,31 @@ namespace Eva.Pages.Empresa
 
         public async Task<IActionResult> OnPostUploadAsync()
         {
-            // Lock Check
             var status = await _pendenciaService.GetStatusAsync("VEICULO", Input.Placa);
             if (status == "EM_ANALISE") return await ReloadPageWithLockError(Input.Placa);
 
-            if (UploadArquivo != null && UploadArquivo.Length > 0)
+            if (UploadArquivo != null && UploadArquivo.Length > 0 && !string.IsNullOrEmpty(TipoDocumentoUpload))
             {
-                // We use "CRLV" as the standard type for vehicles
-                await _arquivoService.SalvarDocumentoAsync(UploadArquivo, "CRLV", "VEICULO", Input.Placa);
+                await _arquivoService.SalvarDocumentoAsync(UploadArquivo, TipoDocumentoUpload, "VEICULO", Input.Placa);
             }
 
-            // Redirect back to the same page (GET) to refresh the list
             return RedirectToPage(new { id = Input.Placa });
         }
 
         public async Task<IActionResult> OnPostDeleteDocAsync(int id)
         {
-            // Lock Check
             var status = await _pendenciaService.GetStatusAsync("VEICULO", Input.Placa);
             if (status == "EM_ANALISE") return await ReloadPageWithLockError(Input.Placa);
 
-            // Security: Ensure this doc actually belongs to a vehicle owned by this company
             var userEmail = User.FindFirstValue(ClaimTypes.Email);
             var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == userEmail);
 
-            // Verify link via database
             var docLink = await _context.DocumentoVeiculos
                 .Include(dv => dv.Documento)
                 .FirstOrDefaultAsync(dv => dv.Id == id && dv.VeiculoPlaca == Input.Placa);
 
             if (docLink != null)
             {
-                // Double check vehicle ownership
                 var vehicle = await _context.Veiculos.FirstOrDefaultAsync(v => v.Placa == Input.Placa && v.EmpresaCnpj == user.EmpresaCnpj);
                 if (vehicle != null)
                 {

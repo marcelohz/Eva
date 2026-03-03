@@ -9,10 +9,17 @@ namespace Eva.Pages
     {
         public async Task<IActionResult> OnGetAsync()
         {
-            // Clear the existing authentication cookie
+            // This destroys the secure cookie in the browser
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
-            // Redirect to the Login page
+            // Redirects to the login page
+            return RedirectToPage("/Login");
+        }
+
+        // We also support POST just in case you want to use a form later for stricter security
+        public async Task<IActionResult> OnPostAsync()
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToPage("/Login");
         }
     }
