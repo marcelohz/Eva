@@ -4,7 +4,7 @@
     ViewData["Title"] = "Novo Veículo - Eva";
 }
 
-<div class="container mt-5">
+<div class="container mt-5 mb-5">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Dashboard</a></li>
@@ -13,56 +13,97 @@
         </ol>
     </nav>
 
-    <div class="card shadow">
-        <div class="card-header bg-primary text-white">
-            <h1 class="h4 mb-0">Cadastrar Novo Veículo</h1>
-        </div>
-        <div class="card-body">
-            <form method="post" novalidate>
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="Input.Placa" class="form-label fw-bold">Placa</label>
-                        <input asp-for="Input.Placa" class="form-control text-uppercase" placeholder="ABC1234" />
-                        <span asp-validation-for="Input.Placa" class="text-danger small"></span>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="Input.Modelo" class="form-label fw-bold">Modelo / Marca</label>
-                        <input asp-for="Input.Modelo" class="form-control" />
-                        <span asp-validation-for="Input.Modelo" class="text-danger small"></span>
-                    </div>
-
-                    <div class="col-md-4 mb-3">
-                        <label asp-for="Input.PotenciaMotor" class="form-label fw-bold">Potência (cv)</label>
-                        <input asp-for="Input.PotenciaMotor" type="number" class="form-control" />
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label asp-for="Input.VeiculoCombustivelNome" class="form-label fw-bold">Combustível</label>
-                        <input asp-for="Input.VeiculoCombustivelNome" class="form-control" placeholder="DIESEL, FLEX, etc" />
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label asp-for="Input.NumeroLugares" class="form-label fw-bold">Nº de Lugares</label>
-                        <input asp-for="Input.NumeroLugares" type="number" class="form-control" />
-                        <span asp-validation-for="Input.NumeroLugares" class="text-danger small"></span>
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="Input.AnoFabricacao" class="form-label fw-bold">Ano Fabricação</label>
-                        <input asp-for="Input.AnoFabricacao" type="number" class="form-control" />
-                        <span asp-validation-for="Input.AnoFabricacao" class="text-danger small"></span>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="Input.ModeloAno" class="form-label fw-bold">Ano Modelo</label>
-                        <input asp-for="Input.ModeloAno" type="number" class="form-control" />
-                        <span asp-validation-for="Input.ModeloAno" class="text-danger small"></span>
-                    </div>
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow border-0">
+                <div class="card-header bg-dark text-white">
+                    <h1 class="h4 mb-0">Cadastrar Novo Veículo</h1>
                 </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" novalidate>
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-                <div class="d-flex justify-content-end gap-2 mt-4">
-                    <a href="/Empresa/MeusVeiculos" class="btn btn-outline-secondary">Cancelar</a>
-                    <button type="submit" class="btn btn-success px-4">Salvar Veículo</button>
+                        <h5 class="text-secondary mb-3 border-bottom pb-2">Dados do Veículo</h5>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="Input.Placa" class="form-label fw-bold">Placa</label>
+                                <input asp-for="Input.Placa" class="form-control" placeholder="ABC1234" style="text-transform: uppercase" />
+                                <span asp-validation-for="Input.Placa" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-8 mb-3">
+                                <label asp-for="Input.Modelo" class="form-label fw-bold">Modelo / Carroceria</label>
+                                <input asp-for="Input.Modelo" class="form-control" />
+                                <span asp-validation-for="Input.Modelo" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Input.ChassiNumero" class="form-label fw-bold">Chassi</label>
+                                <input asp-for="Input.ChassiNumero" class="form-control" />
+                                <span asp-validation-for="Input.ChassiNumero" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Input.Renavan" class="form-label fw-bold">Renavam</label>
+                                <input asp-for="Input.Renavan" class="form-control" />
+                                <span asp-validation-for="Input.Renavan" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label asp-for="Input.AnoFabricacao" class="form-label fw-bold">Ano Fab.</label>
+                                <input asp-for="Input.AnoFabricacao" type="number" class="form-control" />
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label asp-for="Input.ModeloAno" class="form-label fw-bold">Ano Mod.</label>
+                                <input asp-for="Input.ModeloAno" type="number" class="form-control" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Input.VeiculoCombustivelNome" class="form-label fw-bold">Combustível</label>
+                                <select asp-for="Input.VeiculoCombustivelNome" class="form-select">
+                                    <option value="DIESEL">Diesel</option>
+                                    <option value="GASOLINA">Gasolina</option>
+                                    <option value="FLEX">Flex</option>
+                                    <option value="ALCOOL">Álcool</option>
+                                    <option value="GNV">GNV</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Input.NumeroLugares" class="form-label fw-bold">Capacidade (Lugares)</label>
+                                <input asp-for="Input.NumeroLugares" type="number" class="form-control" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Input.PotenciaMotor" class="form-label fw-bold">Potência (CV)</label>
+                                <input asp-for="Input.PotenciaMotor" class="form-control" />
+                            </div>
+                        </div>
+
+                        <h5 class="text-secondary mb-3 mt-4 border-bottom pb-2">Documentação Obrigatória</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="UploadCrlv" class="form-label fw-bold">CRLV (Documento)</label>
+                                <input asp-for="UploadCrlv" class="form-control" type="file" accept=".pdf" />
+                                <div class="form-text">Anexe o PDF do documento do veículo.</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="UploadLaudo" class="form-label fw-bold">Laudo de Inspeção</label>
+                                <input asp-for="UploadLaudo" class="form-control" type="file" accept=".pdf" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="UploadApolice" class="form-label fw-bold">Apólice de Seguro</label>
+                                <input asp-for="UploadApolice" class="form-control" type="file" accept=".pdf" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="UploadComprovante" class="form-label fw-bold">Comprovante de Pagamento</label>
+                                <input asp-for="UploadComprovante" class="form-control" type="file" accept=".pdf" />
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 border-top pt-3 mt-4">
+                            <a href="/Empresa/MeusVeiculos" class="btn btn-outline-secondary">Cancelar</a>
+                            <button type="submit" class="btn btn-primary px-4">Salvar Veículo e Documentos</button>
+                        </div>
+                    </form>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>

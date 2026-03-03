@@ -13,19 +13,19 @@
         </ol>
     </nav>
 
-    <div class="card shadow">
-        <div class="card-header bg-primary text-white">
-            <h1 class="h4 mb-0"><i class="bi bi-person-plus-fill"></i> Cadastrar Novo Motorista</h1>
+    <div class="card shadow border-0" style="max-width: 800px; margin: 0 auto;">
+        <div class="card-header bg-dark text-white">
+            <h1 class="h4 mb-0">Cadastrar Novo Motorista</h1>
         </div>
-        <div class="card-body p-4">
-            @* 'novalidate' prevents the browser from showing its own English tooltips *@
-            <form method="post" id="motoristaForm" novalidate>
-                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data" novalidate>
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
+                <h5 class="text-secondary mb-3 border-bottom pb-2">Dados Pessoais</h5>
                 <div class="row">
                     <div class="col-md-12 mb-3">
                         <label asp-for="Motorista.Nome" class="form-label fw-bold">Nome Completo</label>
-                        <input asp-for="Motorista.Nome" class="form-control" placeholder="Digite o nome completo" />
+                        <input asp-for="Motorista.Nome" class="form-control" placeholder="João da Silva" />
                         <span asp-validation-for="Motorista.Nome" class="text-danger small"></span>
                     </div>
 
@@ -36,23 +36,30 @@
                     </div>
 
                     <div class="col-md-6 mb-3">
-                        <label asp-for="Motorista.Cnh" class="form-label fw-bold">Nº da CNH</label>
+                        <label asp-for="Motorista.Cnh" class="form-label fw-bold">CNH</label>
                         <input asp-for="Motorista.Cnh" class="form-control" />
                         <span asp-validation-for="Motorista.Cnh" class="text-danger small"></span>
                     </div>
 
                     <div class="col-md-12 mb-3">
-                        <label asp-for="Motorista.Email" class="form-label fw-bold">Email (Opcional)</label>
-                        <input asp-for="Motorista.Email" type="email" class="form-control" placeholder="exemplo@email.com" />
+                        <label asp-for="Motorista.Email" class="form-label fw-bold">E-mail</label>
+                        <input asp-for="Motorista.Email" type="email" class="form-control" placeholder="motorista@email.com" />
                         <span asp-validation-for="Motorista.Email" class="text-danger small"></span>
                     </div>
                 </div>
 
-                <div class="d-flex justify-content-end gap-2 mt-4">
-                    <a href="/Empresa/MeusMotoristas" class="btn btn-outline-secondary px-4">Cancelar</a>
-                    <button type="submit" class="btn btn-success px-4">
-                        <i class="bi bi-save"></i> Salvar Motorista
-                    </button>
+                <h5 class="text-secondary mb-3 mt-4 border-bottom pb-2">Documentação</h5>
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label asp-for="UploadCnh" class="form-label fw-bold">Carteira de Habilitação (CNH)</label>
+                        <input asp-for="UploadCnh" class="form-control" type="file" accept=".pdf" />
+                        <div class="form-text">Anexe uma cópia digitalizada da CNH em formato PDF.</div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 border-top pt-3 mt-4">
+                    <a href="/Empresa/MeusMotoristas" class="btn btn-outline-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-primary px-4">Salvar Motorista</button>
                 </div>
             </form>
         </div>
@@ -60,6 +67,5 @@
 </div>
 
 @section Scripts {
-    @* Loads the scripts that make the Portuguese messages appear instantly *@
     <partial name="_ValidationScriptsPartial" />
 }

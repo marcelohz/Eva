@@ -14,15 +14,21 @@ namespace Eva.Pages.Empresa
     {
         private readonly EvaDbContext _context;
         private readonly PendenciaService _pendenciaService;
+        private readonly ArquivoService _arquivoService;
 
-        public NovoMotoristaModel(EvaDbContext context, PendenciaService pendenciaService)
+        public NovoMotoristaModel(EvaDbContext context, PendenciaService pendenciaService, ArquivoService arquivoService)
         {
             _context = context;
             _pendenciaService = pendenciaService;
+            _arquivoService = arquivoService;
         }
 
         [BindProperty]
         public Motorista Motorista { get; set; } = new();
+
+        // New: Bind property for the file directly on the create form
+        [BindProperty]
+        public IFormFile? UploadCnh { get; set; }
 
         public void OnGet() { }
 
@@ -37,13 +43,19 @@ namespace Eva.Pages.Empresa
 
             Motorista.EmpresaCnpj = user.EmpresaCnpj;
 
-            // Note: We removed the manual date assignment here. 
-            // PostgreSQL's "DEFAULT now()" will handle it automatically upon saving!
+            // PostgreSQL will handle CreatedEm via DEFAULT now()
 
             _context.Motoristas.Add(Motorista);
             await _context.SaveChangesAsync();
+            // ^-- CRITICAL: The driver is now in the DB, so we have an ID for the foreign key.
 
-            // Fire the workflow trigger!
+            // 2. Save Document (Sequential Logic)
+            if (UploadCnh != null)
+            {
+                await _arquivoService.SalvarDocumentoAsync(UploadCnh, "CNH", "MOTORISTA", Motorista.Id.ToString());
+            }
+
+            // 3. Trigger Workflow
             await _pendenciaService.AvancarEntidadeAsync("MOTORISTA", Motorista.Id.ToString());
 
             return RedirectToPage("./MeusMotoristas");

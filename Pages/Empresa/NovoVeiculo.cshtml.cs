@@ -15,15 +15,30 @@ namespace Eva.Pages.Empresa
     {
         private readonly EvaDbContext _context;
         private readonly PendenciaService _pendenciaService;
+        private readonly ArquivoService _arquivoService;
 
-        public NovoVeiculoModel(EvaDbContext context, PendenciaService pendenciaService)
+        public NovoVeiculoModel(EvaDbContext context, PendenciaService pendenciaService, ArquivoService arquivoService)
         {
             _context = context;
             _pendenciaService = pendenciaService;
+            _arquivoService = arquivoService;
         }
 
         [BindProperty]
         public VeiculoVM Input { get; set; } = new();
+
+        // New: Bind properties for the files directly on the create form
+        [BindProperty]
+        public IFormFile? UploadCrlv { get; set; }
+
+        [BindProperty]
+        public IFormFile? UploadLaudo { get; set; }
+
+        [BindProperty]
+        public IFormFile? UploadApolice { get; set; }
+
+        [BindProperty]
+        public IFormFile? UploadComprovante { get; set; }
 
         public void OnGet() { }
 
@@ -36,9 +51,19 @@ namespace Eva.Pages.Empresa
 
             if (user == null || string.IsNullOrEmpty(user.EmpresaCnpj)) return RedirectToPage("/Login");
 
-            var novoVeiculo = new Veiculo
+            // 1. Check if Placa already exists
+            bool placaExists = await _context.Veiculos.AnyAsync(v => v.Placa == Input.Placa);
+            if (placaExists)
             {
-                Placa = Input.Placa.ToUpper().Replace("-", "").Trim(),
+                ModelState.AddModelError("Input.Placa", "Esta placa já está cadastrada no sistema.");
+                return Page();
+            }
+
+            // 2. Save the Vehicle (Parent Entity)
+            var veiculo = new Veiculo
+            {
+                EmpresaCnpj = user.EmpresaCnpj,
+                Placa = Input.Placa.ToUpper(),
                 Modelo = Input.Modelo,
                 ChassiNumero = Input.ChassiNumero,
                 Renavan = Input.Renavan,
@@ -47,16 +72,30 @@ namespace Eva.Pages.Empresa
                 NumeroLugares = Input.NumeroLugares,
                 AnoFabricacao = Input.AnoFabricacao,
                 ModeloAno = Input.ModeloAno,
-                EmpresaCnpj = user.EmpresaCnpj,
-                DataInclusaoEventual = DateOnly.FromDateTime(DateTime.Now)
+                EventualStatus = "AGUARDANDO_ANALISE"
             };
 
-            _context.Veiculos.Add(novoVeiculo);
+            _context.Veiculos.Add(veiculo);
             await _context.SaveChangesAsync();
+            // ^-- CRITICAL: The vehicle is now in the DB, so foreign keys will work.
 
-            // Fire the workflow trigger!
-            await _pendenciaService.AvancarEntidadeAsync("VEICULO", novoVeiculo.Placa);
+            // 3. Save Documents (Sequential Logic)
+            if (UploadCrlv != null)
+                await _arquivoService.SalvarDocumentoAsync(UploadCrlv, "CRLV", "VEICULO", veiculo.Placa);
 
+            if (UploadLaudo != null)
+                await _arquivoService.SalvarDocumentoAsync(UploadLaudo, "LAUDO_INSPECAO", "VEICULO", veiculo.Placa);
+
+            if (UploadApolice != null)
+                await _arquivoService.SalvarDocumentoAsync(UploadApolice, "APOLICE_SEGURO", "VEICULO", veiculo.Placa);
+
+            if (UploadComprovante != null)
+                await _arquivoService.SalvarDocumentoAsync(UploadComprovante, "COMPROVANTE_PAGAMENTO", "VEICULO", veiculo.Placa);
+
+            // 4. Trigger Workflow
+            await _pendenciaService.AvancarEntidadeAsync("VEICULO", veiculo.Placa);
+
+            // 5. Redirect to List (Success!)
             return RedirectToPage("./MeusVeiculos");
         }
     }
