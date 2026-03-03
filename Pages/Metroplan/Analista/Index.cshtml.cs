@@ -27,7 +27,10 @@ namespace Eva.Pages.Metroplan.Analista
 
             Fila = await _context.VPendenciasAtuais
                 .Where(p => p.Status == "AGUARDANDO_ANALISE" || p.Status == "EM_ANALISE")
-                .OrderBy(p => p.CriadoEm)
+                // PRIMARY SORT: "Is this assigned to me?" (True comes first)
+                .OrderByDescending(p => p.Analista == AnalistaAtual)
+                // SECONDARY SORT: Oldest tickets first
+                .ThenBy(p => p.CriadoEm)
                 .ToListAsync();
         }
     }
