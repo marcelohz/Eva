@@ -1,0 +1,69 @@
+﻿@page
+@model Eva.Pages.Metroplan.Admin.IndexModel
+@{
+    ViewData["Title"] = "Painel Admin - Eva";
+}
+
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <div>
+            <h1 class="h2"><i class="bi bi-shield-lock-fill text-warning me-2"></i>Painel Administrativo</h1>
+            <p class="text-muted">Gerenciamento de acessos internos e analistas da Metroplan.</p>
+        </div>
+        <a href="/Metroplan/Admin/NovoAnalista" class="btn btn-primary">
+            <i class="bi bi-person-plus-fill"></i> Novo Analista
+        </a>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">Analistas Cadastrados</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Nome</th>
+                            <th>E-mail</th>
+                            <th>Status</th>
+                            <th>Data de Cadastro</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Analistas.Any())
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center py-5 text-muted">
+                                    <i class="bi bi-people display-4 d-block mb-2"></i>
+                                    Nenhum analista cadastrado no sistema ainda.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var analista in Model.Analistas)
+                            {
+                                <tr>
+                                    <td class="ps-4 fw-bold text-secondary">@analista.Nome</td>
+                                    <td>@analista.Email</td>
+                                    <td>
+                                        @if (analista.EmailValidado)
+                                        {
+                                            <span class="badge bg-success">Ativo</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning text-dark">Pendente</span>
+                                        }
+                                    </td>
+                                    <td>@analista.CriadoEm.ToString("dd/MM/yyyy HH:mm")</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

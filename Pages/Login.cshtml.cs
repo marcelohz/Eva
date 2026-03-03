@@ -58,9 +58,8 @@ namespace Eva.Pages
                 return Page();
             }
 
-            if (!user.EmailValidado)
+            if (!user.EmailValidado && user.PapelNome.ToUpper() == "EMPRESA")
             {
-                // Adjust this path if your success page is elsewhere
                 return RedirectToPage("/CadastroEmpresa/Sucesso");
             }
 
@@ -72,7 +71,6 @@ namespace Eva.Pages
                 new Claim(ClaimTypes.Role, user.PapelNome)
             };
 
-            // ADDED: Inject the CNPJ into the secure cookie for the Global Query Filters
             if (!string.IsNullOrEmpty(user.EmpresaCnpj))
             {
                 claims.Add(new Claim("EmpresaCnpj", user.EmpresaCnpj));
@@ -84,10 +82,10 @@ namespace Eva.Pages
                 CookieAuthenticationDefaults.AuthenticationScheme,
                 new ClaimsPrincipal(claimsIdentity));
 
-            // Redirect based on uppercase role
             var papel = user.PapelNome.ToUpper();
             if (papel == "EMPRESA") return RedirectToPage("/Empresa/MinhaEmpresa");
-            if (papel == "ANALISTA") return RedirectToPage("/Metroplan/Analista");
+            if (papel == "ANALISTA") return RedirectToPage("/Metroplan/Analista/Index");
+            if (papel == "ADMIN") return RedirectToPage("/Metroplan/Admin/Index");
 
             return RedirectToPage("/Index");
         }

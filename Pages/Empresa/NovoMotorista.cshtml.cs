@@ -36,7 +36,9 @@ namespace Eva.Pages.Empresa
             if (user == null || string.IsNullOrEmpty(user.EmpresaCnpj)) return RedirectToPage("/Login");
 
             Motorista.EmpresaCnpj = user.EmpresaCnpj;
-            Motorista.DataCadastro = DateTime.UtcNow;
+
+            // Note: We removed the manual date assignment here. 
+            // PostgreSQL's "DEFAULT now()" will handle it automatically upon saving!
 
             _context.Motoristas.Add(Motorista);
             await _context.SaveChangesAsync();

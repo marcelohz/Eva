@@ -42,6 +42,13 @@
                                 <a class="nav-link text-white fw-bold" href="/Metroplan/Analista"><i class="bi bi-inboxes-fill"></i> Fila de Análise</a>
                             </li>
                         }
+
+                        @if (User.IsInRole("ADMIN"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-warning fw-bold" href="/Metroplan/Admin"><i class="bi bi-shield-lock-fill"></i> Painel Admin</a>
+                            </li>
+                        }
                     </ul>
 
                     <ul class="navbar-nav">

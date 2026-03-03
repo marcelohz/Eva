@@ -35,10 +35,10 @@ namespace Eva.Models
         public string? Nome { get; set; }
 
         [ValidateNever]
-        [Column("data_cadastro")]
-        public DateTime DataCadastro { get; set; } = DateTime.UtcNow;
+        [Column("criado_em")] // CHANGED FROM data_cadastro
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public DateTime CriadoEm { get; set; }
 
-        // ADDED: The missing property so PendenciaService can sync the status
         [Column("eventual_status")]
         public string? EventualStatus { get; set; }
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace Eva.Models
 {
@@ -12,16 +13,16 @@ namespace Eva.Models
         public int Id { get; set; }
 
         [Required]
-        [Column("nome")]
-        public string Nome { get; set; } = string.Empty;
+        [Column("papel_nome")]
+        public string PapelNome { get; set; } = string.Empty;
 
         [Required]
-        [EmailAddress]
         [Column("email")]
         public string Email { get; set; } = string.Empty;
 
-        [Column("senha")]
-        public string? Senha { get; set; }
+        [Required]
+        [Column("nome")]
+        public string Nome { get; set; } = string.Empty;
 
         [Column("cpf")]
         public string? Cpf { get; set; }
@@ -32,19 +33,32 @@ namespace Eva.Models
         [Column("telefone")]
         public string? Telefone { get; set; }
 
-        [Column("papel_nome")]
-        public string PapelNome { get; set; } = string.Empty;
-
-        [ForeignKey("PapelNome")]
-        public virtual Papel Papel { get; set; } = null!;
+        [Column("senha")]
+        public string? Senha { get; set; }
 
         [Column("empresa_cnpj")]
         public string? EmpresaCnpj { get; set; }
 
-        [ForeignKey("EmpresaCnpj")]
-        public virtual Empresa? Empresa { get; set; }
+        [Column("criado_em")]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public DateTime CriadoEm { get; set; }
+
+        [Column("atualizado_em")]
+        [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
+        public DateTime AtualizadoEm { get; set; }
+
+        [Column("ativo")]
+        public bool Ativo { get; set; } = true;
 
         [Column("email_validado")]
         public bool EmailValidado { get; set; } = false;
+
+        [ValidateNever]
+        [ForeignKey("PapelNome")]
+        public virtual Papel? Papel { get; set; }
+
+        [ValidateNever]
+        [ForeignKey("EmpresaCnpj")]
+        public virtual Empresa? Empresa { get; set; }
     }
 }
