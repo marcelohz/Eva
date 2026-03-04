@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Eva.Data;
 using Eva.Models;
 using Eva.Services;
+using Eva.Workflow; // Assuming you created the Workflow folder/namespace
 using System.Security.Claims;
 
 namespace Eva.Pages.Empresa
@@ -34,14 +35,19 @@ namespace Eva.Pages.Empresa
 
         public async Task<IActionResult> OnGetAsync(int id)
         {
-            // Fetch Driver safely
-            Motorista = (await _context.Motoristas.FirstOrDefaultAsync(m => m.Id == id))!;
+            // FIX CS8601: Check for null before assignment
+            var dbMotorista = await _context.Motoristas.FirstOrDefaultAsync(m => m.Id == id);
+            if (dbMotorista == null) return NotFound();
 
-            if (Motorista == null) return NotFound();
+            Motorista = dbMotorista;
 
-            PendenciaStatus = await _pendenciaService.GetStatusAsync("MOTORISTA", Motorista.Id.ToString());
+            await LoadAuxiliaryData(id);
+            return Page();
+        }
 
-            // Fetch Documents (CNH)
+        private async Task LoadAuxiliaryData(int id)
+        {
+            PendenciaStatus = await _pendenciaService.GetStatusAsync("MOTORISTA", id.ToString());
             Cnhs = await _context.DocumentoMotoristas
                 .Where(dm => dm.MotoristaId == id)
                 .Include(dm => dm.Documento)
@@ -49,87 +55,59 @@ namespace Eva.Pages.Empresa
                 .Where(d => d.DocumentoTipoNome == "CNH")
                 .OrderByDescending(d => d.DataUpload)
                 .ToListAsync();
-
-            return Page();
         }
 
         public async Task<IActionResult> OnPostAsync()
         {
-            if (!ModelState.IsValid) return await ReloadPage(Motorista.Id);
+            // [PATCH]: Preserve typed input and only reload lists on error
+            if (!ModelState.IsValid) { await LoadAuxiliaryData(Motorista.Id); return Page(); }
 
-            // Lock Check
             var status = await _pendenciaService.GetStatusAsync("MOTORISTA", Motorista.Id.ToString());
-            if (status == "EM_ANALISE") return await ReloadPageWithLockError(Motorista.Id);
+            if (status == "EM_ANALISE") return await ReloadWithLockError(Motorista.Id);
 
-            var motoristaInDb = await _context.Motoristas.FirstOrDefaultAsync(m => m.Id == Motorista.Id);
-            if (motoristaInDb == null) return NotFound();
+            var mInDb = await _context.Motoristas.FirstOrDefaultAsync(m => m.Id == Motorista.Id);
+            if (mInDb == null) return NotFound();
 
-            // Update Fields
-            motoristaInDb.Nome = Motorista.Nome;
-            motoristaInDb.Cpf = Motorista.Cpf;
-            motoristaInDb.Cnh = Motorista.Cnh;
-            motoristaInDb.Email = Motorista.Email;
+            mInDb.Nome = Motorista.Nome;
+            mInDb.Cpf = Motorista.Cpf;
+            mInDb.Cnh = Motorista.Cnh;
+            mInDb.Email = Motorista.Email;
 
-            bool hasChanges = _context.ChangeTracker.HasChanges();
-
-            if (hasChanges)
+            if (_context.ChangeTracker.HasChanges())
             {
                 await _context.SaveChangesAsync();
-                await _pendenciaService.AvancarEntidadeAsync("MOTORISTA", motoristaInDb.Id.ToString());
+                await _pendenciaService.AvancarEntidadeAsync("MOTORISTA", mInDb.Id.ToString());
             }
 
             return RedirectToPage("./MeusMotoristas");
         }
 
-        public async Task<IActionResult> OnPostUploadAsync()
+        // [PATCH]: Use [FromRoute] to ensure ID is captured from URL
+        public async Task<IActionResult> OnPostUploadAsync([FromRoute] int id)
         {
-            // Lock Check
-            var status = await _pendenciaService.GetStatusAsync("MOTORISTA", Motorista.Id.ToString());
-            if (status == "EM_ANALISE") return await ReloadPageWithLockError(Motorista.Id);
+            var status = await _pendenciaService.GetStatusAsync("MOTORISTA", id.ToString());
+            if (status == "EM_ANALISE") return await ReloadWithLockError(id);
 
             if (UploadArquivo != null && UploadArquivo.Length > 0)
-            {
-                // We use "CNH" as the standard type for drivers
-                await _arquivoService.SalvarDocumentoAsync(UploadArquivo, "CNH", "MOTORISTA", Motorista.Id.ToString());
-            }
+                await _arquivoService.SalvarDocumentoAsync(UploadArquivo, "CNH", "MOTORISTA", id.ToString());
 
-            return RedirectToPage(new { id = Motorista.Id });
+            return RedirectToPage(new { id = id });
         }
 
-        public async Task<IActionResult> OnPostDeleteDocAsync(int docId)
+        public async Task<IActionResult> OnPostDeleteDocAsync(int docId, [FromRoute] int id)
         {
-            // Lock Check
-            var status = await _pendenciaService.GetStatusAsync("MOTORISTA", Motorista.Id.ToString());
-            if (status == "EM_ANALISE") return await ReloadPageWithLockError(Motorista.Id);
+            var status = await _pendenciaService.GetStatusAsync("MOTORISTA", id.ToString());
+            if (status == "EM_ANALISE") return await ReloadWithLockError(id);
 
-            // Security Check: Ensure doc belongs to this driver, and driver belongs to logged-in company
-            // (Note: Global Query Filters handle the "Driver belongs to Company" part automatically via _context.Motoristas)
-
-            var docLink = await _context.DocumentoMotoristas
-                .FirstOrDefaultAsync(dm => dm.Id == docId && dm.MotoristaId == Motorista.Id);
-
-            if (docLink != null)
-            {
-                var motoristaExists = await _context.Motoristas.AnyAsync(m => m.Id == Motorista.Id);
-                if (motoristaExists)
-                {
-                    await _arquivoService.DeletarDocumentoAsync(docId, "MOTORISTA", Motorista.Id.ToString());
-                }
-            }
-
-            return RedirectToPage(new { id = Motorista.Id });
+            await _arquivoService.DeletarDocumentoAsync(docId, "MOTORISTA", id.ToString());
+            return RedirectToPage(new { id = id });
         }
 
-        private async Task<IActionResult> ReloadPage(int id)
-        {
-            await OnGetAsync(id);
-            return Page();
-        }
-
-        private async Task<IActionResult> ReloadPageWithLockError(int id)
+        private async Task<IActionResult> ReloadWithLockError(int id)
         {
             ModelState.AddModelError(string.Empty, "Este motorista está em análise e não pode ser alterado.");
-            return await ReloadPage(id);
+            await LoadAuxiliaryData(id);
+            return Page();
         }
     }
 }

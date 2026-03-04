@@ -19,24 +19,14 @@ namespace Eva.Pages.Empresa
 
         public EditarVeiculoModel(EvaDbContext context, PendenciaService pendenciaService, ArquivoService arquivoService)
         {
-            _context = context;
-            _pendenciaService = pendenciaService;
-            _arquivoService = arquivoService;
+            _context = context; _pendenciaService = pendenciaService; _arquivoService = arquivoService;
         }
 
-        [BindProperty]
-        public VeiculoVM Input { get; set; } = new();
-
-        [BindProperty]
-        public IFormFile? UploadArquivo { get; set; }
-
-        // FIXED: Changed to nullable string? so it doesn't block the main Save action
-        [BindProperty]
-        public string? TipoDocumentoUpload { get; set; }
+        [BindProperty] public VeiculoVM Input { get; set; } = new();
+        [BindProperty] public IFormFile? UploadArquivo { get; set; }
+        [BindProperty] public string? TipoDocumentoUpload { get; set; }
 
         public string? PendenciaStatus { get; set; }
-
-        // Document Lists
         public List<Documento> Crlvs { get; set; } = new();
         public List<Documento> Laudos { get; set; } = new();
         public List<Documento> Apolices { get; set; } = new();
@@ -44,137 +34,63 @@ namespace Eva.Pages.Empresa
 
         public async Task<IActionResult> OnGetAsync(string id)
         {
-            if (string.IsNullOrEmpty(id)) return NotFound();
-
-            var userEmail = User.FindFirstValue(ClaimTypes.Email);
-            var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == userEmail);
-
-            if (user == null) return RedirectToPage("/Login");
-
-            // Fetch Vehicle
-            var vehicleInDb = await _context.Veiculos
-                .FirstOrDefaultAsync(v => v.Placa == id && v.EmpresaCnpj == user.EmpresaCnpj);
-
-            if (vehicleInDb == null) return NotFound();
+            var userCnpj = User.FindFirstValue("EmpresaCnpj");
+            var v = await _context.Veiculos.FirstOrDefaultAsync(v => v.Placa == id && v.EmpresaCnpj == userCnpj);
+            if (v == null) return NotFound();
 
             Input = new VeiculoVM
             {
-                Placa = vehicleInDb.Placa,
-                Modelo = vehicleInDb.Modelo ?? "",
-                ChassiNumero = vehicleInDb.ChassiNumero,
-                Renavan = vehicleInDb.Renavan,
-                PotenciaMotor = vehicleInDb.PotenciaMotor,
-                VeiculoCombustivelNome = vehicleInDb.VeiculoCombustivelNome,
-                NumeroLugares = vehicleInDb.NumeroLugares,
-                AnoFabricacao = vehicleInDb.AnoFabricacao,
-                ModeloAno = vehicleInDb.ModeloAno
+                Placa = v.Placa,
+                Modelo = v.Modelo ?? "",
+                ChassiNumero = v.ChassiNumero,
+                Renavan = v.Renavan,
+                PotenciaMotor = v.PotenciaMotor,
+                VeiculoCombustivelNome = v.VeiculoCombustivelNome,
+                NumeroLugares = v.NumeroLugares,
+                AnoFabricacao = v.AnoFabricacao,
+                ModeloAno = v.ModeloAno
             };
 
-            PendenciaStatus = await _pendenciaService.GetStatusAsync("VEICULO", vehicleInDb.Placa);
-
-            // Fetch All Documents for this Vehicle
-            var allDocs = await _context.DocumentoVeiculos
-                .Where(dv => dv.VeiculoPlaca == id)
-                .Include(dv => dv.Documento)
-                .Select(dv => dv.Documento)
-                .ToListAsync();
-
-            // Filter into buckets
-            Crlvs = allDocs.Where(d => d.DocumentoTipoNome == "CRLV").OrderByDescending(d => d.DataUpload).ToList();
-            Laudos = allDocs.Where(d => d.DocumentoTipoNome == "LAUDO_INSPECAO").OrderByDescending(d => d.DataUpload).ToList();
-            Apolices = allDocs.Where(d => d.DocumentoTipoNome == "APOLICE_SEGURO").OrderByDescending(d => d.DataUpload).ToList();
-            Comprovantes = allDocs.Where(d => d.DocumentoTipoNome == "COMPROVANTE_PAGAMENTO").OrderByDescending(d => d.DataUpload).ToList();
-
+            await LoadAuxiliaryData(id);
             return Page();
+        }
+
+        private async Task LoadAuxiliaryData(string id)
+        {
+            PendenciaStatus = await _pendenciaService.GetStatusAsync("VEICULO", id);
+            var docs = await _context.DocumentoVeiculos.Where(dv => dv.VeiculoPlaca == id).Include(dv => dv.Documento).Select(dv => dv.Documento).ToListAsync();
+            Crlvs = docs.Where(d => d.DocumentoTipoNome == "CRLV").OrderByDescending(d => d.DataUpload).ToList();
+            Laudos = docs.Where(d => d.DocumentoTipoNome == "LAUDO_INSPECAO").OrderByDescending(d => d.DataUpload).ToList();
+            Apolices = docs.Where(d => d.DocumentoTipoNome == "APOLICE_SEGURO").OrderByDescending(d => d.DataUpload).ToList();
+            Comprovantes = docs.Where(d => d.DocumentoTipoNome == "COMPROVANTE_PAGAMENTO").OrderByDescending(d => d.DataUpload).ToList();
         }
 
         public async Task<IActionResult> OnPostAsync()
         {
-            // Now this will be VALID because TipoDocumentoUpload is optional
-            if (!ModelState.IsValid) return await ReloadPage(Input.Placa);
+            if (!ModelState.IsValid) { await LoadAuxiliaryData(Input.Placa); return Page(); }
+            var userCnpj = User.FindFirstValue("EmpresaCnpj");
+            var vInDb = await _context.Veiculos.FirstOrDefaultAsync(v => v.Placa == Input.Placa && v.EmpresaCnpj == userCnpj);
+            if (vInDb == null) return NotFound();
 
-            var status = await _pendenciaService.GetStatusAsync("VEICULO", Input.Placa);
-            if (status == "EM_ANALISE") return await ReloadPageWithLockError(Input.Placa);
+            vInDb.Modelo = Input.Modelo; vInDb.ChassiNumero = Input.ChassiNumero; vInDb.Renavan = Input.Renavan;
+            vInDb.PotenciaMotor = Input.PotenciaMotor; vInDb.VeiculoCombustivelNome = Input.VeiculoCombustivelNome;
+            vInDb.NumeroLugares = Input.NumeroLugares; vInDb.AnoFabricacao = Input.AnoFabricacao; vInDb.ModeloAno = Input.ModeloAno;
 
-            var userEmail = User.FindFirstValue(ClaimTypes.Email);
-            var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == userEmail);
-            if (user == null) return RedirectToPage("/Login");
-
-            var vehicleInDb = await _context.Veiculos
-                .FirstOrDefaultAsync(v => v.Placa == Input.Placa && v.EmpresaCnpj == user.EmpresaCnpj);
-
-            if (vehicleInDb == null) return NotFound();
-
-            // Update
-            vehicleInDb.Modelo = Input.Modelo;
-            vehicleInDb.ChassiNumero = Input.ChassiNumero;
-            vehicleInDb.Renavan = Input.Renavan;
-            vehicleInDb.PotenciaMotor = Input.PotenciaMotor;
-            vehicleInDb.VeiculoCombustivelNome = Input.VeiculoCombustivelNome;
-            vehicleInDb.NumeroLugares = Input.NumeroLugares;
-            vehicleInDb.AnoFabricacao = Input.AnoFabricacao;
-            vehicleInDb.ModeloAno = Input.ModeloAno;
-
-            bool hasChanges = _context.ChangeTracker.HasChanges();
-
-            if (hasChanges)
-            {
-                await _context.SaveChangesAsync();
-                await _pendenciaService.AvancarEntidadeAsync("VEICULO", vehicleInDb.Placa);
-            }
-
-            // Redirect back to the list
+            if (_context.ChangeTracker.HasChanges()) { await _context.SaveChangesAsync(); await _pendenciaService.AvancarEntidadeAsync("VEICULO", vInDb.Placa); }
             return RedirectToPage("/Empresa/MeusVeiculos");
         }
 
-        public async Task<IActionResult> OnPostUploadAsync()
+        public async Task<IActionResult> OnPostUploadAsync([FromRoute] string id)
         {
-            var status = await _pendenciaService.GetStatusAsync("VEICULO", Input.Placa);
-            if (status == "EM_ANALISE") return await ReloadPageWithLockError(Input.Placa);
-
-            if (UploadArquivo != null && UploadArquivo.Length > 0 && !string.IsNullOrEmpty(TipoDocumentoUpload))
-            {
-                await _arquivoService.SalvarDocumentoAsync(UploadArquivo, TipoDocumentoUpload, "VEICULO", Input.Placa);
-            }
-
-            return RedirectToPage(new { id = Input.Placa });
+            if (UploadArquivo != null && !string.IsNullOrEmpty(TipoDocumentoUpload))
+                await _arquivoService.SalvarDocumentoAsync(UploadArquivo, TipoDocumentoUpload, "VEICULO", id);
+            return RedirectToPage(new { id = id });
         }
 
-        public async Task<IActionResult> OnPostDeleteDocAsync(int id)
+        public async Task<IActionResult> OnPostDeleteDocAsync(int id, [FromRoute] string idPlaca)
         {
-            var status = await _pendenciaService.GetStatusAsync("VEICULO", Input.Placa);
-            if (status == "EM_ANALISE") return await ReloadPageWithLockError(Input.Placa);
-
-            var userEmail = User.FindFirstValue(ClaimTypes.Email);
-            var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == userEmail);
-            if (user == null) return RedirectToPage("/Login");
-
-            var docLink = await _context.DocumentoVeiculos
-                .Include(dv => dv.Documento)
-                .FirstOrDefaultAsync(dv => dv.Id == id && dv.VeiculoPlaca == Input.Placa);
-
-            if (docLink != null)
-            {
-                var vehicle = await _context.Veiculos.FirstOrDefaultAsync(v => v.Placa == Input.Placa && v.EmpresaCnpj == user.EmpresaCnpj);
-                if (vehicle != null)
-                {
-                    await _arquivoService.DeletarDocumentoAsync(id, "VEICULO", Input.Placa);
-                }
-            }
-
-            return RedirectToPage(new { id = Input.Placa });
-        }
-
-        private async Task<IActionResult> ReloadPage(string placa)
-        {
-            await OnGetAsync(placa);
-            return Page();
-        }
-
-        private async Task<IActionResult> ReloadPageWithLockError(string placa)
-        {
-            ModelState.AddModelError(string.Empty, "Este veículo está em análise e não pode ser alterado.");
-            return await ReloadPage(placa);
+            await _arquivoService.DeletarDocumentoAsync(id, "VEICULO", idPlaca);
+            return RedirectToPage(new { id = idPlaca });
         }
     }
 }

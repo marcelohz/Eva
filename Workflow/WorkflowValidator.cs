@@ -9,69 +9,34 @@ namespace Eva.Workflow
         public const string Aprovado = "APROVADO";
         public const string Rejeitado = "REJEITADO";
 
-        /// <summary>
-        /// Evaluates a state transition for eventual_status compliance.
-        /// Throws exceptions for invalid workflows; returns silently for valid paths.
-        /// </summary>
-        public static void ValidateTransition(
-            string? currentState,
-            string nextState,
-            string? currentAnalistaEmail,
-            string? nextAnalistaEmail,
-            string? motivo = null)
+        public static void ValidateTransition(string? currentState, string nextState, string? currentAnalista, string? nextAnalista, string? motivo = null)
         {
-            // 1. Idempotency (Double-Clicks)
             if (currentState == nextState)
             {
-                // Prevent lock stealing (mirrors fn_avancar_pendencia)
-                if (nextState == EmAnalise &&
-                    !string.IsNullOrWhiteSpace(currentAnalistaEmail) &&
-                    currentAnalistaEmail != nextAnalistaEmail)
-                {
-                    throw new InvalidOperationException($"Lock violation: Cannot steal an EM_ANALISE lock from another analyst. Currently locked by {currentAnalistaEmail}.");
-                }
-
-                return; // Silent success for all other double-clicks
-            }
-
-            // 2. The Company Reset
-            if (nextState == AguardandoAnalise)
-            {
-                // Cannot rip the item out of an analyst's hands
-                if (currentState == EmAnalise)
-                {
-                    throw new InvalidOperationException("Invalid transition: Cannot reset to AGUARDANDO_ANALISE while the item is currently EM_ANALISE.");
-                }
-
-                // Allowed for other states, bypasses ownership rules
+                if (nextState == EmAnalise && !string.IsNullOrWhiteSpace(currentAnalista) && currentAnalista != nextAnalista)
+                    throw new InvalidOperationException($"Bloqueio: Este item já está sendo analisado por {currentAnalista}.");
                 return;
             }
 
-            // 3. Database Triggers / Mandatory Fields
-            // Mirrors fn_analista_obrigatorio
-            if (string.IsNullOrWhiteSpace(nextAnalistaEmail))
+            if (nextState == AguardandoAnalise)
             {
-                throw new ArgumentException("An Analista (email) is mandatory for any state other than AGUARDANDO_ANALISE.", nameof(nextAnalistaEmail));
+                if (currentState == EmAnalise)
+                    throw new InvalidOperationException("Não é possível alterar dados enquanto um analista está revisando o item.");
+                return;
             }
 
-            // Mirrors fn_motivo_obrigatorio
+            if (string.IsNullOrWhiteSpace(nextAnalista))
+                throw new ArgumentException("O e-mail do analista é obrigatório.");
+
             if (nextState == Rejeitado && string.IsNullOrWhiteSpace(motivo))
-            {
-                throw new ArgumentException("A Motivo is mandatory when rejecting.", nameof(motivo));
-            }
+                throw new ArgumentException("O motivo é obrigatório para rejeições.");
 
-            // 4. Strict Analyst Workflow & 5. Ownership
             if (nextState == Aprovado || nextState == Rejeitado)
             {
                 if (currentState != EmAnalise)
-                {
-                    throw new InvalidOperationException($"Invalid sequence: Cannot transition to {nextState} from {currentState}. The item must be {EmAnalise} first.");
-                }
-
-                if (currentAnalistaEmail != nextAnalistaEmail)
-                {
-                    throw new UnauthorizedAccessException("Ownership violation: Only the analyst who locked the item can approve or reject it.");
-                }
+                    throw new InvalidOperationException("O item deve estar em análise antes de ser aprovado ou rejeitado.");
+                if (currentAnalista != nextAnalista)
+                    throw new UnauthorizedAccessException("Apenas o analista que iniciou a análise pode concluí-la.");
             }
         }
     }

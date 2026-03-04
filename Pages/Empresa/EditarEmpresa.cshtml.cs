@@ -6,6 +6,7 @@ using Eva.Data;
 using Eva.Models;
 using Eva.Models.ViewModels;
 using Eva.Services;
+using Eva.Workflow;
 using System.Security.Claims;
 
 namespace Eva.Pages.Empresa
@@ -30,12 +31,10 @@ namespace Eva.Pages.Empresa
         [BindProperty]
         public IFormFile? UploadArquivo { get; set; }
 
-        // FIXED: Made nullable to prevent ModelState invalidation during main save
         [BindProperty]
         public string? TipoDocumentoUpload { get; set; }
 
         public string? PendenciaStatus { get; set; }
-
         public List<Documento> Contratos { get; set; } = new();
         public List<Documento> IdentidadesSocios { get; set; } = new();
         public List<Documento> CartoesCnpj { get; set; } = new();
@@ -44,32 +43,38 @@ namespace Eva.Pages.Empresa
 
         public async Task<IActionResult> OnGetAsync()
         {
-            var userCnpj = User.FindFirstValue("EmpresaCnpj");
-            if (string.IsNullOrEmpty(userCnpj)) return RedirectToPage("/Login");
+            var cnpj = User.FindFirstValue("EmpresaCnpj");
+            if (string.IsNullOrEmpty(cnpj)) return RedirectToPage("/Login");
 
-            var empresaInDb = await _context.Empresas.FirstOrDefaultAsync(e => e.Cnpj == userCnpj);
-            if (empresaInDb == null) return NotFound();
+            var e = await _context.Empresas.FirstOrDefaultAsync(e => e.Cnpj == cnpj);
+            if (e == null) return NotFound();
 
+            // Populate Input from DB only on initial GET
             Input = new EmpresaVM
             {
-                Cnpj = empresaInDb.Cnpj,
-                Nome = empresaInDb.Nome,
-                NomeFantasia = empresaInDb.NomeFantasia,
-                Endereco = empresaInDb.Endereco,
-                EnderecoNumero = empresaInDb.EnderecoNumero,
-                EnderecoComplemento = empresaInDb.EnderecoComplemento,
-                Bairro = empresaInDb.Bairro,
-                Cidade = empresaInDb.Cidade,
-                Estado = empresaInDb.Estado,
-                Cep = empresaInDb.Cep,
-                Email = empresaInDb.Email,
-                Telefone = empresaInDb.Telefone
+                Cnpj = e.Cnpj,
+                Nome = e.Nome,
+                NomeFantasia = e.NomeFantasia,
+                Endereco = e.Endereco,
+                EnderecoNumero = e.EnderecoNumero,
+                EnderecoComplemento = e.EnderecoComplemento,
+                Bairro = e.Bairro,
+                Cidade = e.Cidade,
+                Estado = e.Estado,
+                Cep = e.Cep,
+                Email = e.Email,
+                Telefone = e.Telefone
             };
 
-            PendenciaStatus = await _pendenciaService.GetStatusAsync("EMPRESA", empresaInDb.Cnpj);
+            await LoadAuxiliaryData(cnpj);
+            return Page();
+        }
 
+        private async Task LoadAuxiliaryData(string cnpj)
+        {
+            PendenciaStatus = await _pendenciaService.GetStatusAsync("EMPRESA", cnpj);
             var docs = await _context.DocumentoEmpresas
-                .Where(de => de.EmpresaCnpj == userCnpj)
+                .Where(de => de.EmpresaCnpj == cnpj)
                 .Include(de => de.Documento)
                 .Select(de => de.Documento)
                 .ToListAsync();
@@ -79,94 +84,60 @@ namespace Eva.Pages.Empresa
             CartoesCnpj = docs.Where(d => d.DocumentoTipoNome == "CARTAO_CNPJ").ToList();
             Alvaras = docs.Where(d => d.DocumentoTipoNome == "ALVARA").ToList();
             Cnaes = docs.Where(d => d.DocumentoTipoNome == "CNAE_FISCAL").ToList();
-
-            return Page();
         }
 
         public async Task<IActionResult> OnPostAsync()
         {
-            // This will now pass because TipoDocumentoUpload is optional
-            if (!ModelState.IsValid) return await ReloadPage();
+            // [PATCH]: Preserve Input and only reload lists to prevent data loss
+            if (!ModelState.IsValid) { await LoadAuxiliaryData(Input.Cnpj); return Page(); }
 
-            var userCnpj = User.FindFirstValue("EmpresaCnpj");
-            if (string.IsNullOrEmpty(userCnpj)) return RedirectToPage("/Login");
+            var status = await _pendenciaService.GetStatusAsync("EMPRESA", Input.Cnpj);
+            if (status == WorkflowValidator.EmAnalise) return await ReloadWithLockError(Input.Cnpj);
 
-            var status = await _pendenciaService.GetStatusAsync("EMPRESA", userCnpj);
-            if (status == "EM_ANALISE") return await ReloadPageWithLockError();
+            var eInDb = await _context.Empresas.FirstOrDefaultAsync(e => e.Cnpj == Input.Cnpj);
+            if (eInDb == null) return NotFound();
 
-            var empresaInDb = await _context.Empresas.FirstOrDefaultAsync(e => e.Cnpj == userCnpj);
-            if (empresaInDb == null) return NotFound();
+            eInDb.Nome = Input.Nome; eInDb.NomeFantasia = Input.NomeFantasia; eInDb.Endereco = Input.Endereco;
+            eInDb.EnderecoNumero = Input.EnderecoNumero; eInDb.EnderecoComplemento = Input.EnderecoComplemento;
+            eInDb.Bairro = Input.Bairro; eInDb.Cidade = Input.Cidade; eInDb.Estado = Input.Estado;
+            eInDb.Cep = Input.Cep; eInDb.Email = Input.Email; eInDb.Telefone = Input.Telefone;
 
-            // Update Fields
-            empresaInDb.Nome = Input.Nome;
-            empresaInDb.NomeFantasia = Input.NomeFantasia;
-            empresaInDb.Endereco = Input.Endereco;
-            empresaInDb.EnderecoNumero = Input.EnderecoNumero;
-            empresaInDb.EnderecoComplemento = Input.EnderecoComplemento;
-            empresaInDb.Bairro = Input.Bairro;
-            empresaInDb.Cidade = Input.Cidade;
-            empresaInDb.Estado = Input.Estado;
-            empresaInDb.Cep = Input.Cep;
-            empresaInDb.Email = Input.Email;
-            empresaInDb.Telefone = Input.Telefone;
-
-            bool hasChanges = _context.ChangeTracker.HasChanges();
-            if (hasChanges)
+            if (_context.ChangeTracker.HasChanges())
             {
                 await _context.SaveChangesAsync();
-                await _pendenciaService.AvancarEntidadeAsync("EMPRESA", empresaInDb.Cnpj);
+                await _pendenciaService.AvancarEntidadeAsync("EMPRESA", eInDb.Cnpj);
             }
 
-            // FIXED: Redirect to Dashboard instead of reloading page
             return RedirectToPage("/Empresa/MinhaEmpresa");
         }
 
         public async Task<IActionResult> OnPostUploadAsync()
         {
-            var userCnpj = User.FindFirstValue("EmpresaCnpj");
-            if (string.IsNullOrEmpty(userCnpj)) return RedirectToPage("/Login");
+            var cnpj = User.FindFirstValue("EmpresaCnpj")!;
+            var status = await _pendenciaService.GetStatusAsync("EMPRESA", cnpj);
+            if (status == WorkflowValidator.EmAnalise) return await ReloadWithLockError(cnpj);
 
-            var status = await _pendenciaService.GetStatusAsync("EMPRESA", userCnpj);
-            if (status == "EM_ANALISE") return await ReloadPageWithLockError();
+            if (UploadArquivo != null && !string.IsNullOrEmpty(TipoDocumentoUpload))
+                await _arquivoService.SalvarDocumentoAsync(UploadArquivo, TipoDocumentoUpload, "EMPRESA", cnpj);
 
-            if (UploadArquivo != null && UploadArquivo.Length > 0 && !string.IsNullOrEmpty(TipoDocumentoUpload))
-            {
-                await _arquivoService.SalvarDocumentoAsync(UploadArquivo, TipoDocumentoUpload, "EMPRESA", userCnpj);
-            }
-
-            // Uploads still reload the current page to show the file
             return RedirectToPage();
         }
 
         public async Task<IActionResult> OnPostDeleteDocAsync(int id)
         {
-            var userCnpj = User.FindFirstValue("EmpresaCnpj");
-            if (string.IsNullOrEmpty(userCnpj)) return RedirectToPage("/Login");
+            var cnpj = User.FindFirstValue("EmpresaCnpj")!;
+            var status = await _pendenciaService.GetStatusAsync("EMPRESA", cnpj);
+            if (status == WorkflowValidator.EmAnalise) return await ReloadWithLockError(cnpj);
 
-            var status = await _pendenciaService.GetStatusAsync("EMPRESA", userCnpj);
-            if (status == "EM_ANALISE") return await ReloadPageWithLockError();
-
-            var link = await _context.DocumentoEmpresas
-                .FirstOrDefaultAsync(de => de.Id == id && de.EmpresaCnpj == userCnpj);
-
-            if (link != null)
-            {
-                await _arquivoService.DeletarDocumentoAsync(id, "EMPRESA", userCnpj);
-            }
-
+            await _arquivoService.DeletarDocumentoAsync(id, "EMPRESA", cnpj);
             return RedirectToPage();
         }
 
-        private async Task<IActionResult> ReloadPage()
+        private async Task<IActionResult> ReloadWithLockError(string cnpj)
         {
-            await OnGetAsync();
+            ModelState.AddModelError(string.Empty, "O cadastro da empresa está em análise e não pode ser alterado.");
+            await LoadAuxiliaryData(cnpj);
             return Page();
-        }
-
-        private async Task<IActionResult> ReloadPageWithLockError()
-        {
-            ModelState.AddModelError(string.Empty, "O cadastro da sua empresa está em análise e não pode ser alterado.");
-            return await ReloadPage();
         }
     }
 }
