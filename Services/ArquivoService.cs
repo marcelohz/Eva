@@ -49,6 +49,7 @@ namespace Eva.Services
             else if (entTipo == "MOTORISTA" && int.TryParse(entId, out int mId)) _context.DocumentoMotoristas.Add(new DocumentoMotorista { Documento = doc, MotoristaId = mId });
 
             await _context.SaveChangesAsync();
+            // RESTORED: Automatic workflow trigger
             await _pendenciaService.AvancarEntidadeAsync(entTipo, entId);
             return doc;
         }
@@ -56,7 +57,13 @@ namespace Eva.Services
         public async Task DeletarDocumentoAsync(int docId, string entTipo, string entId)
         {
             var doc = await _context.Documentos.FindAsync(docId);
-            if (doc != null) { _context.Documentos.Remove(doc); await _context.SaveChangesAsync(); await _pendenciaService.AvancarEntidadeAsync(entTipo, entId); }
+            if (doc != null)
+            {
+                _context.Documentos.Remove(doc);
+                await _context.SaveChangesAsync();
+                // RESTORED: Automatic workflow trigger
+                await _pendenciaService.AvancarEntidadeAsync(entTipo, entId);
+            }
         }
     }
 }

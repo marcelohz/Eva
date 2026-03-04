@@ -17,93 +17,52 @@ namespace Eva.Pages.Metroplan.Analista
 
         public RevisaoModel(EvaDbContext context, PendenciaService pendenciaService)
         {
-            _context = context;
-            _pendenciaService = pendenciaService;
+            _context = context; _pendenciaService = pendenciaService;
         }
 
-        [BindProperty(SupportsGet = true)]
-        public string Tipo { get; set; } = string.Empty;
-
-        [BindProperty(SupportsGet = true)]
-        public string Id { get; set; } = string.Empty;
-
-        [BindProperty]
-        public string MotivoRejeicao { get; set; } = string.Empty;
+        [BindProperty(SupportsGet = true)] public string Tipo { get; set; } = string.Empty;
+        [BindProperty(SupportsGet = true)] public string Id { get; set; } = string.Empty;
+        [BindProperty] public string MotivoRejeicao { get; set; } = string.Empty;
 
         public VPendenciaAtual? Ticket { get; set; }
         public List<FluxoPendencia> Historico { get; set; } = new();
         public bool IsLockedByMe { get; set; }
         public bool IsLockedByOther { get; set; }
 
-        // Data Models
         public Veiculo? Veiculo { get; set; }
         public Motorista? Motorista { get; set; }
-
-        // FIXED: Explicit namespace to avoid conflict with "Pages/Empresa" folder
         public Eva.Models.Empresa? Empresa { get; set; }
-
-        // Documents List
         public List<Documento> Documentos { get; set; } = new();
 
         public async Task<IActionResult> OnGetAsync()
         {
             if (string.IsNullOrEmpty(Tipo) || string.IsNullOrEmpty(Id)) return RedirectToPage("./Index");
 
-            Ticket = await _context.VPendenciasAtuais
-                .FirstOrDefaultAsync(p => p.EntidadeTipo == Tipo && p.EntidadeId == Id);
-
+            Ticket = await _context.VPendenciasAtuais.FirstOrDefaultAsync(p => p.EntidadeTipo == Tipo && p.EntidadeId == Id);
             if (Ticket == null) return RedirectToPage("./Index");
 
             var email = User.FindFirstValue(ClaimTypes.Email);
             IsLockedByMe = Ticket.Status == "EM_ANALISE" && Ticket.Analista == email;
             IsLockedByOther = Ticket.Status == "EM_ANALISE" && Ticket.Analista != email;
-
             Historico = await _pendenciaService.GetHistoricoAsync(Tipo, Id);
 
-            // Fetch specific entity data and related documents
             if (Tipo == "VEICULO")
             {
-                Veiculo = await _context.Veiculos.IgnoreQueryFilters()
-                    .Include(v => v.Empresa)
-                    .FirstOrDefaultAsync(v => v.Placa == Id);
-
-                Documentos = await _context.DocumentoVeiculos
-                    .Where(dv => dv.VeiculoPlaca == Id)
-                    .Include(dv => dv.Documento)
-                    .Select(dv => dv.Documento)
-                    .OrderByDescending(d => d.DataUpload)
-                    .ToListAsync();
+                Veiculo = await _context.Veiculos.IgnoreQueryFilters().Include(v => v.Empresa).FirstOrDefaultAsync(v => v.Placa == Id);
+                Documentos = await _context.DocumentoVeiculos.Where(dv => dv.VeiculoPlaca == Id).Include(dv => dv.Documento).Select(dv => dv.Documento).OrderByDescending(d => d.DataUpload).ToListAsync();
             }
             else if (Tipo == "MOTORISTA" && int.TryParse(Id, out int mId))
             {
-                Motorista = await _context.Motoristas.IgnoreQueryFilters()
-                    .Include(m => m.Empresa)
-                    .FirstOrDefaultAsync(m => m.Id == mId);
-
-                Documentos = await _context.DocumentoMotoristas
-                    .Where(dm => dm.MotoristaId == mId)
-                    .Include(dm => dm.Documento)
-                    .Select(dm => dm.Documento)
-                    .OrderByDescending(d => d.DataUpload)
-                    .ToListAsync();
+                Motorista = await _context.Motoristas.IgnoreQueryFilters().Include(m => m.Empresa).FirstOrDefaultAsync(m => m.Id == mId);
+                Documentos = await _context.DocumentoMotoristas.Where(dm => dm.MotoristaId == mId).Include(dm => dm.Documento).Select(dm => dm.Documento).OrderByDescending(d => d.DataUpload).ToListAsync();
             }
             else if (Tipo == "EMPRESA")
             {
-                Empresa = await _context.Empresas.IgnoreQueryFilters()
-                    .FirstOrDefaultAsync(e => e.Cnpj == Id);
-
-                Documentos = await _context.DocumentoEmpresas
-                    .Where(de => de.EmpresaCnpj == Id)
-                    .Include(de => de.Documento)
-                    .Select(de => de.Documento)
-                    .OrderByDescending(d => d.DataUpload)
-                    .ToListAsync();
+                Empresa = await _context.Empresas.IgnoreQueryFilters().FirstOrDefaultAsync(e => e.Cnpj == Id);
+                Documentos = await _context.DocumentoEmpresas.Where(de => de.EmpresaCnpj == Id).Include(de => de.Documento).Select(de => de.Documento).OrderByDescending(d => d.DataUpload).ToListAsync();
             }
-
             return Page();
         }
-
-        // --- ACTIONS ---
 
         public async Task<IActionResult> OnPostIniciarAsync()
         {
@@ -122,28 +81,14 @@ namespace Eva.Pages.Metroplan.Analista
         public async Task<IActionResult> OnPostRejeitarAsync()
         {
             var email = User.FindFirstValue(ClaimTypes.Email);
-            if (email != null && !string.IsNullOrWhiteSpace(MotivoRejeicao))
-            {
-                await _pendenciaService.RejeitarAsync(Tipo, Id, email, MotivoRejeicao);
-            }
+            if (email != null && !string.IsNullOrWhiteSpace(MotivoRejeicao)) await _pendenciaService.RejeitarAsync(Tipo, Id, email, MotivoRejeicao);
             return RedirectToPage("./Index");
-        }
-
-        // --- FILE HANDLERS ---
-
-        public async Task<IActionResult> OnGetDownloadAsync(int docId)
-        {
-            var doc = await _context.Documentos.FindAsync(docId);
-            if (doc == null) return NotFound();
-
-            return File(doc.Conteudo, doc.ContentType, doc.NomeArquivo);
         }
 
         public async Task<IActionResult> OnGetVisualizarAsync(int docId)
         {
             var doc = await _context.Documentos.FindAsync(docId);
             if (doc == null) return NotFound();
-
             return File(doc.Conteudo, doc.ContentType);
         }
     }

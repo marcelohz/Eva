@@ -20,19 +20,12 @@ namespace Eva.Pages.Empresa
 
         public EditarEmpresaModel(EvaDbContext context, PendenciaService pendenciaService, ArquivoService arquivoService)
         {
-            _context = context;
-            _pendenciaService = pendenciaService;
-            _arquivoService = arquivoService;
+            _context = context; _pendenciaService = pendenciaService; _arquivoService = arquivoService;
         }
 
-        [BindProperty]
-        public EmpresaVM Input { get; set; } = new();
-
-        [BindProperty]
-        public IFormFile? UploadArquivo { get; set; }
-
-        [BindProperty]
-        public string? TipoDocumentoUpload { get; set; }
+        [BindProperty] public EmpresaVM Input { get; set; } = new();
+        [BindProperty] public IFormFile? UploadArquivo { get; set; }
+        [BindProperty] public string? TipoDocumentoUpload { get; set; }
 
         public string? PendenciaStatus { get; set; }
         public List<Documento> Contratos { get; set; } = new();
@@ -45,11 +38,9 @@ namespace Eva.Pages.Empresa
         {
             var cnpj = User.FindFirstValue("EmpresaCnpj");
             if (string.IsNullOrEmpty(cnpj)) return RedirectToPage("/Login");
-
             var e = await _context.Empresas.FirstOrDefaultAsync(e => e.Cnpj == cnpj);
             if (e == null) return NotFound();
 
-            // Populate Input from DB only on initial GET
             Input = new EmpresaVM
             {
                 Cnpj = e.Cnpj,
@@ -65,7 +56,6 @@ namespace Eva.Pages.Empresa
                 Email = e.Email,
                 Telefone = e.Telefone
             };
-
             await LoadAuxiliaryData(cnpj);
             return Page();
         }
@@ -73,12 +63,7 @@ namespace Eva.Pages.Empresa
         private async Task LoadAuxiliaryData(string cnpj)
         {
             PendenciaStatus = await _pendenciaService.GetStatusAsync("EMPRESA", cnpj);
-            var docs = await _context.DocumentoEmpresas
-                .Where(de => de.EmpresaCnpj == cnpj)
-                .Include(de => de.Documento)
-                .Select(de => de.Documento)
-                .ToListAsync();
-
+            var docs = await _context.DocumentoEmpresas.Where(de => de.EmpresaCnpj == cnpj).Include(de => de.Documento).Select(de => de.Documento).ToListAsync();
             Contratos = docs.Where(d => d.DocumentoTipoNome == "CONTRATO_SOCIAL").ToList();
             IdentidadesSocios = docs.Where(d => d.DocumentoTipoNome == "IDENTIDADE_SOCIO").ToList();
             CartoesCnpj = docs.Where(d => d.DocumentoTipoNome == "CARTAO_CNPJ").ToList();
@@ -88,11 +73,9 @@ namespace Eva.Pages.Empresa
 
         public async Task<IActionResult> OnPostAsync()
         {
-            // [PATCH]: Preserve Input and only reload lists to prevent data loss
             if (!ModelState.IsValid) { await LoadAuxiliaryData(Input.Cnpj); return Page(); }
-
             var status = await _pendenciaService.GetStatusAsync("EMPRESA", Input.Cnpj);
-            if (status == WorkflowValidator.EmAnalise) return await ReloadWithLockError(Input.Cnpj);
+            if (status == WorkflowValidator.EmAnalise) return Page();
 
             var eInDb = await _context.Empresas.FirstOrDefaultAsync(e => e.Cnpj == Input.Cnpj);
             if (eInDb == null) return NotFound();
@@ -105,9 +88,8 @@ namespace Eva.Pages.Empresa
             if (_context.ChangeTracker.HasChanges())
             {
                 await _context.SaveChangesAsync();
-                await _pendenciaService.AvancarEntidadeAsync("EMPRESA", eInDb.Cnpj);
+                await _pendenciaService.AvancarEntidadeAsync("EMPRESA", eInDb.Cnpj); // RESTORED
             }
-
             return RedirectToPage("/Empresa/MinhaEmpresa");
         }
 
@@ -115,29 +97,25 @@ namespace Eva.Pages.Empresa
         {
             var cnpj = User.FindFirstValue("EmpresaCnpj")!;
             var status = await _pendenciaService.GetStatusAsync("EMPRESA", cnpj);
-            if (status == WorkflowValidator.EmAnalise) return await ReloadWithLockError(cnpj);
+            if (status == WorkflowValidator.EmAnalise) return Page();
 
             if (UploadArquivo != null && !string.IsNullOrEmpty(TipoDocumentoUpload))
+            {
+                if (TipoDocumentoUpload != "IDENTIDADE_SOCIO")
+                {
+                    var existingId = await _context.DocumentoEmpresas.Where(de => de.EmpresaCnpj == cnpj && de.Documento.DocumentoTipoNome == TipoDocumentoUpload).Select(de => de.Documento.Id).FirstOrDefaultAsync();
+                    if (existingId > 0) await _arquivoService.DeletarDocumentoAsync(existingId, "EMPRESA", cnpj);
+                }
                 await _arquivoService.SalvarDocumentoAsync(UploadArquivo, TipoDocumentoUpload, "EMPRESA", cnpj);
-
+            }
             return RedirectToPage();
         }
 
         public async Task<IActionResult> OnPostDeleteDocAsync(int id)
         {
             var cnpj = User.FindFirstValue("EmpresaCnpj")!;
-            var status = await _pendenciaService.GetStatusAsync("EMPRESA", cnpj);
-            if (status == WorkflowValidator.EmAnalise) return await ReloadWithLockError(cnpj);
-
             await _arquivoService.DeletarDocumentoAsync(id, "EMPRESA", cnpj);
             return RedirectToPage();
-        }
-
-        private async Task<IActionResult> ReloadWithLockError(string cnpj)
-        {
-            ModelState.AddModelError(string.Empty, "O cadastro da empresa está em análise e não pode ser alterado.");
-            await LoadAuxiliaryData(cnpj);
-            return Page();
         }
     }
 }

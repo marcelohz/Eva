@@ -18,7 +18,7 @@
     {
         <div class="alert alert-warning mb-4 shadow-sm" role="alert">
             <i class="bi bi-lock-fill me-2"></i>
-            <strong>Acesso Bloqueado:</strong> Este motorista está atualmente em análise por um analista e não pode ser alterado ou excluído no momento.
+            <strong>Acesso Bloqueado:</strong> Este motorista está em análise por um analista e não pode ser alterado no momento.
         </div>
     }
 
@@ -55,19 +55,16 @@
                                     <input asp-for="Motorista.Nome" class="form-control" />
                                     <span asp-validation-for="Motorista.Nome" class="text-danger small"></span>
                                 </div>
-
                                 <div class="col-md-6 mb-3">
                                     <label asp-for="Motorista.Cpf" class="form-label fw-bold">CPF</label>
                                     <input asp-for="Motorista.Cpf" class="form-control" />
                                     <span asp-validation-for="Motorista.Cpf" class="text-danger small"></span>
                                 </div>
-
                                 <div class="col-md-6 mb-3">
                                     <label asp-for="Motorista.Cnh" class="form-label fw-bold">CNH</label>
                                     <input asp-for="Motorista.Cnh" class="form-control" />
                                     <span asp-validation-for="Motorista.Cnh" class="text-danger small"></span>
                                 </div>
-
                                 <div class="col-md-12 mb-3">
                                     <label asp-for="Motorista.Email" class="form-label fw-bold">E-mail</label>
                                     <input asp-for="Motorista.Email" type="email" class="form-control" />
@@ -97,7 +94,8 @@
                     <div class="mb-3">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <h6 class="fw-bold text-secondary mb-0">CNH (Habilitação)</h6>
-                            @if (!isLocked)
+                            @* Interface Fix: Hide button if document already exists *@
+                            @if (!isLocked && !Model.Cnhs.Any())
                             {
                                 <button class="btn btn-sm btn-outline-primary" onclick="document.getElementById('fileInput').click()">
                                     <i class="bi bi-upload"></i> Enviar Nova
@@ -127,9 +125,9 @@
                                         </div>
                                         @if (!isLocked)
                                         {
-                                            <form method="post" asp-page-handler="DeleteDoc" class="d-inline">
+                                            @* Bug Fix: Added asp-route-id to deletion form *@
+                                            <form method="post" asp-page-handler="DeleteDoc" asp-route-id="@Model.Motorista.Id" class="d-inline">
                                                 <input type="hidden" name="docId" value="@doc.Id" />
-                                                <input type="hidden" asp-for="Motorista.Id" />
                                                 <button type="submit" class="btn btn-link text-danger p-0 border-0" title="Excluir">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
@@ -146,8 +144,8 @@
     </div>
 </div>
 
-<form id="uploadForm" method="post" enctype="multipart/form-data" asp-page-handler="Upload" style="display:none">
-    <input type="hidden" asp-for="Motorista.Id" />
+@* Bug Fix: Added asp-route-id *@
+<form id="uploadForm" method="post" enctype="multipart/form-data" asp-page-handler="Upload" asp-route-id="@Model.Motorista.Id" style="display:none">
     <input type="file" asp-for="UploadArquivo" id="fileInput" accept=".pdf" onchange="document.getElementById('uploadForm').submit()" />
 </form>
 

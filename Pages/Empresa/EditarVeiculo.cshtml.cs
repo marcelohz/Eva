@@ -6,6 +6,7 @@ using Eva.Data;
 using Eva.Models;
 using Eva.Models.ViewModels;
 using Eva.Services;
+using Eva.Workflow;
 using System.Security.Claims;
 
 namespace Eva.Pages.Empresa
@@ -35,7 +36,8 @@ namespace Eva.Pages.Empresa
         public async Task<IActionResult> OnGetAsync(string id)
         {
             var userCnpj = User.FindFirstValue("EmpresaCnpj");
-            var v = await _context.Veiculos.FirstOrDefaultAsync(v => v.Placa == id && v.EmpresaCnpj == userCnpj);
+            // Normalize ID to prevent 404 on case mismatch
+            var v = await _context.Veiculos.FirstOrDefaultAsync(v => v.Placa.ToUpper() == id.ToUpper().Trim() && v.EmpresaCnpj == userCnpj);
             if (v == null) return NotFound();
 
             Input = new VeiculoVM
@@ -50,8 +52,7 @@ namespace Eva.Pages.Empresa
                 AnoFabricacao = v.AnoFabricacao,
                 ModeloAno = v.ModeloAno
             };
-
-            await LoadAuxiliaryData(id);
+            await LoadAuxiliaryData(v.Placa);
             return Page();
         }
 
@@ -76,21 +77,29 @@ namespace Eva.Pages.Empresa
             vInDb.PotenciaMotor = Input.PotenciaMotor; vInDb.VeiculoCombustivelNome = Input.VeiculoCombustivelNome;
             vInDb.NumeroLugares = Input.NumeroLugares; vInDb.AnoFabricacao = Input.AnoFabricacao; vInDb.ModeloAno = Input.ModeloAno;
 
-            if (_context.ChangeTracker.HasChanges()) { await _context.SaveChangesAsync(); await _pendenciaService.AvancarEntidadeAsync("VEICULO", vInDb.Placa); }
+            if (_context.ChangeTracker.HasChanges())
+            {
+                await _context.SaveChangesAsync();
+                await _pendenciaService.AvancarEntidadeAsync("VEICULO", vInDb.Placa); // RESTORED
+            }
             return RedirectToPage("/Empresa/MeusVeiculos");
         }
 
         public async Task<IActionResult> OnPostUploadAsync([FromRoute] string id)
         {
             if (UploadArquivo != null && !string.IsNullOrEmpty(TipoDocumentoUpload))
+            {
+                var existingId = await _context.DocumentoVeiculos.Where(dv => dv.VeiculoPlaca == id && dv.Documento.DocumentoTipoNome == TipoDocumentoUpload).Select(dv => dv.Documento.Id).FirstOrDefaultAsync();
+                if (existingId > 0) await _arquivoService.DeletarDocumentoAsync(existingId, "VEICULO", id);
                 await _arquivoService.SalvarDocumentoAsync(UploadArquivo, TipoDocumentoUpload, "VEICULO", id);
+            }
             return RedirectToPage(new { id = id });
         }
 
-        public async Task<IActionResult> OnPostDeleteDocAsync(int id, [FromRoute] string idPlaca)
+        public async Task<IActionResult> OnPostDeleteDocAsync(int docId, [FromRoute] string id)
         {
-            await _arquivoService.DeletarDocumentoAsync(id, "VEICULO", idPlaca);
-            return RedirectToPage(new { id = idPlaca });
+            await _arquivoService.DeletarDocumentoAsync(docId, "VEICULO", id);
+            return RedirectToPage(new { id = id });
         }
     }
 }

@@ -93,7 +93,7 @@ namespace Eva.Pages.Empresa
                 await _arquivoService.SalvarDocumentoAsync(UploadComprovante, "COMPROVANTE_PAGAMENTO", "VEICULO", veiculo.Placa);
 
             // 4. Trigger Workflow
-            await _pendenciaService.AvancarEntidadeAsync("VEICULO", veiculo.Placa);
+           // await _pendenciaService.AvancarEntidadeAsync("VEICULO", veiculo.Placa);
 
             // 5. Redirect to List (Success!)
             return RedirectToPage("./MeusVeiculos");

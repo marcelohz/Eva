@@ -114,14 +114,14 @@
                 </div>
                 <div class="card-body bg-light">
 
-                    @* Reusable Razor Function to render document sections *@
                     @{
                         async Task RenderDocSection(string title, string type, List<Eva.Models.Documento> docs)
                         {
                             <div class="mb-4 pb-3 border-bottom">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <h6 class="fw-bold text-secondary mb-0">@title</h6>
-                                    @if (!isLocked)
+                                    @* Interface Fix: Mimics Empresa behavior - only show button if no document exists *@
+                                    @if (!isLocked && !docs.Any())
                                     {
                                         <button class="btn btn-sm btn-outline-primary" onclick="triggerUpload('@type')">
                                             <i class="bi bi-upload"></i> Enviar Novo
@@ -148,9 +148,9 @@
                                                 </div>
                                                 @if (!isLocked)
                                                 {
-                                                    <form method="post" asp-page-handler="DeleteDoc" class="d-inline">
-                                                        <input type="hidden" name="id" value="@doc.Id" />
-                                                        <input type="hidden" asp-for="Input.Placa" />
+                                                    @* Bug Fix: Added asp-route-id and renamed input to 'docId' for clarity *@
+                                                    <form method="post" asp-page-handler="DeleteDoc" asp-route-id="@Model.Input.Placa" class="d-inline">
+                                                        <input type="hidden" name="docId" value="@doc.Id" />
                                                         <button type="submit" class="btn btn-link text-danger p-0 border-0" title="Excluir">
                                                             <i class="bi bi-trash"></i>
                                                         </button>
@@ -183,8 +183,8 @@
     </div>
 </div>
 
-<form id="uploadForm" method="post" enctype="multipart/form-data" asp-page-handler="Upload" style="display:none">
-    <input type="hidden" asp-for="Input.Placa" />
+@* Bug Fix: Added asp-route-id so Upload handler receives the plaque *@
+<form id="uploadForm" method="post" enctype="multipart/form-data" asp-page-handler="Upload" asp-route-id="@Model.Input.Placa" style="display:none">
     <input type="hidden" asp-for="TipoDocumentoUpload" id="tipoDocInput" />
     <input type="file" asp-for="UploadArquivo" id="fileInput" accept=".pdf" onchange="document.getElementById('uploadForm').submit()" />
 </form>
