@@ -92,6 +92,35 @@ namespace Eva.Services
             // Note: EF SaveChangesAsync automatically wraps this in a database transaction, 
             // ensuring both the insert and the sync happen together, just like the old Postgres function.
             await _context.SaveChangesAsync();
+            // --- The Document Linkage ---
+            // If the analyst is approving, stamp unlinked documents for this entity as approved.
+            if (novoStatus == WorkflowValidator.Aprovado)
+            {
+                IQueryable<Documento> documentosPendentes = _context.Documentos.Where(d => d.FluxoPendenciaId == null);
+
+                if (entidadeTipo == "EMPRESA")
+                {
+                    documentosPendentes = documentosPendentes.Where(d => _context.DocumentoEmpresas.Any(de => de.Id == d.Id && de.EmpresaCnpj == entidadeId));
+                }
+                else if (entidadeTipo == "VEICULO")
+                {
+                    documentosPendentes = documentosPendentes.Where(d => _context.DocumentoVeiculos.Any(dv => dv.Id == d.Id && dv.VeiculoPlaca == entidadeId));
+                }
+                else if (entidadeTipo == "MOTORISTA" && int.TryParse(entidadeId, out int mId))
+                {
+                    documentosPendentes = documentosPendentes.Where(d => _context.DocumentoMotoristas.Any(dm => dm.Id == d.Id && dm.MotoristaId == mId));
+                }
+
+                var docsToUpdate = await documentosPendentes.ToListAsync();
+                foreach (var doc in docsToUpdate)
+                {
+                    doc.FluxoPendenciaId = novaPendencia.Id;
+                    doc.AprovadoEm = DateTime.Now;
+                    // Note: You will eventually need to pass "Validade" from the Analyst UI down to this service.
+                }
+
+                await _context.SaveChangesAsync();
+            }
         }
 
         // --- UNCHANGED HELPER METHODS ---
