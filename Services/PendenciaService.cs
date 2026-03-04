@@ -19,8 +19,6 @@ namespace Eva.Services
         }
 
         // --- BACKWARD COMPATIBILITY FACADE ---
-        // These keep your Razor Pages from breaking, but route everything through the strict pipeline.
-
         public async Task AvancarEntidadeAsync(string entidadeTipo, string entidadeId)
         {
             await ProcessarTransicaoAsync(entidadeTipo, entidadeId, WorkflowValidator.AguardandoAnalise, null, null);
@@ -42,10 +40,6 @@ namespace Eva.Services
         }
 
         // --- THE CORE PIPELINE ---
-
-        /// <summary>
-        /// The single entry point for ALL workflow transitions.
-        /// </summary>
         private async Task ProcessarTransicaoAsync(
             string entidadeTipo,
             string entidadeId,
@@ -53,6 +47,12 @@ namespace Eva.Services
             string? analistaEmail = null,
             string? motivo = null)
         {
+            // [PATCH 3]: Ensure exact uppercase match for fn_valida_entidade DB trigger
+            entidadeTipo = entidadeTipo.ToUpperInvariant();
+
+            // [PATCH 2]: Ensure exact lowercase match for web.usuario FK constraint
+            analistaEmail = analistaEmail?.ToLowerInvariant();
+
             // 1. Fetch current state
             var atual = await _context.VPendenciasAtuais
                 .FirstOrDefaultAsync(p => p.EntidadeTipo == entidadeTipo && p.EntidadeId == entidadeId);
@@ -69,11 +69,11 @@ namespace Eva.Services
                 motivo: motivo
             );
 
-            // 3. Idempotency Check: If the state is exactly the same and the Brain allowed it, 
-            // we return silently to avoid tripping the database's fn_evitar_status_repetido trigger.
-            if (statusAtual == novoStatus && analistaAtual == analistaEmail)
+            // 3. Idempotency Check
+            // [PATCH 1]: Stripped out the analyst check to perfectly match DB trigger fn_evitar_status_repetido
+            if (statusAtual == novoStatus)
             {
-                return;
+                return; // Silent success, avoids DB exception
             }
 
             // 4. Brawn: Execute database operations
@@ -88,15 +88,17 @@ namespace Eva.Services
 
             _context.FluxoPendencias.Add(novaPendencia);
             await SyncEntityStatusAsync(entidadeTipo, entidadeId, novoStatus);
+
+            // Note: EF SaveChangesAsync automatically wraps this in a database transaction, 
+            // ensuring both the insert and the sync happen together, just like the old Postgres function.
             await _context.SaveChangesAsync();
         }
 
         // --- UNCHANGED HELPER METHODS ---
-
         public async Task<List<FluxoPendencia>> GetHistoricoAsync(string entidadeTipo, string entidadeId)
         {
             return await _context.FluxoPendencias
-                .Where(p => p.EntidadeTipo == entidadeTipo && p.EntidadeId == entidadeId)
+                .Where(p => p.EntidadeTipo == entidadeTipo.ToUpperInvariant() && p.EntidadeId == entidadeId)
                 .OrderByDescending(p => p.CriadoEm)
                 .ToListAsync();
         }
@@ -104,7 +106,7 @@ namespace Eva.Services
         public async Task<string?> GetStatusAsync(string entidadeTipo, string entidadeId)
         {
             var atual = await _context.VPendenciasAtuais
-                .FirstOrDefaultAsync(p => p.EntidadeTipo == entidadeTipo && p.EntidadeId == entidadeId);
+                .FirstOrDefaultAsync(p => p.EntidadeTipo == entidadeTipo.ToUpperInvariant() && p.EntidadeId == entidadeId);
             return atual?.Status;
         }
 
