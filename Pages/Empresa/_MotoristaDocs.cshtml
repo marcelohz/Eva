@@ -1,0 +1,53 @@
+﻿@model Eva.Pages.Empresa.EditarMotoristaModel
+@{
+    // SAFETY LOCK 1: Prevents the "Inception" bug
+    Layout = null;
+
+    bool isLocked = Model.PendenciaStatus == "EM_ANALISE";
+}
+
+<div class="mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="fw-bold text-secondary mb-0">CNH (Habilitação)</h6>
+        @if (!isLocked && !Model.Cnhs.Any())
+        {
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('fileInput').click()">
+                <i class="bi bi-upload"></i> Enviar Nova
+            </button>
+        }
+    </div>
+
+    @if (!Model.Cnhs.Any())
+    {
+        <div class="alert alert-light border border-dashed text-center text-muted">
+            <i class="bi bi-cloud-upload display-6 d-block mb-2"></i>
+            Nenhum documento anexado.
+        </div>
+    }
+    else
+    {
+        <ul class="list-group list-group-flush shadow-sm rounded">
+            @foreach (var doc in Model.Cnhs)
+            {
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div class="text-truncate me-2" title="@doc.NomeArquivo">
+                        <i class="bi bi-file-earmark-person text-primary me-1"></i>
+                        <small class="fw-bold">@doc.NomeArquivo</small>
+                        <div class="text-muted" style="font-size: 0.75rem">
+                            @doc.DataUpload.ToString("dd/MM/yyyy HH:mm")
+                        </div>
+                    </div>
+                    @if (!isLocked)
+                    {
+                        <form id="deleteForm-@doc.Id" method="post" asp-page-handler="DeleteDoc" asp-route-id="@Model.Input.Id" class="d-inline">
+                            <input type="hidden" name="docId" value="@doc.Id" />
+                            <button type="button" class="btn btn-link text-danger p-0 border-0" title="Excluir" onclick="evaPerformAsyncAction('deleteForm-@doc.Id', 'doc-section-container')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    }
+                </li>
+            }
+        </ul>
+    }
+</div>

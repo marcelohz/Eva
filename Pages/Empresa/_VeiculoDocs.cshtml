@@ -1,0 +1,66 @@
+﻿@model Eva.Pages.Empresa.EditarVeiculoModel
+@{
+    // SAFETY LOCK 1: Prevents the "Inception" bug
+    Layout = null;
+
+    bool isLocked = Model.PendenciaStatus == "EM_ANALISE";
+
+    async Task RenderDocSection(string title, string type, List<Eva.Models.Documento> docs)
+    {
+        <div class="mb-4 pb-3 border-bottom">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="fw-bold text-secondary mb-0">@title</h6>
+                @if (!isLocked && !docs.Any())
+                {
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="triggerUpload('@type')">
+                        <i class="bi bi-upload"></i> Enviar Novo
+                    </button>
+                }
+            </div>
+
+            @if (!docs.Any())
+            {
+                <div class="text-muted small fst-italic ms-1"><i class="bi bi-exclamation-circle"></i> Pendente de envio</div>
+            }
+            else
+            {
+                <ul class="list-group list-group-flush shadow-sm rounded">
+                    @foreach (var doc in docs)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div class="text-truncate me-2" title="@doc.NomeArquivo">
+                                <i class="bi bi-file-earmark-check text-success me-1"></i>
+                                <small class="fw-bold">@doc.NomeArquivo</small>
+                                <div class="text-muted" style="font-size: 0.75rem">
+                                    @doc.DataUpload.ToString("dd/MM/yyyy HH:mm")
+                                </div>
+                            </div>
+                            @if (!isLocked)
+                            {
+                                <form id="deleteForm-@doc.Id" method="post" asp-page-handler="DeleteDoc" asp-route-id="@Model.Input.Placa" class="d-inline">
+                                    <input type="hidden" name="docId" value="@doc.Id" />
+                                    <button type="button" class="btn btn-link text-danger p-0 border-0" title="Excluir" onclick="evaPerformAsyncAction('deleteForm-@doc.Id', 'doc-section-container')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            }
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    }
+}
+
+@{
+    await RenderDocSection("CRLV (Documento)", "CRLV", Model.Crlvs);
+}
+@{
+    await RenderDocSection("Apólice de Seguro", "APOLICE_SEGURO", Model.Apolices);
+}
+@{
+    await RenderDocSection("Laudo de Inspeção", "LAUDO_INSPECAO", Model.Laudos);
+}
+@{
+    await RenderDocSection("Comprovante de Pagamento", "COMPROVANTE_PAGAMENTO", Model.Comprovantes);
+}

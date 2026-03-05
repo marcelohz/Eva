@@ -22,7 +22,6 @@
         </div>
     }
 
-    @* NEW: Display the rejection motive if the status is REJEITADO *@
     @if (Model.PendenciaStatus == "REJEITADO" && !string.IsNullOrEmpty(Model.RejeicaoMotivo))
     {
         <div class="alert alert-danger mb-4 shadow-sm" role="alert">
@@ -121,89 +120,25 @@
                 <div class="card-header bg-secondary text-white">
                     <h5 class="mb-0"><i class="bi bi-file-earmark-pdf me-2"></i>Documentação do Veículo</h5>
                 </div>
-                <div class="card-body bg-light">
-
-                    @{
-                        async Task RenderDocSection(string title, string type, List<Eva.Models.Documento> docs)
-                        {
-                            <div class="mb-4 pb-3 border-bottom">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <h6 class="fw-bold text-secondary mb-0">@title</h6>
-                                    @* Interface Fix: Mimics Empresa behavior - only show button if no document exists *@
-                                    @if (!isLocked && !docs.Any())
-                                    {
-                                        <button class="btn btn-sm btn-outline-primary" onclick="triggerUpload('@type')">
-                                            <i class="bi bi-upload"></i> Enviar Novo
-                                        </button>
-                                    }
-                                </div>
-
-                                @if (!docs.Any())
-                                {
-                                    <div class="text-muted small fst-italic ms-1"><i class="bi bi-exclamation-circle"></i> Pendente de envio</div>
-                                }
-                                else
-                                {
-                                    <ul class="list-group list-group-flush shadow-sm rounded">
-                                        @foreach (var doc in docs)
-                                        {
-                                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                                <div class="text-truncate me-2" title="@doc.NomeArquivo">
-                                                    <i class="bi bi-file-earmark-check text-success me-1"></i>
-                                                    <small class="fw-bold">@doc.NomeArquivo</small>
-                                                    <div class="text-muted" style="font-size: 0.75rem">
-                                                        @doc.DataUpload.ToString("dd/MM/yyyy HH:mm")
-                                                    </div>
-                                                </div>
-                                                @if (!isLocked)
-                                                {
-                                                    @* Bug Fix: Added asp-route-id and renamed input to 'docId' for clarity *@
-                                                    <form method="post" asp-page-handler="DeleteDoc" asp-route-id="@Model.Input.Placa" class="d-inline">
-                                                        <input type="hidden" name="docId" value="@doc.Id" />
-                                                        <button type="submit" class="btn btn-link text-danger p-0 border-0" title="Excluir">
-                                                            <i class="bi bi-trash"></i>
-                                                        </button>
-                                                    </form>
-                                                }
-                                            </li>
-                                        }
-                                    </ul>
-                                }
-                            </div>
-                        }
-                    }
-
-                    @{
-                        await RenderDocSection("CRLV (Documento)", "CRLV", Model.Crlvs);
-                    }
-                    @{
-                        await RenderDocSection("Apólice de Seguro", "APOLICE_SEGURO", Model.Apolices);
-                    }
-                    @{
-                        await RenderDocSection("Laudo de Inspeção", "LAUDO_INSPECAO", Model.Laudos);
-                    }
-                    @{
-                        await RenderDocSection("Comprovante de Pagamento", "COMPROVANTE_PAGAMENTO", Model.Comprovantes);
-                    }
-
+                <div class="card-body bg-light" id="doc-section-container">
+                    <partial name="_VeiculoDocs" model="Model" />
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-@* Bug Fix: Added asp-route-id so Upload handler receives the plaque *@
 <form id="uploadForm" method="post" enctype="multipart/form-data" asp-page-handler="Upload" asp-route-id="@Model.Input.Placa" style="display:none">
     <input type="hidden" asp-for="TipoDocumentoUpload" id="tipoDocInput" />
-    <input type="file" asp-for="UploadArquivo" id="fileInput" accept=".pdf" onchange="document.getElementById('uploadForm').submit()" />
+    <input type="file" asp-for="UploadArquivo" id="fileInput" accept=".pdf"
+           onchange="evaPerformAsyncAction('uploadForm', 'doc-section-container')" />
 </form>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
         function triggerUpload(type) {
-            document.getElementById('tipoDocInput').value = type;
-            document.getElementById('fileInput').click();
+            evaTriggerUpload(type, 'tipoDocInput', 'fileInput');
         }
     </script>
 }

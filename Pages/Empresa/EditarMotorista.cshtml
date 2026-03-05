@@ -22,7 +22,6 @@
         </div>
     }
 
-    @* NEW: Display the rejection motive if the status is REJEITADO *@
     @if (Model.PendenciaStatus == "REJEITADO" && !string.IsNullOrEmpty(Model.RejeicaoMotivo))
     {
         <div class="alert alert-danger mb-4 shadow-sm" role="alert">
@@ -99,63 +98,17 @@
                 <div class="card-header bg-secondary text-white">
                     <h5 class="mb-0"><i class="bi bi-file-earmark-person me-2"></i>Documentação</h5>
                 </div>
-                <div class="card-body bg-light">
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 class="fw-bold text-secondary mb-0">CNH (Habilitação)</h6>
-                            @* Interface Fix: Hide button if document already exists *@
-                            @if (!isLocked && !Model.Cnhs.Any())
-                            {
-                                <button class="btn btn-sm btn-outline-primary" onclick="document.getElementById('fileInput').click()">
-                                    <i class="bi bi-upload"></i> Enviar Nova
-                                </button>
-                            }
-                        </div>
-
-                        @if (!Model.Cnhs.Any())
-                        {
-                            <div class="alert alert-light border border-dashed text-center text-muted">
-                                <i class="bi bi-cloud-upload display-6 d-block mb-2"></i>
-                                Nenhum documento anexado.
-                            </div>
-                        }
-                        else
-                        {
-                            <ul class="list-group list-group-flush shadow-sm rounded">
-                                @foreach (var doc in Model.Cnhs)
-                                {
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        <div class="text-truncate me-2" title="@doc.NomeArquivo">
-                                            <i class="bi bi-file-earmark-person text-primary me-1"></i>
-                                            <small class="fw-bold">@doc.NomeArquivo</small>
-                                            <div class="text-muted" style="font-size: 0.75rem">
-                                                @doc.DataUpload.ToString("dd/MM/yyyy HH:mm")
-                                            </div>
-                                        </div>
-                                        @if (!isLocked)
-                                        {
-                                            @* Bug Fix: Added asp-route-id to deletion form *@
-                                            <form method="post" asp-page-handler="DeleteDoc" asp-route-id="@Model.Input.Id" class="d-inline">
-                                                <input type="hidden" name="docId" value="@doc.Id" />
-                                                <button type="submit" class="btn btn-link text-danger p-0 border-0" title="Excluir">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </form>
-                                        }
-                                    </li>
-                                }
-                            </ul>
-                        }
-                    </div>
+                <div class="card-body bg-light" id="doc-section-container">
+                    <partial name="_MotoristaDocs" model="Model" />
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-@* Bug Fix: Added asp-route-id *@
 <form id="uploadForm" method="post" enctype="multipart/form-data" asp-page-handler="Upload" asp-route-id="@Model.Input.Id" style="display:none">
-    <input type="file" asp-for="UploadArquivo" id="fileInput" accept=".pdf" onchange="document.getElementById('uploadForm').submit()" />
+    <input type="file" asp-for="UploadArquivo" id="fileInput" accept=".pdf"
+           onchange="evaPerformAsyncAction('uploadForm', 'doc-section-container')" />
 </form>
 
 @section Scripts {

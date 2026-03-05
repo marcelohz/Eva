@@ -29,7 +29,7 @@ namespace Eva.Pages.Empresa
         [BindProperty] public string? TipoDocumentoUpload { get; set; }
 
         public string? PendenciaStatus { get; set; }
-        public string? RejeicaoMotivo { get; set; } // ADDED: To display analyst feedback
+        public string? RejeicaoMotivo { get; set; }
 
         public List<Documento> Contratos { get; set; } = new();
         public List<Documento> IdentidadesSocios { get; set; } = new();
@@ -44,11 +44,10 @@ namespace Eva.Pages.Empresa
 
             var ticket = await _context.VPendenciasAtuais.FirstOrDefaultAsync(p => p.EntidadeTipo == "EMPRESA" && p.EntidadeId == cnpj);
 
-            // Checks for active drafts including REJEITADO
             if (ticket != null && (ticket.Status == WorkflowValidator.AguardandoAnalise || ticket.Status == WorkflowValidator.EmAnalise || ticket.Status == WorkflowValidator.Rejeitado) && !string.IsNullOrEmpty(ticket.DadosPropostos))
             {
                 Input = JsonSerializer.Deserialize<EmpresaVM>(ticket.DadosPropostos, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new EmpresaVM();
-                Input.Cnpj = cnpj; // Ensure ID safety
+                Input.Cnpj = cnpj;
             }
             else
             {
@@ -80,7 +79,7 @@ namespace Eva.Pages.Empresa
         {
             var ticket = await _context.VPendenciasAtuais.FirstOrDefaultAsync(p => p.EntidadeTipo == "EMPRESA" && p.EntidadeId == cnpj);
             PendenciaStatus = ticket?.Status;
-            RejeicaoMotivo = ticket?.Motivo; // POPULATED: Fetched from the view
+            RejeicaoMotivo = ticket?.Motivo;
 
             var docs = await _context.DocumentoEmpresas.Where(de => de.EmpresaCnpj == cnpj).Include(de => de.Documento).Select(de => de.Documento).ToListAsync();
             Contratos = docs.Where(d => d.DocumentoTipoNome == "CONTRATO_SOCIAL").ToList();
@@ -112,7 +111,14 @@ namespace Eva.Pages.Empresa
         {
             var cnpj = User.FindFirstValue("EmpresaCnpj")!;
             var status = await _pendenciaService.GetStatusAsync("EMPRESA", cnpj);
-            if (status == WorkflowValidator.EmAnalise) return RedirectToPage();
+
+            // If locked, return the partial immediately with no changes
+            if (status == WorkflowValidator.EmAnalise)
+            {
+                Input.Cnpj = cnpj;
+                await LoadAuxiliaryData(cnpj);
+                return Partial("_EmpresaDocs", this);
+            }
 
             if (UploadArquivo != null && !string.IsNullOrEmpty(TipoDocumentoUpload))
             {
@@ -123,17 +129,32 @@ namespace Eva.Pages.Empresa
                 }
                 await _arquivoService.SalvarDocumentoAsync(UploadArquivo, TipoDocumentoUpload, "EMPRESA", cnpj);
             }
-            return RedirectToPage();
+
+            // SAFETY LOCK 3: Model Refill & Partial Return
+            Input.Cnpj = cnpj;
+            await LoadAuxiliaryData(cnpj);
+            return Partial("_EmpresaDocs", this);
         }
 
         public async Task<IActionResult> OnPostDeleteDocAsync(int id)
         {
             var cnpj = User.FindFirstValue("EmpresaCnpj")!;
             var status = await _pendenciaService.GetStatusAsync("EMPRESA", cnpj);
-            if (status == WorkflowValidator.EmAnalise) return RedirectToPage();
+
+            // If locked, return the partial immediately with no changes
+            if (status == WorkflowValidator.EmAnalise)
+            {
+                Input.Cnpj = cnpj;
+                await LoadAuxiliaryData(cnpj);
+                return Partial("_EmpresaDocs", this);
+            }
 
             await _arquivoService.DeletarDocumentoAsync(id, "EMPRESA", cnpj);
-            return RedirectToPage();
+
+            // SAFETY LOCK 3: Model Refill & Partial Return
+            Input.Cnpj = cnpj;
+            await LoadAuxiliaryData(cnpj);
+            return Partial("_EmpresaDocs", this);
         }
     }
 }

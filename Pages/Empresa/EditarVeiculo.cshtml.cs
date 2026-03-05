@@ -29,7 +29,7 @@ namespace Eva.Pages.Empresa
         [BindProperty] public string? TipoDocumentoUpload { get; set; }
 
         public string? PendenciaStatus { get; set; }
-        public string? RejeicaoMotivo { get; set; } // ADDED: To display analyst feedback
+        public string? RejeicaoMotivo { get; set; }
 
         public List<Documento> Crlvs { get; set; } = new();
         public List<Documento> Laudos { get; set; } = new();
@@ -45,7 +45,6 @@ namespace Eva.Pages.Empresa
 
             var ticket = await _context.VPendenciasAtuais.FirstOrDefaultAsync(p => p.EntidadeTipo == "VEICULO" && p.EntidadeId == normalizedId);
 
-            // Checks for active drafts including REJEITADO
             if (ticket != null && (ticket.Status == WorkflowValidator.AguardandoAnalise || ticket.Status == WorkflowValidator.EmAnalise || ticket.Status == WorkflowValidator.Rejeitado) && !string.IsNullOrEmpty(ticket.DadosPropostos))
             {
                 Input = JsonSerializer.Deserialize<VeiculoVM>(ticket.DadosPropostos, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new VeiculoVM();
@@ -78,7 +77,7 @@ namespace Eva.Pages.Empresa
         {
             var ticket = await _context.VPendenciasAtuais.FirstOrDefaultAsync(p => p.EntidadeTipo == "VEICULO" && p.EntidadeId == id);
             PendenciaStatus = ticket?.Status;
-            RejeicaoMotivo = ticket?.Motivo; // POPULATED: Fetched from the view
+            RejeicaoMotivo = ticket?.Motivo;
 
             var docs = await _context.DocumentoVeiculos.Where(dv => dv.VeiculoPlaca == id).Include(dv => dv.Documento).Select(dv => dv.Documento).ToListAsync();
             Crlvs = docs.Where(d => d.DocumentoTipoNome == "CRLV").OrderByDescending(d => d.DataUpload).ToList();
@@ -116,7 +115,11 @@ namespace Eva.Pages.Empresa
                 if (existingId > 0) await _arquivoService.DeletarDocumentoAsync(existingId, "VEICULO", id);
                 await _arquivoService.SalvarDocumentoAsync(UploadArquivo, TipoDocumentoUpload, "VEICULO", id);
             }
-            return RedirectToPage(new { id = id });
+
+            // SAFETY LOCK 3: Model Refill
+            Input.Placa = id;
+            await LoadAuxiliaryData(id);
+            return Partial("_VeiculoDocs", this);
         }
 
         public async Task<IActionResult> OnPostDeleteDocAsync(int docId, [FromRoute] string id)
@@ -125,7 +128,11 @@ namespace Eva.Pages.Empresa
             if (status == WorkflowValidator.EmAnalise) return RedirectToPage(new { id = id });
 
             await _arquivoService.DeletarDocumentoAsync(docId, "VEICULO", id);
-            return RedirectToPage(new { id = id });
+
+            // SAFETY LOCK 3: Model Refill
+            Input.Placa = id;
+            await LoadAuxiliaryData(id);
+            return Partial("_VeiculoDocs", this);
         }
     }
 }

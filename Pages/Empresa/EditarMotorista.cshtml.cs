@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Eva.Data;
 using Eva.Models;
-using Eva.Models.ViewModels; // ADDED
+using Eva.Models.ViewModels;
 using Eva.Services;
 using Eva.Workflow;
 using System.Security.Claims;
@@ -24,7 +24,7 @@ namespace Eva.Pages.Empresa
             _context = context; _pendenciaService = pendenciaService; _arquivoService = arquivoService;
         }
 
-        [BindProperty] public MotoristaVM Input { get; set; } = new(); // CHANGED to Input / MotoristaVM
+        [BindProperty] public MotoristaVM Input { get; set; } = new();
         [BindProperty] public IFormFile? UploadArquivo { get; set; }
 
         public string? PendenciaStatus { get; set; }
@@ -45,7 +45,6 @@ namespace Eva.Pages.Empresa
                 var dbMotorista = await _context.Motoristas.FirstOrDefaultAsync(m => m.Id == id);
                 if (dbMotorista == null) return NotFound();
 
-                // MAP to VM
                 Input = new MotoristaVM
                 {
                     Id = dbMotorista.Id,
@@ -90,7 +89,13 @@ namespace Eva.Pages.Empresa
         public async Task<IActionResult> OnPostUploadAsync([FromRoute] int id)
         {
             var status = await _pendenciaService.GetStatusAsync("MOTORISTA", id.ToString());
-            if (status == WorkflowValidator.EmAnalise) return RedirectToPage(new { id = id });
+
+            if (status == WorkflowValidator.EmAnalise)
+            {
+                Input.Id = id;
+                await LoadAuxiliaryData(id);
+                return Partial("_MotoristaDocs", this);
+            }
 
             if (UploadArquivo != null && UploadArquivo.Length > 0)
             {
@@ -98,16 +103,30 @@ namespace Eva.Pages.Empresa
                 if (existingId > 0) await _arquivoService.DeletarDocumentoAsync(existingId, "MOTORISTA", id.ToString());
                 await _arquivoService.SalvarDocumentoAsync(UploadArquivo, "CNH", "MOTORISTA", id.ToString());
             }
-            return RedirectToPage(new { id = id });
+
+            // SAFETY LOCK 3: Model Refill
+            Input.Id = id;
+            await LoadAuxiliaryData(id);
+            return Partial("_MotoristaDocs", this);
         }
 
         public async Task<IActionResult> OnPostDeleteDocAsync(int docId, [FromRoute] int id)
         {
             var status = await _pendenciaService.GetStatusAsync("MOTORISTA", id.ToString());
-            if (status == WorkflowValidator.EmAnalise) return RedirectToPage(new { id = id });
+
+            if (status == WorkflowValidator.EmAnalise)
+            {
+                Input.Id = id;
+                await LoadAuxiliaryData(id);
+                return Partial("_MotoristaDocs", this);
+            }
 
             await _arquivoService.DeletarDocumentoAsync(docId, "MOTORISTA", id.ToString());
-            return RedirectToPage(new { id = id });
+
+            // SAFETY LOCK 3: Model Refill
+            Input.Id = id;
+            await LoadAuxiliaryData(id);
+            return Partial("_MotoristaDocs", this);
         }
     }
 }
