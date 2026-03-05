@@ -4,64 +4,71 @@
     ViewData["Title"] = "Novo Motorista - Eva";
 }
 
-<div class="container mt-5">
+<div class="container mt-5 mb-5">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Dashboard</a></li>
             <li class="breadcrumb-item"><a href="/Empresa/MeusMotoristas">Meus Motoristas</a></li>
-            <li class="breadcrumb-item active">Novo</li>
+            <li class="breadcrumb-item active" aria-current="page">Novo Motorista</li>
         </ol>
     </nav>
 
-    <div class="card shadow border-0" style="max-width: 800px; margin: 0 auto;">
-        <div class="card-header bg-dark text-white">
-            <h1 class="h4 mb-0">Cadastrar Novo Motorista</h1>
-        </div>
-        <div class="card-body">
-            <form method="post" enctype="multipart/form-data" novalidate>
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-                <h5 class="text-secondary mb-3 border-bottom pb-2">Dados Pessoais</h5>
-                <div class="row">
-                    <div class="col-md-12 mb-3">
-                        <label asp-for="Motorista.Nome" class="form-label fw-bold">Nome Completo</label>
-                        <input asp-for="Motorista.Nome" class="form-control" placeholder="João da Silva" />
-                        <span asp-validation-for="Motorista.Nome" class="text-danger small"></span>
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="Motorista.Cpf" class="form-label fw-bold">CPF</label>
-                        <input asp-for="Motorista.Cpf" class="form-control" placeholder="000.000.000-00" />
-                        <span asp-validation-for="Motorista.Cpf" class="text-danger small"></span>
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="Motorista.Cnh" class="form-label fw-bold">CNH</label>
-                        <input asp-for="Motorista.Cnh" class="form-control" />
-                        <span asp-validation-for="Motorista.Cnh" class="text-danger small"></span>
-                    </div>
-
-                    <div class="col-md-12 mb-3">
-                        <label asp-for="Motorista.Email" class="form-label fw-bold">E-mail</label>
-                        <input asp-for="Motorista.Email" type="email" class="form-control" placeholder="motorista@email.com" />
-                        <span asp-validation-for="Motorista.Email" class="text-danger small"></span>
-                    </div>
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow border-0">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="bi bi-person-plus me-2"></i>Cadastrar Novo Motorista</h5>
                 </div>
+                <div class="card-body bg-light">
+                    <form method="post" enctype="multipart/form-data" novalidate>
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger shadow-sm"></div>
 
-                <h5 class="text-secondary mb-3 mt-4 border-bottom pb-2">Documentação</h5>
-                <div class="row">
-                    <div class="col-md-12 mb-3">
-                        <label asp-for="UploadCnh" class="form-label fw-bold">Carteira de Habilitação (CNH)</label>
-                        <input asp-for="UploadCnh" class="form-control" type="file" accept=".pdf" />
-                        <div class="form-text">Anexe uma cópia digitalizada da CNH em formato PDF.</div>
-                    </div>
-                </div>
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label asp-for="Input.Nome" class="form-label fw-bold">Nome Completo</label>
+                                <input asp-for="Input.Nome" class="form-control" placeholder="Ex: João da Silva" />
+                                <span asp-validation-for="Input.Nome" class="text-danger small"></span>
+                            </div>
 
-                <div class="d-flex justify-content-end gap-2 border-top pt-3 mt-4">
-                    <a href="/Empresa/MeusMotoristas" class="btn btn-outline-secondary">Cancelar</a>
-                    <button type="submit" class="btn btn-primary px-4">Salvar Motorista</button>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Input.Cpf" class="form-label fw-bold">CPF</label>
+                                <input asp-for="Input.Cpf" class="form-control" placeholder="000.000.000-00" />
+                                <span asp-validation-for="Input.Cpf" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Input.Cnh" class="form-label fw-bold">CNH</label>
+                                <input asp-for="Input.Cnh" class="form-control" placeholder="Número do registro" />
+                                <span asp-validation-for="Input.Cnh" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-12 mb-4">
+                                <label asp-for="Input.Email" class="form-label fw-bold">E-mail</label>
+                                <input asp-for="Input.Email" type="email" class="form-control" placeholder="motorista@exemplo.com" />
+                                <span asp-validation-for="Input.Email" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="card border border-primary-subtle shadow-sm mb-4">
+                            <div class="card-header bg-primary-subtle text-primary fw-bold">
+                                <i class="bi bi-file-earmark-arrow-up me-2"></i>Documentação Inicial (Opcional)
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label asp-for="UploadCnh" class="form-label fw-bold">CNH (Arquivo PDF)</label>
+                                    <input type="file" asp-for="UploadCnh" class="form-control" accept=".pdf" />
+                                    <div class="form-text">Você também poderá enviar ou alterar este documento posteriormente.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-2 border-top pt-3">
+                            <a href="/Empresa/MeusMotoristas" class="btn btn-outline-secondary">Cancelar</a>
+                            <button type="submit" class="btn btn-success px-4"><i class="bi bi-check-lg me-2"></i>Salvar e Enviar para Análise</button>
+                        </div>
+                    </form>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>

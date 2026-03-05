@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Eva.Data;
 using Eva.Models;
+using Eva.Models.ViewModels; // ADDED
 using Eva.Services;
+using Eva.Workflow; // ADDED
 using System.Security.Claims;
 
 namespace Eva.Pages.Empresa
@@ -23,10 +25,10 @@ namespace Eva.Pages.Empresa
             _arquivoService = arquivoService;
         }
 
+        // CHANGED: Using VM for security consistency
         [BindProperty]
-        public Motorista Motorista { get; set; } = new();
+        public MotoristaVM Input { get; set; } = new();
 
-        // New: Bind property for the file directly on the create form
         [BindProperty]
         public IFormFile? UploadCnh { get; set; }
 
@@ -41,22 +43,27 @@ namespace Eva.Pages.Empresa
 
             if (user == null || string.IsNullOrEmpty(user.EmpresaCnpj)) return RedirectToPage("/Login");
 
-            Motorista.EmpresaCnpj = user.EmpresaCnpj;
+            // Map the secure VM to the actual database model
+            var motorista = new Motorista
+            {
+                EmpresaCnpj = user.EmpresaCnpj,
+                Nome = Input.Nome,
+                Cpf = Input.Cpf,
+                Cnh = Input.Cnh,
+                Email = Input.Email,
+                EventualStatus = WorkflowValidator.AguardandoAnalise // CRITICAL FIX: Set initial status
+            };
 
-            // PostgreSQL will handle CreatedEm via DEFAULT now()
-
-            _context.Motoristas.Add(Motorista);
+            _context.Motoristas.Add(motorista);
             await _context.SaveChangesAsync();
-            // ^-- CRITICAL: The driver is now in the DB, so we have an ID for the foreign key.
 
-            // 2. Save Document (Sequential Logic)
             if (UploadCnh != null)
             {
-                await _arquivoService.SalvarDocumentoAsync(UploadCnh, "CNH", "MOTORISTA", Motorista.Id.ToString());
+                await _arquivoService.SalvarDocumentoAsync(UploadCnh, "CNH", "MOTORISTA", motorista.Id.ToString());
             }
 
-            // 3. Trigger Workflow
-           // await _pendenciaService.AvancarEntidadeAsync("MOTORISTA", Motorista.Id.ToString());
+            // CRITICAL FIX: Trigger the workflow so it appears in the Analyst's queue!
+            await _pendenciaService.AvancarEntidadeAsync("MOTORISTA", motorista.Id.ToString());
 
             return RedirectToPage("./MeusMotoristas");
         }

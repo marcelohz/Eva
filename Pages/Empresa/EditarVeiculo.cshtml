@@ -9,7 +9,7 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="/Empresa/MeusVeiculos">Meus Veiculos</a></li>
+            <li class="breadcrumb-item"><a href="/Empresa/MeusVeiculos">Meus Veículos</a></li>
             <li class="breadcrumb-item active">Editar</li>
         </ol>
     </nav>
@@ -19,6 +19,15 @@
         <div class="alert alert-warning mb-4 shadow-sm" role="alert">
             <i class="bi bi-lock-fill me-2"></i>
             <strong>Acesso Bloqueado:</strong> Este veículo está em análise por um analista e não pode ser alterado no momento.
+        </div>
+    }
+
+    @* NEW: Display the rejection motive if the status is REJEITADO *@
+    @if (Model.PendenciaStatus == "REJEITADO" && !string.IsNullOrEmpty(Model.RejeicaoMotivo))
+    {
+        <div class="alert alert-danger mb-4 shadow-sm" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <strong>Atenção (Cadastro Rejeitado):</strong> @Model.RejeicaoMotivo
         </div>
     }
 

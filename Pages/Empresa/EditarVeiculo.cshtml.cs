@@ -29,6 +29,8 @@ namespace Eva.Pages.Empresa
         [BindProperty] public string? TipoDocumentoUpload { get; set; }
 
         public string? PendenciaStatus { get; set; }
+        public string? RejeicaoMotivo { get; set; } // ADDED: To display analyst feedback
+
         public List<Documento> Crlvs { get; set; } = new();
         public List<Documento> Laudos { get; set; } = new();
         public List<Documento> Apolices { get; set; } = new();
@@ -43,8 +45,8 @@ namespace Eva.Pages.Empresa
 
             var ticket = await _context.VPendenciasAtuais.FirstOrDefaultAsync(p => p.EntidadeTipo == "VEICULO" && p.EntidadeId == normalizedId);
 
-            // Checking DadosPropostos to load the draft if it exists
-            if (ticket != null && (ticket.Status == WorkflowValidator.AguardandoAnalise || ticket.Status == WorkflowValidator.EmAnalise) && !string.IsNullOrEmpty(ticket.DadosPropostos))
+            // Checks for active drafts including REJEITADO
+            if (ticket != null && (ticket.Status == WorkflowValidator.AguardandoAnalise || ticket.Status == WorkflowValidator.EmAnalise || ticket.Status == WorkflowValidator.Rejeitado) && !string.IsNullOrEmpty(ticket.DadosPropostos))
             {
                 Input = JsonSerializer.Deserialize<VeiculoVM>(ticket.DadosPropostos, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new VeiculoVM();
                 Input.Placa = normalizedId;
@@ -74,7 +76,10 @@ namespace Eva.Pages.Empresa
 
         private async Task LoadAuxiliaryData(string id)
         {
-            PendenciaStatus = await _pendenciaService.GetStatusAsync("VEICULO", id);
+            var ticket = await _context.VPendenciasAtuais.FirstOrDefaultAsync(p => p.EntidadeTipo == "VEICULO" && p.EntidadeId == id);
+            PendenciaStatus = ticket?.Status;
+            RejeicaoMotivo = ticket?.Motivo; // POPULATED: Fetched from the view
+
             var docs = await _context.DocumentoVeiculos.Where(dv => dv.VeiculoPlaca == id).Include(dv => dv.Documento).Select(dv => dv.Documento).ToListAsync();
             Crlvs = docs.Where(d => d.DocumentoTipoNome == "CRLV").OrderByDescending(d => d.DataUpload).ToList();
             Laudos = docs.Where(d => d.DocumentoTipoNome == "LAUDO_INSPECAO").OrderByDescending(d => d.DataUpload).ToList();
@@ -94,7 +99,6 @@ namespace Eva.Pages.Empresa
                 return Page();
             }
 
-            // Serialize the form and save it to the ticket as DadosPropostos
             var dadosPropostos = JsonSerializer.Serialize(Input);
             await _pendenciaService.SalvarDadosPropostosAsync("VEICULO", Input.Placa, dadosPropostos);
 

@@ -6,6 +6,7 @@ using Eva.Data;
 using Eva.Models;
 using Eva.Models.ViewModels;
 using Eva.Services;
+using Eva.Workflow; // ADDED
 using System.Security.Claims;
 
 namespace Eva.Pages.Empresa
@@ -27,18 +28,10 @@ namespace Eva.Pages.Empresa
         [BindProperty]
         public VeiculoVM Input { get; set; } = new();
 
-        // New: Bind properties for the files directly on the create form
-        [BindProperty]
-        public IFormFile? UploadCrlv { get; set; }
-
-        [BindProperty]
-        public IFormFile? UploadLaudo { get; set; }
-
-        [BindProperty]
-        public IFormFile? UploadApolice { get; set; }
-
-        [BindProperty]
-        public IFormFile? UploadComprovante { get; set; }
+        [BindProperty] public IFormFile? UploadCrlv { get; set; }
+        [BindProperty] public IFormFile? UploadLaudo { get; set; }
+        [BindProperty] public IFormFile? UploadApolice { get; set; }
+        [BindProperty] public IFormFile? UploadComprovante { get; set; }
 
         public void OnGet() { }
 
@@ -51,7 +44,6 @@ namespace Eva.Pages.Empresa
 
             if (user == null || string.IsNullOrEmpty(user.EmpresaCnpj)) return RedirectToPage("/Login");
 
-            // 1. Check if Placa already exists
             bool placaExists = await _context.Veiculos.AnyAsync(v => v.Placa == Input.Placa);
             if (placaExists)
             {
@@ -59,7 +51,6 @@ namespace Eva.Pages.Empresa
                 return Page();
             }
 
-            // 2. Save the Vehicle (Parent Entity)
             var veiculo = new Veiculo
             {
                 EmpresaCnpj = user.EmpresaCnpj,
@@ -72,30 +63,20 @@ namespace Eva.Pages.Empresa
                 NumeroLugares = Input.NumeroLugares,
                 AnoFabricacao = Input.AnoFabricacao,
                 ModeloAno = Input.ModeloAno,
-                EventualStatus = "AGUARDANDO_ANALISE"
+                EventualStatus = WorkflowValidator.AguardandoAnalise // Using validator
             };
 
             _context.Veiculos.Add(veiculo);
             await _context.SaveChangesAsync();
-            // ^-- CRITICAL: The vehicle is now in the DB, so foreign keys will work.
 
-            // 3. Save Documents (Sequential Logic)
-            if (UploadCrlv != null)
-                await _arquivoService.SalvarDocumentoAsync(UploadCrlv, "CRLV", "VEICULO", veiculo.Placa);
+            if (UploadCrlv != null) await _arquivoService.SalvarDocumentoAsync(UploadCrlv, "CRLV", "VEICULO", veiculo.Placa);
+            if (UploadLaudo != null) await _arquivoService.SalvarDocumentoAsync(UploadLaudo, "LAUDO_INSPECAO", "VEICULO", veiculo.Placa);
+            if (UploadApolice != null) await _arquivoService.SalvarDocumentoAsync(UploadApolice, "APOLICE_SEGURO", "VEICULO", veiculo.Placa);
+            if (UploadComprovante != null) await _arquivoService.SalvarDocumentoAsync(UploadComprovante, "COMPROVANTE_PAGAMENTO", "VEICULO", veiculo.Placa);
 
-            if (UploadLaudo != null)
-                await _arquivoService.SalvarDocumentoAsync(UploadLaudo, "LAUDO_INSPECAO", "VEICULO", veiculo.Placa);
+            // CRITICAL FIX: Trigger the workflow so it appears in the Analyst's queue!
+            await _pendenciaService.AvancarEntidadeAsync("VEICULO", veiculo.Placa);
 
-            if (UploadApolice != null)
-                await _arquivoService.SalvarDocumentoAsync(UploadApolice, "APOLICE_SEGURO", "VEICULO", veiculo.Placa);
-
-            if (UploadComprovante != null)
-                await _arquivoService.SalvarDocumentoAsync(UploadComprovante, "COMPROVANTE_PAGAMENTO", "VEICULO", veiculo.Placa);
-
-            // 4. Trigger Workflow
-           // await _pendenciaService.AvancarEntidadeAsync("VEICULO", veiculo.Placa);
-
-            // 5. Redirect to List (Success!)
             return RedirectToPage("./MeusVeiculos");
         }
     }

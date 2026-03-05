@@ -22,6 +22,15 @@
         </div>
     }
 
+    @* NEW: Display the rejection motive if the status is REJEITADO *@
+    @if (Model.PendenciaStatus == "REJEITADO" && !string.IsNullOrEmpty(Model.RejeicaoMotivo))
+    {
+        <div class="alert alert-danger mb-4 shadow-sm" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <strong>Atenção (Cadastro Rejeitado):</strong> @Model.RejeicaoMotivo
+        </div>
+    }
+
     <div class="row">
         <div class="col-lg-7">
             <div class="card shadow mb-4">
@@ -46,29 +55,29 @@
                 <div class="card-body">
                     <form method="post" novalidate>
                         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                        <input type="hidden" asp-for="Motorista.Id" />
+                        <input type="hidden" asp-for="Input.Id" />
 
                         <fieldset disabled="@(isLocked ? "disabled" : null)">
                             <div class="row">
                                 <div class="col-md-12 mb-3">
-                                    <label asp-for="Motorista.Nome" class="form-label fw-bold">Nome Completo</label>
-                                    <input asp-for="Motorista.Nome" class="form-control" />
-                                    <span asp-validation-for="Motorista.Nome" class="text-danger small"></span>
+                                    <label asp-for="Input.Nome" class="form-label fw-bold">Nome Completo</label>
+                                    <input asp-for="Input.Nome" class="form-control" />
+                                    <span asp-validation-for="Input.Nome" class="text-danger small"></span>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label asp-for="Motorista.Cpf" class="form-label fw-bold">CPF</label>
-                                    <input asp-for="Motorista.Cpf" class="form-control" />
-                                    <span asp-validation-for="Motorista.Cpf" class="text-danger small"></span>
+                                    <label asp-for="Input.Cpf" class="form-label fw-bold">CPF</label>
+                                    <input asp-for="Input.Cpf" class="form-control" />
+                                    <span asp-validation-for="Input.Cpf" class="text-danger small"></span>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label asp-for="Motorista.Cnh" class="form-label fw-bold">CNH</label>
-                                    <input asp-for="Motorista.Cnh" class="form-control" />
-                                    <span asp-validation-for="Motorista.Cnh" class="text-danger small"></span>
+                                    <label asp-for="Input.Cnh" class="form-label fw-bold">CNH</label>
+                                    <input asp-for="Input.Cnh" class="form-control" />
+                                    <span asp-validation-for="Input.Cnh" class="text-danger small"></span>
                                 </div>
                                 <div class="col-md-12 mb-3">
-                                    <label asp-for="Motorista.Email" class="form-label fw-bold">E-mail</label>
-                                    <input asp-for="Motorista.Email" type="email" class="form-control" />
-                                    <span asp-validation-for="Motorista.Email" class="text-danger small"></span>
+                                    <label asp-for="Input.Email" class="form-label fw-bold">E-mail</label>
+                                    <input asp-for="Input.Email" type="email" class="form-control" />
+                                    <span asp-validation-for="Input.Email" class="text-danger small"></span>
                                 </div>
                             </div>
 
@@ -126,7 +135,7 @@
                                         @if (!isLocked)
                                         {
                                             @* Bug Fix: Added asp-route-id to deletion form *@
-                                            <form method="post" asp-page-handler="DeleteDoc" asp-route-id="@Model.Motorista.Id" class="d-inline">
+                                            <form method="post" asp-page-handler="DeleteDoc" asp-route-id="@Model.Input.Id" class="d-inline">
                                                 <input type="hidden" name="docId" value="@doc.Id" />
                                                 <button type="submit" class="btn btn-link text-danger p-0 border-0" title="Excluir">
                                                     <i class="bi bi-trash"></i>
@@ -145,7 +154,7 @@
 </div>
 
 @* Bug Fix: Added asp-route-id *@
-<form id="uploadForm" method="post" enctype="multipart/form-data" asp-page-handler="Upload" asp-route-id="@Model.Motorista.Id" style="display:none">
+<form id="uploadForm" method="post" enctype="multipart/form-data" asp-page-handler="Upload" asp-route-id="@Model.Input.Id" style="display:none">
     <input type="file" asp-for="UploadArquivo" id="fileInput" accept=".pdf" onchange="document.getElementById('uploadForm').submit()" />
 </form>
 

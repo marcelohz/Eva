@@ -29,6 +29,8 @@ namespace Eva.Pages.Empresa
         [BindProperty] public string? TipoDocumentoUpload { get; set; }
 
         public string? PendenciaStatus { get; set; }
+        public string? RejeicaoMotivo { get; set; } // ADDED: To display analyst feedback
+
         public List<Documento> Contratos { get; set; } = new();
         public List<Documento> IdentidadesSocios { get; set; } = new();
         public List<Documento> CartoesCnpj { get; set; } = new();
@@ -42,8 +44,8 @@ namespace Eva.Pages.Empresa
 
             var ticket = await _context.VPendenciasAtuais.FirstOrDefaultAsync(p => p.EntidadeTipo == "EMPRESA" && p.EntidadeId == cnpj);
 
-            // Checking DadosPropostos to load the draft if it exists
-            if (ticket != null && (ticket.Status == WorkflowValidator.AguardandoAnalise || ticket.Status == WorkflowValidator.EmAnalise) && !string.IsNullOrEmpty(ticket.DadosPropostos))
+            // Checks for active drafts including REJEITADO
+            if (ticket != null && (ticket.Status == WorkflowValidator.AguardandoAnalise || ticket.Status == WorkflowValidator.EmAnalise || ticket.Status == WorkflowValidator.Rejeitado) && !string.IsNullOrEmpty(ticket.DadosPropostos))
             {
                 Input = JsonSerializer.Deserialize<EmpresaVM>(ticket.DadosPropostos, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new EmpresaVM();
                 Input.Cnpj = cnpj; // Ensure ID safety
@@ -76,7 +78,10 @@ namespace Eva.Pages.Empresa
 
         private async Task LoadAuxiliaryData(string cnpj)
         {
-            PendenciaStatus = await _pendenciaService.GetStatusAsync("EMPRESA", cnpj);
+            var ticket = await _context.VPendenciasAtuais.FirstOrDefaultAsync(p => p.EntidadeTipo == "EMPRESA" && p.EntidadeId == cnpj);
+            PendenciaStatus = ticket?.Status;
+            RejeicaoMotivo = ticket?.Motivo; // POPULATED: Fetched from the view
+
             var docs = await _context.DocumentoEmpresas.Where(de => de.EmpresaCnpj == cnpj).Include(de => de.Documento).Select(de => de.Documento).ToListAsync();
             Contratos = docs.Where(d => d.DocumentoTipoNome == "CONTRATO_SOCIAL").ToList();
             IdentidadesSocios = docs.Where(d => d.DocumentoTipoNome == "IDENTIDADE_SOCIO").ToList();
@@ -97,7 +102,6 @@ namespace Eva.Pages.Empresa
                 return Page();
             }
 
-            // Serialize the form and save it to the ticket as DadosPropostos
             var dadosPropostos = JsonSerializer.Serialize(Input);
             await _pendenciaService.SalvarDadosPropostosAsync("EMPRESA", Input.Cnpj, dadosPropostos);
 

@@ -39,7 +39,9 @@ namespace Eva.Pages.Metroplan.Analista
 
         public VeiculoVM? VeiculoDraft { get; set; }
         public EmpresaVM? EmpresaDraft { get; set; }
-        public Motorista? MotoristaDraft { get; set; }
+
+        // CHANGED: Now uses the safe MotoristaVM
+        public MotoristaVM? MotoristaDraft { get; set; }
 
         public List<Documento> Documentos { get; set; } = new();
 
@@ -66,7 +68,9 @@ namespace Eva.Pages.Metroplan.Analista
             {
                 Motorista = await _context.Motoristas.IgnoreQueryFilters().Include(m => m.Empresa).FirstOrDefaultAsync(m => m.Id == mId);
                 Documentos = await _context.DocumentoMotoristas.Where(dm => dm.MotoristaId == mId).Include(dm => dm.Documento).Select(dm => dm.Documento).OrderByDescending(d => d.DataUpload).ToListAsync();
-                if (hasDraft) MotoristaDraft = JsonSerializer.Deserialize<Motorista>(Ticket.DadosPropostos!, jsonOpts);
+
+                // CHANGED: Deserializes into the MotoristaVM
+                if (hasDraft) MotoristaDraft = JsonSerializer.Deserialize<MotoristaVM>(Ticket.DadosPropostos!, jsonOpts);
             }
             else if (Tipo == "EMPRESA")
             {

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Eva.Data;
 using Eva.Models;
+using Eva.Models.ViewModels; // ADDED
 using Eva.Services;
 using Eva.Workflow;
 using System.Security.Claims;
@@ -23,27 +24,36 @@ namespace Eva.Pages.Empresa
             _context = context; _pendenciaService = pendenciaService; _arquivoService = arquivoService;
         }
 
-        [BindProperty] public Motorista Motorista { get; set; } = null!;
+        [BindProperty] public MotoristaVM Input { get; set; } = new(); // CHANGED to Input / MotoristaVM
         [BindProperty] public IFormFile? UploadArquivo { get; set; }
 
         public string? PendenciaStatus { get; set; }
+        public string? RejeicaoMotivo { get; set; }
         public List<Documento> Cnhs { get; set; } = new();
 
         public async Task<IActionResult> OnGetAsync(int id)
         {
             var ticket = await _context.VPendenciasAtuais.FirstOrDefaultAsync(p => p.EntidadeTipo == "MOTORISTA" && p.EntidadeId == id.ToString());
 
-            // Checking DadosPropostos to load the draft if it exists
-            if (ticket != null && (ticket.Status == WorkflowValidator.AguardandoAnalise || ticket.Status == WorkflowValidator.EmAnalise) && !string.IsNullOrEmpty(ticket.DadosPropostos))
+            if (ticket != null && (ticket.Status == WorkflowValidator.AguardandoAnalise || ticket.Status == WorkflowValidator.EmAnalise || ticket.Status == WorkflowValidator.Rejeitado) && !string.IsNullOrEmpty(ticket.DadosPropostos))
             {
-                Motorista = JsonSerializer.Deserialize<Motorista>(ticket.DadosPropostos, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new Motorista();
-                Motorista.Id = id; // Ensure ID safety
+                Input = JsonSerializer.Deserialize<MotoristaVM>(ticket.DadosPropostos, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new MotoristaVM();
+                Input.Id = id;
             }
             else
             {
                 var dbMotorista = await _context.Motoristas.FirstOrDefaultAsync(m => m.Id == id);
                 if (dbMotorista == null) return NotFound();
-                Motorista = dbMotorista;
+
+                // MAP to VM
+                Input = new MotoristaVM
+                {
+                    Id = dbMotorista.Id,
+                    Nome = dbMotorista.Nome,
+                    Cpf = dbMotorista.Cpf,
+                    Cnh = dbMotorista.Cnh,
+                    Email = dbMotorista.Email
+                };
             }
 
             await LoadAuxiliaryData(id);
@@ -52,25 +62,27 @@ namespace Eva.Pages.Empresa
 
         private async Task LoadAuxiliaryData(int id)
         {
-            PendenciaStatus = await _pendenciaService.GetStatusAsync("MOTORISTA", id.ToString());
+            var ticket = await _context.VPendenciasAtuais.FirstOrDefaultAsync(p => p.EntidadeTipo == "MOTORISTA" && p.EntidadeId == id.ToString());
+            PendenciaStatus = ticket?.Status;
+            RejeicaoMotivo = ticket?.Motivo;
+
             Cnhs = await _context.DocumentoMotoristas.Where(dm => dm.MotoristaId == id).Include(dm => dm.Documento).Select(dm => dm.Documento).Where(d => d.DocumentoTipoNome == "CNH").OrderByDescending(d => d.DataUpload).ToListAsync();
         }
 
         public async Task<IActionResult> OnPostAsync()
         {
-            if (!ModelState.IsValid) { await LoadAuxiliaryData(Motorista.Id); return Page(); }
+            if (!ModelState.IsValid) { await LoadAuxiliaryData(Input.Id); return Page(); }
 
-            var status = await _pendenciaService.GetStatusAsync("MOTORISTA", Motorista.Id.ToString());
+            var status = await _pendenciaService.GetStatusAsync("MOTORISTA", Input.Id.ToString());
             if (status == WorkflowValidator.EmAnalise)
             {
                 ModelState.AddModelError("", "Este registro está em análise e não pode ser alterado no momento.");
-                await LoadAuxiliaryData(Motorista.Id);
+                await LoadAuxiliaryData(Input.Id);
                 return Page();
             }
 
-            // Serialize the form and save it to the ticket as DadosPropostos
-            var dadosPropostos = JsonSerializer.Serialize(Motorista);
-            await _pendenciaService.SalvarDadosPropostosAsync("MOTORISTA", Motorista.Id.ToString(), dadosPropostos);
+            var dadosPropostos = JsonSerializer.Serialize(Input);
+            await _pendenciaService.SalvarDadosPropostosAsync("MOTORISTA", Input.Id.ToString(), dadosPropostos);
 
             return RedirectToPage("./MeusMotoristas");
         }
