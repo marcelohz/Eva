@@ -2,6 +2,57 @@
 @model Eva.Pages.Metroplan.Analista.RevisaoModel
 @{
     ViewData["Title"] = "Revisão de Ticket - Eva";
+
+    // 1. DATA PREPARATION: We build a safe list of fields to iterate over, avoiding any Razor parsing bugs
+    var fieldsToRender = new List<(string Label, object? LiveVal, object? DraftVal)>();
+    bool hasDraftData = false;
+    string headerLabel = "";
+    string headerValue = "";
+
+    if (Model.Tipo == "VEICULO" && Model.Veiculo != null)
+    {
+        hasDraftData = Model.VeiculoDraft != null;
+        headerLabel = "Empresa Proprietária";
+        headerValue = $"{Model.Veiculo.Empresa?.Nome} ({Model.Veiculo.EmpresaCnpj})";
+
+        fieldsToRender.Add(("Placa", Model.Veiculo.Placa, Model.VeiculoDraft?.Placa));
+        fieldsToRender.Add(("Renavam", Model.Veiculo.Renavan, Model.VeiculoDraft?.Renavan));
+        fieldsToRender.Add(("Chassi", Model.Veiculo.ChassiNumero, Model.VeiculoDraft?.ChassiNumero));
+        fieldsToRender.Add(("Modelo", Model.Veiculo.Modelo, Model.VeiculoDraft?.Modelo));
+        fieldsToRender.Add(("Ano Fab.", Model.Veiculo.AnoFabricacao, Model.VeiculoDraft?.AnoFabricacao));
+        fieldsToRender.Add(("Ano Modelo", Model.Veiculo.ModeloAno, Model.VeiculoDraft?.ModeloAno));
+        fieldsToRender.Add(("Potência Motor", Model.Veiculo.PotenciaMotor, Model.VeiculoDraft?.PotenciaMotor));
+        fieldsToRender.Add(("Lugares", Model.Veiculo.NumeroLugares, Model.VeiculoDraft?.NumeroLugares));
+        fieldsToRender.Add(("Combustível", Model.Veiculo.VeiculoCombustivelNome, Model.VeiculoDraft?.VeiculoCombustivelNome));
+    }
+    else if (Model.Tipo == "MOTORISTA" && Model.Motorista != null)
+    {
+        hasDraftData = Model.MotoristaDraft != null;
+        headerLabel = "Empresa Vinculada";
+        headerValue = $"{Model.Motorista.Empresa?.Nome} ({Model.Motorista.EmpresaCnpj})";
+
+        fieldsToRender.Add(("Nome", Model.Motorista.Nome, Model.MotoristaDraft?.Nome));
+        fieldsToRender.Add(("CPF", Model.Motorista.Cpf, Model.MotoristaDraft?.Cpf));
+        fieldsToRender.Add(("CNH", Model.Motorista.Cnh, Model.MotoristaDraft?.Cnh));
+        fieldsToRender.Add(("E-mail", Model.Motorista.Email, Model.MotoristaDraft?.Email));
+    }
+    else if (Model.Tipo == "EMPRESA" && Model.Empresa != null)
+    {
+        hasDraftData = Model.EmpresaDraft != null;
+
+        fieldsToRender.Add(("CNPJ", Model.Empresa.Cnpj, Model.EmpresaDraft?.Cnpj));
+        fieldsToRender.Add(("Razão Social", Model.Empresa.Nome, Model.EmpresaDraft?.Nome));
+        fieldsToRender.Add(("Nome Fantasia", Model.Empresa.NomeFantasia, Model.EmpresaDraft?.NomeFantasia));
+        fieldsToRender.Add(("E-mail", Model.Empresa.Email, Model.EmpresaDraft?.Email));
+        fieldsToRender.Add(("Telefone", Model.Empresa.Telefone, Model.EmpresaDraft?.Telefone));
+        fieldsToRender.Add(("CEP", Model.Empresa.Cep, Model.EmpresaDraft?.Cep));
+        fieldsToRender.Add(("Endereço", Model.Empresa.Endereco, Model.EmpresaDraft?.Endereco));
+        fieldsToRender.Add(("Número", Model.Empresa.EnderecoNumero, Model.EmpresaDraft?.EnderecoNumero));
+        fieldsToRender.Add(("Complemento", Model.Empresa.EnderecoComplemento, Model.EmpresaDraft?.EnderecoComplemento));
+        fieldsToRender.Add(("Bairro", Model.Empresa.Bairro, Model.EmpresaDraft?.Bairro));
+        fieldsToRender.Add(("Cidade", Model.Empresa.Cidade, Model.EmpresaDraft?.Cidade));
+        fieldsToRender.Add(("Estado", Model.Empresa.Estado, Model.EmpresaDraft?.Estado));
+    }
 }
 
 <div class="container mt-5 mb-5">
@@ -48,99 +99,121 @@
 
     <div class="row g-4">
         <div class="col-lg-8">
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0">Dados Preenchidos pela Empresa</h5>
+            <div class="card shadow-sm mb-4 border-0">
+                <div class="card-header bg-dark text-white rounded-top">
+                    <h5 class="mb-0"><i class="bi bi-card-text me-2"></i> Dados Cadastrais</h5>
                 </div>
                 <div class="card-body bg-light">
-                    @if (Model.Tipo == "VEICULO" && Model.Veiculo != null)
-                    {
-                        <div class="row">
-                            <div class="col-md-6 mb-3"><strong>Empresa:</strong> @Model.Veiculo.Empresa?.Nome (@Model.Veiculo.EmpresaCnpj)</div>
-                            <div class="col-md-6 mb-3"><strong>Placa:</strong> @Model.Veiculo.Placa</div>
-                            <div class="col-md-6 mb-3"><strong>Modelo:</strong> @Model.Veiculo.Modelo</div>
-                            <div class="col-md-6 mb-3"><strong>Chassi:</strong> @Model.Veiculo.ChassiNumero</div>
-                            <div class="col-md-4 mb-3"><strong>Renavam:</strong> @Model.Veiculo.Renavan</div>
-                            <div class="col-md-4 mb-3"><strong>Ano Fab.:</strong> @Model.Veiculo.AnoFabricacao</div>
-                            <div class="col-md-4 mb-3"><strong>Lugares:</strong> @Model.Veiculo.NumeroLugares</div>
-                        </div>
-                    }
-                    else if (Model.Tipo == "MOTORISTA" && Model.Motorista != null)
-                    {
-                        <div class="row">
-                            <div class="col-md-12 mb-3"><strong>Empresa:</strong> @Model.Motorista.Empresa?.Nome (@Model.Motorista.EmpresaCnpj)</div>
-                            <div class="col-md-6 mb-3"><strong>Nome:</strong> @Model.Motorista.Nome</div>
-                            <div class="col-md-6 mb-3"><strong>CPF:</strong> @Model.Motorista.Cpf</div>
-                            <div class="col-md-6 mb-3"><strong>CNH:</strong> @Model.Motorista.Cnh</div>
-                            <div class="col-md-6 mb-3"><strong>E-mail:</strong> @Model.Motorista.Email</div>
-                        </div>
-                    }
-                    else if (Model.Tipo == "EMPRESA" && Model.Empresa != null)
-                    {
-                        <div class="row">
-                            <div class="col-md-6 mb-3"><strong>CNPJ:</strong> @Model.Empresa.Cnpj</div>
-                            <div class="col-md-6 mb-3"><strong>Razão Social:</strong> @Model.Empresa.Nome</div>
-                            <div class="col-md-6 mb-3"><strong>Nome Fantasia:</strong> @Model.Empresa.NomeFantasia</div>
-                            <div class="col-md-6 mb-3"><strong>E-mail:</strong> @Model.Empresa.Email</div>
-                            <div class="col-md-12 mb-3"><strong>Endereço:</strong> @Model.Empresa.Endereco, @Model.Empresa.EnderecoNumero - @Model.Empresa.Cidade/@Model.Empresa.Estado</div>
-                        </div>
-                    }
+                    <div class="row g-3">
+                        @if (!string.IsNullOrEmpty(headerLabel))
+                        {
+                            <div class="col-12 mb-2">
+                                <div class="p-3 bg-white border rounded shadow-sm">
+                                    <small class="text-muted fw-bold text-uppercase d-block mb-1" style="font-size: 0.75rem;">@headerLabel</small>
+                                    <div class="fs-6 text-dark fw-bold">@headerValue</div>
+                                </div>
+                            </div>
+                        }
+
+                        @foreach (var field in fieldsToRender)
+                        {
+                            string liveVal = field.LiveVal?.ToString()?.Trim() ?? "";
+                            string draftVal = field.DraftVal?.ToString()?.Trim() ?? "";
+                            bool isChanged = hasDraftData && liveVal != draftVal;
+
+                            if (isChanged)
+                            {
+                                <div class="col-md-4 col-sm-6">
+                                    <div class="p-3 border border-warning rounded bg-warning-subtle shadow-sm h-100">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <small class="text-dark fw-bold text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">@field.Label</small>
+                                            <span class="badge bg-warning text-dark border border-warning-subtle shadow-sm">Novo</span>
+                                        </div>
+                                        <div class="fs-6 fw-bold text-dark mb-1">@(string.IsNullOrWhiteSpace(draftVal) ? "(Vazio)" : draftVal)</div>
+                                        @if (!string.IsNullOrWhiteSpace(liveVal))
+                                        {
+                                            <div class="text-muted small" style="font-size: 0.8rem;">
+                                                <i class="bi bi-arrow-return-right"></i> Anterior: <span class="text-decoration-line-through">@liveVal</span>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                string displayVal = hasDraftData ? draftVal : liveVal;
+                                <div class="col-md-4 col-sm-6">
+                                    <div class="p-3 border rounded bg-white shadow-sm h-100">
+                                        <small class="text-muted fw-bold text-uppercase d-block mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">@field.Label</small>
+                                        <div class="fs-6 text-dark">@(string.IsNullOrWhiteSpace(displayVal) ? "-" : displayVal)</div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
                 </div>
             </div>
 
-            <div class="card shadow-sm border-secondary">
-                <div class="card-header bg-secondary text-white">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-secondary text-white rounded-top">
                     <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>Documentos Anexados</h5>
                 </div>
-                <div class="card-body p-0">
+                <div class="card-body p-0 bg-white">
                     @if (!Model.Documentos.Any())
                     {
-                        <div class="p-4 text-center text-muted">
-                            <i class="bi bi-file-earmark-x display-6"></i>
-                            <p class="mt-2 mb-0">Nenhum documento foi anexado para este registro.</p>
+                        <div class="p-5 text-center text-muted">
+                            <i class="bi bi-file-earmark-x display-6 text-light"></i>
+                            <p class="mt-3 mb-0 fs-5">Nenhum documento foi anexado.</p>
                         </div>
                     }
                     else
                     {
-                        <div class="list-group list-group-flush">
+                        <div class="list-group list-group-flush rounded-bottom">
                             @foreach (var doc in Model.Documentos)
                             {
-                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                bool isNewDoc = doc.FluxoPendenciaId == null;
+                                string rowClass = isNewDoc ? "list-group-item-warning bg-warning-subtle" : "";
+
+                                <div class="list-group-item d-flex justify-content-between align-items-center p-3 @rowClass">
                                     <div>
-                                        <div class="fw-bold text-dark">
-                                            @doc.DocumentoTipoNome.Replace("_", " ")
+                                        <div class="d-flex align-items-center gap-2 mb-1">
+                                            <span class="fw-bold text-dark fs-6">@doc.DocumentoTipoNome.Replace("_", " ")</span>
+                                            @if (isNewDoc)
+                                            {
+                                                <span class="badge bg-warning text-dark border border-warning shadow-sm">Novo Envio</span>
+                                            }
                                         </div>
                                         <div class="small text-muted">
-                                            <i class="bi bi-file-earmark-pdf text-danger"></i> @doc.NomeArquivo
-                                            <span class="mx-1">•</span>
-                                            @doc.DataUpload.ToString("dd/MM/yyyy HH:mm")
+                                            <i class="bi bi-file-earmark-pdf-fill text-danger"></i> @doc.NomeArquivo
+                                            <span class="mx-2 text-light">|</span>
+                                            <i class="bi bi-clock"></i> @doc.DataUpload.ToString("dd/MM/yyyy HH:mm")
                                         </div>
 
                                         @if (doc.DocumentoTipoNome == "CARTAO_CNPJ")
                                         {
-                                            <div class="mt-2">
-                                                @if (Model.IsLockedByMe && doc.FluxoPendenciaId == null)
+                                            <div class="mt-3 p-2 bg-white rounded border border-light shadow-sm d-inline-block">
+                                                @if (Model.IsLockedByMe && isNewDoc)
                                                 {
-                                                    <label class="form-label small fw-bold mb-1 text-primary">Inserir Validade do Documento</label>
-                                                    <input type="date" name="Validades[@doc.Id]" form="formAprovar" class="form-control form-control-sm w-auto border-primary" required />
+                                                    <label class="form-label small fw-bold mb-1 text-primary"><i class="bi bi-calendar-event"></i> Definir Validade</label>
+                                                    <input type="date" name="Validades[@doc.Id]" form="formAprovar" class="form-control form-control-sm border-primary shadow-sm" required />
                                                 }
                                                 else if (doc.Validade.HasValue)
                                                 {
-                                                    <span class="badge bg-info text-dark">Validade: @doc.Validade.Value.ToString("dd/MM/yyyy")</span>
+                                                    <span class="text-dark small fw-semibold"><i class="bi bi-calendar-check text-success"></i> Validade: @doc.Validade.Value.ToString("dd/MM/yyyy")</span>
                                                 }
                                             </div>
                                         }
                                     </div>
 
-                                    <div class="btn-group" role="group">
+                                    <div class="btn-group shadow-sm" role="group">
                                         <a href="/Metroplan/Analista/Revisao?handler=Visualizar&docId=@doc.Id"
                                            target="_blank"
-                                           class="btn btn-sm btn-outline-primary"
+                                           class="btn btn-sm btn-outline-primary bg-white"
                                            title="Abrir em nova guia">
                                             <i class="bi bi-eye"></i> Visualizar
                                         </a>
                                         <a href="/Metroplan/Analista/Revisao?handler=Download&docId=@doc.Id"
-                                           class="btn btn-sm btn-outline-primary"
+                                           class="btn btn-sm btn-outline-primary bg-white"
                                            title="Baixar arquivo">
                                             <i class="bi bi-download"></i> Baixar
                                         </a>
@@ -154,16 +227,16 @@
         </div>
 
         <div class="col-lg-4">
-            <div class="card shadow-sm sticky-top" style="top: 20px; z-index: 0;">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0 text-secondary"><i class="bi bi-clock-history"></i> Histórico</h5>
+            <div class="card shadow-sm sticky-top border-0" style="top: 20px; z-index: 0;">
+                <div class="card-header bg-light border-bottom">
+                    <h5 class="mb-0 text-secondary fw-bold"><i class="bi bi-clock-history"></i> Histórico</h5>
                 </div>
                 <div class="card-body p-0">
                     <ul class="list-group list-group-flush">
                         @foreach (var h in Model.Historico)
                         {
-                            <li class="list-group-item pt-3 pb-3">
-                                <div class="d-flex justify-content-between align-items-center mb-1">
+                            <li class="list-group-item p-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
                                     <small class="text-muted fw-bold">@h.CriadoEm.ToString("dd/MM/yyyy HH:mm")</small>
                                     @switch (h.Status)
                                     {
@@ -174,22 +247,22 @@
                                             <span class="badge bg-info text-dark">Em Análise</span>
                                             break;
                                         case "APROVADO":
-                                            <span class="badge bg-success">Aprovado</span>
+                                            <span class="badge bg-success shadow-sm">Aprovado</span>
                                             break;
                                         case "REJEITADO":
-                                            <span class="badge bg-danger">Rejeitado</span>
+                                            <span class="badge bg-danger shadow-sm">Rejeitado</span>
                                             break;
                                     }
                                 </div>
                                 <div class="small text-secondary">
                                     @if (!string.IsNullOrEmpty(h.Analista))
                                     {
-                                        <span>Por: @h.Analista</span>
+                                        <span><i class="bi bi-person"></i> @h.Analista</span>
                                     }
                                 </div>
                                 @if (!string.IsNullOrEmpty(h.Motivo))
                                 {
-                                    <div class="mt-2 p-2 bg-light border-start border-danger border-3 small">
+                                    <div class="mt-2 p-2 bg-danger-subtle text-danger border border-danger border-opacity-25 rounded small shadow-sm">
                                         <strong>Motivo:</strong> @h.Motivo
                                     </div>
                                 }
@@ -203,26 +276,26 @@
 </div>
 
 <div class="modal fade" id="modalRejeitar" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">Rejeitar Cadastro</h5>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-danger text-white border-0">
+                <h5 class="modal-title fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>Rejeitar Cadastro</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form method="post" asp-page-handler="Rejeitar">
-                <div class="modal-body">
+                <div class="modal-body bg-light">
                     <input type="hidden" asp-for="Tipo" />
                     <input type="hidden" asp-for="Id" />
 
                     <div class="mb-3">
-                        <label asp-for="MotivoRejeicao" class="form-label fw-bold">Motivo da Rejeição (obrigatório)</label>
-                        <textarea asp-for="MotivoRejeicao" class="form-control" rows="4" required placeholder="Ex: O documento anexado está ilegível."></textarea>
+                        <label asp-for="MotivoRejeicao" class="form-label fw-bold text-dark">Motivo da Rejeição (obrigatório)</label>
+                        <textarea asp-for="MotivoRejeicao" class="form-control shadow-sm" rows="4" required placeholder="Ex: O documento anexado está ilegível."></textarea>
                     </div>
-                    <p class="text-muted small">Este motivo será exibido para a empresa para que ela possa corrigir o problema.</p>
+                    <p class="text-muted small mb-0"><i class="bi bi-info-circle"></i> Este motivo será exibido para a empresa para que ela possa corrigir o problema.</p>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer border-top-0 bg-light">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-danger">Confirmar Rejeição</button>
+                    <button type="submit" class="btn btn-danger shadow">Confirmar Rejeição</button>
                 </div>
             </form>
         </div>

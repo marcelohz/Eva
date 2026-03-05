@@ -28,5 +28,8 @@ namespace Eva.Models
 
         [Column("motivo")]
         public string? Motivo { get; set; }
+
+        [Column("dados_propostos")]
+        public string? DadosPropostos { get; set; }
     }
 }

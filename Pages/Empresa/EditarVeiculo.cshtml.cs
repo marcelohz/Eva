@@ -8,6 +8,7 @@ using Eva.Models.ViewModels;
 using Eva.Services;
 using Eva.Workflow;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace Eva.Pages.Empresa
 {
@@ -36,23 +37,38 @@ namespace Eva.Pages.Empresa
         public async Task<IActionResult> OnGetAsync(string id)
         {
             var userCnpj = User.FindFirstValue("EmpresaCnpj");
-            // Normalize ID to prevent 404 on case mismatch
-            var v = await _context.Veiculos.FirstOrDefaultAsync(v => v.Placa.ToUpper() == id.ToUpper().Trim() && v.EmpresaCnpj == userCnpj);
-            if (v == null) return NotFound();
+            if (string.IsNullOrEmpty(userCnpj)) return RedirectToPage("/Login");
 
-            Input = new VeiculoVM
+            var normalizedId = id.ToUpper().Trim();
+
+            var ticket = await _context.VPendenciasAtuais.FirstOrDefaultAsync(p => p.EntidadeTipo == "VEICULO" && p.EntidadeId == normalizedId);
+
+            // Checking DadosPropostos to load the draft if it exists
+            if (ticket != null && (ticket.Status == WorkflowValidator.AguardandoAnalise || ticket.Status == WorkflowValidator.EmAnalise) && !string.IsNullOrEmpty(ticket.DadosPropostos))
             {
-                Placa = v.Placa,
-                Modelo = v.Modelo ?? "",
-                ChassiNumero = v.ChassiNumero,
-                Renavan = v.Renavan,
-                PotenciaMotor = v.PotenciaMotor,
-                VeiculoCombustivelNome = v.VeiculoCombustivelNome,
-                NumeroLugares = v.NumeroLugares,
-                AnoFabricacao = v.AnoFabricacao,
-                ModeloAno = v.ModeloAno
-            };
-            await LoadAuxiliaryData(v.Placa);
+                Input = JsonSerializer.Deserialize<VeiculoVM>(ticket.DadosPropostos, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new VeiculoVM();
+                Input.Placa = normalizedId;
+            }
+            else
+            {
+                var v = await _context.Veiculos.FirstOrDefaultAsync(v => v.Placa.ToUpper() == normalizedId && v.EmpresaCnpj == userCnpj);
+                if (v == null) return NotFound();
+
+                Input = new VeiculoVM
+                {
+                    Placa = v.Placa,
+                    Modelo = v.Modelo ?? "",
+                    ChassiNumero = v.ChassiNumero,
+                    Renavan = v.Renavan,
+                    PotenciaMotor = v.PotenciaMotor,
+                    VeiculoCombustivelNome = v.VeiculoCombustivelNome,
+                    NumeroLugares = v.NumeroLugares,
+                    AnoFabricacao = v.AnoFabricacao,
+                    ModeloAno = v.ModeloAno
+                };
+            }
+
+            await LoadAuxiliaryData(normalizedId);
             return Page();
         }
 
@@ -69,24 +85,27 @@ namespace Eva.Pages.Empresa
         public async Task<IActionResult> OnPostAsync()
         {
             if (!ModelState.IsValid) { await LoadAuxiliaryData(Input.Placa); return Page(); }
-            var userCnpj = User.FindFirstValue("EmpresaCnpj");
-            var vInDb = await _context.Veiculos.FirstOrDefaultAsync(v => v.Placa == Input.Placa && v.EmpresaCnpj == userCnpj);
-            if (vInDb == null) return NotFound();
 
-            vInDb.Modelo = Input.Modelo; vInDb.ChassiNumero = Input.ChassiNumero; vInDb.Renavan = Input.Renavan;
-            vInDb.PotenciaMotor = Input.PotenciaMotor; vInDb.VeiculoCombustivelNome = Input.VeiculoCombustivelNome;
-            vInDb.NumeroLugares = Input.NumeroLugares; vInDb.AnoFabricacao = Input.AnoFabricacao; vInDb.ModeloAno = Input.ModeloAno;
-
-            if (_context.ChangeTracker.HasChanges())
+            var status = await _pendenciaService.GetStatusAsync("VEICULO", Input.Placa);
+            if (status == WorkflowValidator.EmAnalise)
             {
-                await _context.SaveChangesAsync();
-                await _pendenciaService.AvancarEntidadeAsync("VEICULO", vInDb.Placa); // RESTORED
+                ModelState.AddModelError("", "Este registro está em análise e não pode ser alterado no momento.");
+                await LoadAuxiliaryData(Input.Placa);
+                return Page();
             }
+
+            // Serialize the form and save it to the ticket as DadosPropostos
+            var dadosPropostos = JsonSerializer.Serialize(Input);
+            await _pendenciaService.SalvarDadosPropostosAsync("VEICULO", Input.Placa, dadosPropostos);
+
             return RedirectToPage("/Empresa/MeusVeiculos");
         }
 
         public async Task<IActionResult> OnPostUploadAsync([FromRoute] string id)
         {
+            var status = await _pendenciaService.GetStatusAsync("VEICULO", id);
+            if (status == WorkflowValidator.EmAnalise) return RedirectToPage(new { id = id });
+
             if (UploadArquivo != null && !string.IsNullOrEmpty(TipoDocumentoUpload))
             {
                 var existingId = await _context.DocumentoVeiculos.Where(dv => dv.VeiculoPlaca == id && dv.Documento.DocumentoTipoNome == TipoDocumentoUpload).Select(dv => dv.Documento.Id).FirstOrDefaultAsync();
@@ -98,6 +117,9 @@ namespace Eva.Pages.Empresa
 
         public async Task<IActionResult> OnPostDeleteDocAsync(int docId, [FromRoute] string id)
         {
+            var status = await _pendenciaService.GetStatusAsync("VEICULO", id);
+            if (status == WorkflowValidator.EmAnalise) return RedirectToPage(new { id = id });
+
             await _arquivoService.DeletarDocumentoAsync(docId, "VEICULO", id);
             return RedirectToPage(new { id = id });
         }

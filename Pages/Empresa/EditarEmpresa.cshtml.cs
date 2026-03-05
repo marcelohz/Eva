@@ -8,6 +8,7 @@ using Eva.Models.ViewModels;
 using Eva.Services;
 using Eva.Workflow;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace Eva.Pages.Empresa
 {
@@ -38,24 +39,37 @@ namespace Eva.Pages.Empresa
         {
             var cnpj = User.FindFirstValue("EmpresaCnpj");
             if (string.IsNullOrEmpty(cnpj)) return RedirectToPage("/Login");
-            var e = await _context.Empresas.FirstOrDefaultAsync(e => e.Cnpj == cnpj);
-            if (e == null) return NotFound();
 
-            Input = new EmpresaVM
+            var ticket = await _context.VPendenciasAtuais.FirstOrDefaultAsync(p => p.EntidadeTipo == "EMPRESA" && p.EntidadeId == cnpj);
+
+            // Checking DadosPropostos to load the draft if it exists
+            if (ticket != null && (ticket.Status == WorkflowValidator.AguardandoAnalise || ticket.Status == WorkflowValidator.EmAnalise) && !string.IsNullOrEmpty(ticket.DadosPropostos))
             {
-                Cnpj = e.Cnpj,
-                Nome = e.Nome,
-                NomeFantasia = e.NomeFantasia,
-                Endereco = e.Endereco,
-                EnderecoNumero = e.EnderecoNumero,
-                EnderecoComplemento = e.EnderecoComplemento,
-                Bairro = e.Bairro,
-                Cidade = e.Cidade,
-                Estado = e.Estado,
-                Cep = e.Cep,
-                Email = e.Email,
-                Telefone = e.Telefone
-            };
+                Input = JsonSerializer.Deserialize<EmpresaVM>(ticket.DadosPropostos, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new EmpresaVM();
+                Input.Cnpj = cnpj; // Ensure ID safety
+            }
+            else
+            {
+                var e = await _context.Empresas.FirstOrDefaultAsync(e => e.Cnpj == cnpj);
+                if (e == null) return NotFound();
+
+                Input = new EmpresaVM
+                {
+                    Cnpj = e.Cnpj,
+                    Nome = e.Nome,
+                    NomeFantasia = e.NomeFantasia,
+                    Endereco = e.Endereco,
+                    EnderecoNumero = e.EnderecoNumero,
+                    EnderecoComplemento = e.EnderecoComplemento,
+                    Bairro = e.Bairro,
+                    Cidade = e.Cidade,
+                    Estado = e.Estado,
+                    Cep = e.Cep,
+                    Email = e.Email,
+                    Telefone = e.Telefone
+                };
+            }
+
             await LoadAuxiliaryData(cnpj);
             return Page();
         }
@@ -74,22 +88,19 @@ namespace Eva.Pages.Empresa
         public async Task<IActionResult> OnPostAsync()
         {
             if (!ModelState.IsValid) { await LoadAuxiliaryData(Input.Cnpj); return Page(); }
+
             var status = await _pendenciaService.GetStatusAsync("EMPRESA", Input.Cnpj);
-            if (status == WorkflowValidator.EmAnalise) return Page();
-
-            var eInDb = await _context.Empresas.FirstOrDefaultAsync(e => e.Cnpj == Input.Cnpj);
-            if (eInDb == null) return NotFound();
-
-            eInDb.Nome = Input.Nome; eInDb.NomeFantasia = Input.NomeFantasia; eInDb.Endereco = Input.Endereco;
-            eInDb.EnderecoNumero = Input.EnderecoNumero; eInDb.EnderecoComplemento = Input.EnderecoComplemento;
-            eInDb.Bairro = Input.Bairro; eInDb.Cidade = Input.Cidade; eInDb.Estado = Input.Estado;
-            eInDb.Cep = Input.Cep; eInDb.Email = Input.Email; eInDb.Telefone = Input.Telefone;
-
-            if (_context.ChangeTracker.HasChanges())
+            if (status == WorkflowValidator.EmAnalise)
             {
-                await _context.SaveChangesAsync();
-                await _pendenciaService.AvancarEntidadeAsync("EMPRESA", eInDb.Cnpj); // RESTORED
+                ModelState.AddModelError("", "Este registro está em análise e não pode ser alterado no momento.");
+                await LoadAuxiliaryData(Input.Cnpj);
+                return Page();
             }
+
+            // Serialize the form and save it to the ticket as DadosPropostos
+            var dadosPropostos = JsonSerializer.Serialize(Input);
+            await _pendenciaService.SalvarDadosPropostosAsync("EMPRESA", Input.Cnpj, dadosPropostos);
+
             return RedirectToPage("/Empresa/MinhaEmpresa");
         }
 
@@ -97,7 +108,7 @@ namespace Eva.Pages.Empresa
         {
             var cnpj = User.FindFirstValue("EmpresaCnpj")!;
             var status = await _pendenciaService.GetStatusAsync("EMPRESA", cnpj);
-            if (status == WorkflowValidator.EmAnalise) return Page();
+            if (status == WorkflowValidator.EmAnalise) return RedirectToPage();
 
             if (UploadArquivo != null && !string.IsNullOrEmpty(TipoDocumentoUpload))
             {
@@ -114,6 +125,9 @@ namespace Eva.Pages.Empresa
         public async Task<IActionResult> OnPostDeleteDocAsync(int id)
         {
             var cnpj = User.FindFirstValue("EmpresaCnpj")!;
+            var status = await _pendenciaService.GetStatusAsync("EMPRESA", cnpj);
+            if (status == WorkflowValidator.EmAnalise) return RedirectToPage();
+
             await _arquivoService.DeletarDocumentoAsync(id, "EMPRESA", cnpj);
             return RedirectToPage();
         }
