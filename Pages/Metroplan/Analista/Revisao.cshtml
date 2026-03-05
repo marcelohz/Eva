@@ -34,7 +34,8 @@
                 <button type="button" class="btn btn-danger btn-lg shadow" data-bs-toggle="modal" data-bs-target="#modalRejeitar">
                     <i class="bi bi-x-circle"></i> Rejeitar
                 </button>
-                <form method="post" asp-page-handler="Aprovar">
+
+                <form id="formAprovar" method="post" asp-page-handler="Aprovar">
                     <input type="hidden" asp-for="Tipo" />
                     <input type="hidden" asp-for="Id" />
                     <button type="submit" class="btn btn-success btn-lg shadow">
@@ -114,6 +115,21 @@
                                             <span class="mx-1">•</span>
                                             @doc.DataUpload.ToString("dd/MM/yyyy HH:mm")
                                         </div>
+
+                                        @if (doc.DocumentoTipoNome == "CARTAO_CNPJ")
+                                        {
+                                            <div class="mt-2">
+                                                @if (Model.IsLockedByMe && doc.FluxoPendenciaId == null)
+                                                {
+                                                    <label class="form-label small fw-bold mb-1 text-primary">Inserir Validade do Documento</label>
+                                                    <input type="date" name="Validades[@doc.Id]" form="formAprovar" class="form-control form-control-sm w-auto border-primary" required />
+                                                }
+                                                else if (doc.Validade.HasValue)
+                                                {
+                                                    <span class="badge bg-info text-dark">Validade: @doc.Validade.Value.ToString("dd/MM/yyyy")</span>
+                                                }
+                                            </div>
+                                        }
                                     </div>
 
                                     <div class="btn-group" role="group">

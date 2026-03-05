@@ -24,6 +24,9 @@ namespace Eva.Pages.Metroplan.Analista
         [BindProperty(SupportsGet = true)] public string Id { get; set; } = string.Empty;
         [BindProperty] public string MotivoRejeicao { get; set; } = string.Empty;
 
+        // Dictionary to bind dynamic dates tied directly to the Document ID
+        [BindProperty] public Dictionary<int, DateOnly?> Validades { get; set; } = new();
+
         public VPendenciaAtual? Ticket { get; set; }
         public List<FluxoPendencia> Historico { get; set; } = new();
         public bool IsLockedByMe { get; set; }
@@ -34,12 +37,10 @@ namespace Eva.Pages.Metroplan.Analista
         public Eva.Models.Empresa? Empresa { get; set; }
         public List<Documento> Documentos { get; set; } = new();
 
-        public async Task<IActionResult> OnGetAsync()
+        private async Task LoadDataAsync()
         {
-            if (string.IsNullOrEmpty(Tipo) || string.IsNullOrEmpty(Id)) return RedirectToPage("./Index");
-
             Ticket = await _context.VPendenciasAtuais.FirstOrDefaultAsync(p => p.EntidadeTipo == Tipo && p.EntidadeId == Id);
-            if (Ticket == null) return RedirectToPage("./Index");
+            if (Ticket == null) return;
 
             var email = User.FindFirstValue(ClaimTypes.Email);
             IsLockedByMe = Ticket.Status == "EM_ANALISE" && Ticket.Analista == email;
@@ -61,6 +62,15 @@ namespace Eva.Pages.Metroplan.Analista
                 Empresa = await _context.Empresas.IgnoreQueryFilters().FirstOrDefaultAsync(e => e.Cnpj == Id);
                 Documentos = await _context.DocumentoEmpresas.Where(de => de.EmpresaCnpj == Id).Include(de => de.Documento).Select(de => de.Documento).OrderByDescending(d => d.DataUpload).ToListAsync();
             }
+        }
+
+        public async Task<IActionResult> OnGetAsync()
+        {
+            if (string.IsNullOrEmpty(Tipo) || string.IsNullOrEmpty(Id)) return RedirectToPage("./Index");
+
+            await LoadDataAsync();
+            if (Ticket == null) return RedirectToPage("./Index");
+
             return Page();
         }
 
@@ -74,7 +84,23 @@ namespace Eva.Pages.Metroplan.Analista
         public async Task<IActionResult> OnPostAprovarAsync()
         {
             var email = User.FindFirstValue(ClaimTypes.Email);
-            if (email != null) await _pendenciaService.AprovarAsync(Tipo, Id, email);
+            if (email == null) return RedirectToPage("/Login");
+
+            // Process provided validity dates
+            foreach (var kvp in Validades)
+            {
+                if (kvp.Value.HasValue)
+                {
+                    var doc = await _context.Documentos.FindAsync(kvp.Key);
+                    if (doc != null)
+                    {
+                        doc.Validade = kvp.Value.Value;
+                    }
+                }
+            }
+            await _context.SaveChangesAsync();
+
+            await _pendenciaService.AprovarAsync(Tipo, Id, email);
             return RedirectToPage("./Index");
         }
 

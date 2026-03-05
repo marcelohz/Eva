@@ -29,7 +29,26 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 builder.Services.AddDbContext<EvaDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Define the cultures you want to support
+var supportedCultures = new[] { "pt-BR" };
+var localizationOptions = new RequestLocalizationOptions()
+    .SetDefaultCulture(supportedCultures[0])
+    .AddSupportedCultures(supportedCultures)
+    .AddSupportedUICultures(supportedCultures);
+
+// Optional: Force it to always use the default culture regardless of browser headers
+localizationOptions.ApplyCurrentCultureToResponseHeaders = true;
+
+builder.Services.Configure<RequestLocalizationOptions>(options =>
+{
+    options.DefaultRequestCulture = new Microsoft.AspNetCore.Localization.RequestCulture("pt-BR");
+    options.SupportedCultures = localizationOptions.SupportedCultures;
+    options.SupportedUICultures = localizationOptions.SupportedUICultures;
+});
+
 var app = builder.Build();
+
+app.UseRequestLocalization();
 
 if (!app.Environment.IsDevelopment())
 {
