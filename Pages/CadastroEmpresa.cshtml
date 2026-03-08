@@ -1,61 +1,43 @@
 ﻿@page
 @model Eva.Pages.CadastroEmpresaModel
 @{
-    ViewData["Title"] = "Cadastro de Empresa";
+    ViewData["Title"] = "Iniciar Cadastro - Eva";
 }
 
 <div class="container mt-5 mb-5">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white text-center py-3">
-                    <h1 class="h3 mb-0">Cadastro de Nova Empresa</h1>
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-dark text-white text-center py-3">
+                    <h1 class="h4 mb-0">Cadastro de Empresa</h1>
                 </div>
                 <div class="card-body p-4">
-                    <form method="post">
-                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                    <p class="text-muted text-center mb-4">
+                        Digite o CNPJ e o E-mail para iniciar seu cadastro.
+                        Enviaremos um link de confirmação para o seu e-mail.
+                    </p>
 
-                        <h5 class="border-bottom pb-2 mb-3">Dados da Empresa</h5>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label asp-for="Input.Cnpj" class="form-label">CNPJ</label>
-                                <input asp-for="Input.Cnpj" class="form-control" placeholder="00.000.000/0001-00" />
-                                <span asp-validation-for="Input.Cnpj" class="text-danger small"></span>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label asp-for="Input.RazaoSocial" class="form-label">Razão Social</label>
-                                <input asp-for="Input.RazaoSocial" class="form-control" />
-                                <span asp-validation-for="Input.RazaoSocial" class="text-danger small"></span>
-                            </div>
+                    <form method="post" novalidate>
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger shadow-sm py-2"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.Cnpj" class="form-label fw-bold">CNPJ</label>
+                            <input asp-for="Input.Cnpj" class="form-control form-control-lg" placeholder="00.000.000/0001-00" />
+                            <span asp-validation-for="Input.Cnpj" class="text-danger small"></span>
                         </div>
 
-                        <h5 class="border-bottom pb-2 mb-3 mt-3">Dados de Acesso (Administrador)</h5>
-                        <div class="mb-3">
-                            <label asp-for="Input.NomeResponsavel" class="form-label">Nome Completo</label>
-                            <input asp-for="Input.NomeResponsavel" class="form-control" />
-                            <span asp-validation-for="Input.NomeResponsavel" class="text-danger small"></span>
-                        </div>
-                        <div class="mb-3">
-                            <label asp-for="Input.Email" class="form-label">Email Corporativo</label>
-                            <input asp-for="Input.Email" class="form-control" type="email" />
+                        <div class="mb-4">
+                            <label asp-for="Input.Email" class="form-label fw-bold">E-mail Corporativo</label>
+                            <input asp-for="Input.Email" class="form-control form-control-lg" type="email" placeholder="exemplo@empresa.com.br" />
                             <span asp-validation-for="Input.Email" class="text-danger small"></span>
                         </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label asp-for="Input.Senha" class="form-label">Senha</label>
-                                <input asp-for="Input.Senha" class="form-control" type="password" />
-                                <span asp-validation-for="Input.Senha" class="text-danger small"></span>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label asp-for="Input.ConfirmarSenha" class="form-label">Confirmar Senha</label>
-                                <input asp-for="Input.ConfirmarSenha" class="form-control" type="password" />
-                                <span asp-validation-for="Input.ConfirmarSenha" class="text-danger small"></span>
-                            </div>
-                        </div>
 
-                        <div class="d-grid gap-2 mt-4">
-                            <button type="submit" class="btn btn-primary btn-lg">Finalizar Cadastro</button>
-                            <a asp-page="/Login" class="btn btn-link text-muted text-decoration-none">Já tenho conta? Ir para Login</a>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg shadow-sm">Iniciar Cadastro</button>
+                            <hr class="my-3" />
+                            <a asp-page="/Login" class="btn btn-link text-muted text-decoration-none">
+                                <i class="bi bi-arrow-left"></i> Já tenho conta? Ir para Login
+                            </a>
                         </div>
                     </form>
                 </div>
@@ -63,3 +45,7 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

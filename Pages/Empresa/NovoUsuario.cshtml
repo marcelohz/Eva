@@ -1,0 +1,67 @@
+﻿@page
+@model Eva.Pages.Empresa.NovoUsuarioModel
+@{
+    ViewData["Title"] = "Novo Colaborador - Eva";
+}
+
+<div class="container mt-5 mb-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="/Empresa/MeusUsuarios">Gerenciar Usuários</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Novo Colaborador</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="bi bi-person-plus me-2"></i>Cadastrar Novo Operador</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" novalidate>
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger shadow-sm"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.Nome" class="form-label fw-bold">Nome Completo</label>
+                            <input asp-for="Input.Nome" class="form-control" placeholder="Ex: João da Silva" />
+                            <span asp-validation-for="Input.Nome" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.Cpf" class="form-label fw-bold">CPF</label>
+                            <input asp-for="Input.Cpf" class="form-control" placeholder="Apenas números" />
+                            <span asp-validation-for="Input.Cpf" class="text-danger small"></span>
+                        </div>
+
+                        <hr class="my-4" />
+                        <h6 class="fw-bold text-secondary mb-3">Dados de Acesso</h6>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.Email" class="form-label fw-bold">E-mail (Login)</label>
+                            <input asp-for="Input.Email" type="email" class="form-control" placeholder="joao@empresa.com.br" />
+                            <span asp-validation-for="Input.Email" class="text-danger small"></span>
+                            <div class="form-text">Este e-mail será utilizado para entrar no sistema.</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="Input.Senha" class="form-label fw-bold">Senha Inicial</label>
+                            <input asp-for="Input.Senha" type="password" class="form-control" />
+                            <span asp-validation-for="Input.Senha" class="text-danger small"></span>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                            <a href="/Empresa/MeusUsuarios" class="btn btn-outline-secondary">Cancelar</a>
+                            <button type="submit" class="btn btn-primary px-4">Criar Acesso</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
