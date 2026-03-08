@@ -32,10 +32,16 @@
                             <span asp-validation-for="Input.Email" class="text-danger small"></span>
                         </div>
 
+                        <div class="mb-4 d-flex justify-content-center">
+                            <div class="cf-turnstile" data-sitekey="0x4AAAAAACoDXZxJk5MOTM0t"></div>
+                            @* <div class="cf-turnstile" data-sitekey="1x00000000000000000000AA"></div> *@
+                            
+                        </div>
+
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary btn-lg shadow-sm">Iniciar Cadastro</button>
                             <hr class="my-3" />
-                            <a asp-page="/Login" class="btn btn-link text-muted text-decoration-none">
+                            <a asp-page="/Login" class="btn btn-link text-muted text-decoration-none text-center">
                                 <i class="bi bi-arrow-left"></i> Já tenho conta? Ir para Login
                             </a>
                         </div>
@@ -47,5 +53,6 @@
 </div>
 
 @section Scripts {
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <partial name="_ValidationScriptsPartial" />
 }

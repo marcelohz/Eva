@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Identity; // <-- Added for PasswordHasher
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using Eva.Data;
+using Eva.Models;
 
 namespace Eva.Pages
 {
@@ -28,7 +30,6 @@ namespace Eva.Pages
         public class LoginVM
         {
             [Required(ErrorMessage = "O E-mail é obrigatório.")]
-            [EmailAddress(ErrorMessage = "Formato de e-mail inválido.")]
             public string Email { get; set; } = string.Empty;
 
             [Required(ErrorMessage = "A Senha é obrigatória.")]
@@ -38,12 +39,11 @@ namespace Eva.Pages
 
         public async Task<IActionResult> OnGetAsync(string? returnUrl = null)
         {
-            // If already logged in, redirect straight to the dashboard
             if (User.Identity?.IsAuthenticated == true)
             {
                 if (User.IsInRole("ANALISTA") || User.IsInRole("ADMIN"))
                 {
-                    return RedirectToPage("/Analista/Dashboard"); // Or your specific internal dashboard path
+                    return RedirectToPage("/Analista/Dashboard");
                 }
                 return RedirectToPage("/Empresa/MinhaEmpresa");
             }
@@ -61,24 +61,54 @@ namespace Eva.Pages
                 return Page();
             }
 
-            // IgnoreQueryFilters() allows us to search the entire user base
-            // regardless of the session context (since the user isn't logged in yet).
+            var cleanEmail = Input.Email.ToLower().Trim();
+
             var user = await _context.Usuarios
                 .IgnoreQueryFilters()
-                .Include(u => u.Papel)
-                .FirstOrDefaultAsync(u => u.Email == Input.Email);
+                .FirstOrDefaultAsync(u => u.Email.ToLower() == cleanEmail);
 
-            // Verify credentials
-            if (user == null || user.Senha != Input.Senha)
+            if (user == null)
+            {
+                ModelState.AddModelError(string.Empty, "E-mail ou senha inválidos.");
+                return Page();
+            }
+
+            // --- THE SMART PASSWORD VERIFIER ---
+            bool isPasswordValid = false;
+
+            // 1. Check if it matches plain text (for the new Empresas we just registered)
+            if (user.Senha == Input.Senha)
+            {
+                isPasswordValid = true;
+            }
+            else
+            {
+                // 2. Check if it matches the ASP.NET Core Identity Hash (AQAAAA...)
+                var hasher = new PasswordHasher<Usuario>();
+                try
+                {
+                    var result = hasher.VerifyHashedPassword(user, user.Senha ?? "", Input.Senha);
+                    if (result == PasswordVerificationResult.Success || result == PasswordVerificationResult.SuccessRehashNeeded)
+                    {
+                        isPasswordValid = true;
+                    }
+                }
+                catch
+                {
+                    // Failsafe in case the string in DB isn't a valid base64 hash at all
+                }
+            }
+
+            if (!isPasswordValid)
             {
                 ModelState.AddModelError(string.Empty, "E-mail ou senha inválidos.");
                 return Page();
             }
 
             // Identify if the user is internal staff
-            bool isInternalStaff = user.PapelNome == "ANALISTA" || user.PapelNome == "ADMIN";
+            bool isInternalStaff = user.PapelNome?.ToUpper() == "ANALISTA" || user.PapelNome?.ToUpper() == "ADMIN";
 
-            // Block unverified accounts (BUT bypass for internal staff since they are seeded directly)
+            // Block unverified accounts (bypass for internal staff)
             if (!user.EmailValidado && !isInternalStaff)
             {
                 ModelState.AddModelError(string.Empty, "Esta conta ainda não foi confirmada. Verifique seu e-mail e clique no link de ativação.");
@@ -100,7 +130,7 @@ namespace Eva.Pages
                 new Claim(ClaimTypes.Name, user.Nome ?? user.Email)
             };
 
-            // FIX: Only add the EmpresaCnpj claim if the user actually belongs to one! (Analistas do not)
+            // Only add the EmpresaCnpj claim if the user actually belongs to one
             if (!string.IsNullOrEmpty(user.EmpresaCnpj))
             {
                 claims.Add(new Claim("EmpresaCnpj", user.EmpresaCnpj));
@@ -109,7 +139,7 @@ namespace Eva.Pages
             // Assign standard role for Authorize attributes
             if (!string.IsNullOrEmpty(user.PapelNome))
             {
-                claims.Add(new Claim(ClaimTypes.Role, user.PapelNome));
+                claims.Add(new Claim(ClaimTypes.Role, user.PapelNome.ToUpper()));
             }
 
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -122,21 +152,19 @@ namespace Eva.Pages
                 new AuthenticationProperties
                 {
                     IsPersistent = true,
-                    ExpiresUtc = DateTimeOffset.UtcNow.AddHours(12) // Standard 12-hour session
+                    ExpiresUtc = DateTimeOffset.UtcNow.AddHours(12)
                 });
 
             _logger.LogInformation("Usuário {Email} autenticado com sucesso.", user.Email);
 
-            // Redirect logic
             if (!string.IsNullOrEmpty(ReturnUrl) && Url.IsLocalUrl(ReturnUrl))
             {
                 return LocalRedirect(ReturnUrl);
             }
 
-            // Route based on role
             if (isInternalStaff)
             {
-                return RedirectToPage("/Analista/Dashboard"); // Adjust this path if your Analista home page is different
+                return RedirectToPage("/Analista/Dashboard");
             }
 
             return RedirectToPage("/Empresa/MinhaEmpresa");

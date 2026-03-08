@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -41,8 +42,6 @@ namespace Eva.Pages.Empresa
         {
             if (!ModelState.IsValid) return Page();
 
-            // We use IgnoreQueryFilters() here to check the absolute entire database 
-            // to ensure no one else in any other company is using this email.
             var emailExists = await _context.Usuarios.IgnoreQueryFilters().AnyAsync(u => u.Email == Input.Email);
             if (emailExists)
             {
@@ -57,13 +56,15 @@ namespace Eva.Pages.Empresa
                 Nome = Input.Nome,
                 Email = Input.Email,
                 Cpf = Input.Cpf,
-                Senha = Input.Senha,
                 EmpresaCnpj = cnpj,
-                PapelNome = "USUARIO_EMPRESA", // Forces the Sub-User role
+                PapelNome = "USUARIO_EMPRESA",
                 Ativo = true,
-                EmailValidado = true, // Auto-validate since it was created internally
+                EmailValidado = true,
                 CriadoEm = DateTime.UtcNow
             };
+
+            var hasher = new PasswordHasher<Usuario>();
+            novoUsuario.Senha = hasher.HashPassword(novoUsuario, Input.Senha);
 
             _context.Usuarios.Add(novoUsuario);
             await _context.SaveChangesAsync();
