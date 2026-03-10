@@ -36,6 +36,8 @@ namespace Eva.Data
             DocumentoVeiculos = Set<DocumentoVeiculo>();
             DocumentoMotoristas = Set<DocumentoMotorista>();
             TokensValidacaoEmail = Set<TokenValidacaoEmail>();
+            DocumentoTipos = Set<DocumentoTipo>();
+            DocumentoTipoPermissoes = Set<DocumentoTipoPermissao>();
         }
 
         public DbSet<Usuario> Usuarios { get; set; }
@@ -50,6 +52,8 @@ namespace Eva.Data
         public DbSet<DocumentoVeiculo> DocumentoVeiculos { get; set; }
         public DbSet<DocumentoMotorista> DocumentoMotoristas { get; set; }
         public DbSet<TokenValidacaoEmail> TokensValidacaoEmail { get; set; }
+        public DbSet<DocumentoTipo> DocumentoTipos { get; set; }
+        public DbSet<DocumentoTipoPermissao> DocumentoTipoPermissoes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -64,6 +68,9 @@ namespace Eva.Data
             modelBuilder.Entity<Motorista>().ToTable("motorista", "eventual");
             modelBuilder.Entity<VPendenciaAtual>().ToView("v_pendencia_atual", "eventual").HasKey(v => v.Id);
             modelBuilder.Entity<TokenValidacaoEmail>().ToTable("token_validacao_email", "web");
+
+            modelBuilder.Entity<DocumentoTipoPermissao>()
+                .HasKey(dtp => new { dtp.TipoNome, dtp.EntidadeTipo });
 
             // Token Configuration
             modelBuilder.Entity<TokenValidacaoEmail>(entity =>

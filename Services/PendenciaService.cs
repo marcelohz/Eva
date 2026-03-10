@@ -4,10 +4,10 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Eva.Data;
 using Eva.Models;
-using Eva.Models.ViewModels; // Needed to deserialize into our form shapes
+using Eva.Models.ViewModels;
 using Eva.Workflow;
 using System.Linq;
-using System.Text.Json; // Needed for JSON operations
+using System.Text.Json;
 
 namespace Eva.Services
 {
@@ -17,7 +17,6 @@ namespace Eva.Services
 
         public PendenciaService(EvaDbContext context) { _context = context; }
 
-        // 1. NEW: The Entry point for saving drafts from the UI
         public async Task SalvarDadosPropostosAsync(string tipo, string id, string dadosPropostos)
         {
             tipo = tipo.ToUpperInvariant();
@@ -25,7 +24,6 @@ namespace Eva.Services
 
             if (atual?.Status == WorkflowValidator.AguardandoAnalise)
             {
-                // Update the existing draft directly to prevent spamming the history table
                 var ticket = await _context.FluxoPendencias
                     .Where(f => f.EntidadeTipo == tipo && f.EntidadeId == id && f.Status == WorkflowValidator.AguardandoAnalise)
                     .OrderByDescending(f => f.Id)
@@ -34,13 +32,12 @@ namespace Eva.Services
                 if (ticket != null)
                 {
                     ticket.DadosPropostos = dadosPropostos;
-                    ticket.CriadoEm = DateTime.Now; // refresh the timestamp
+                    ticket.CriadoEm = DateTime.Now;
                     await _context.SaveChangesAsync();
                     return;
                 }
             }
 
-            // If no active ticket, transition it and pass the new draft
             await ProcessarTransicaoAsync(tipo, id, WorkflowValidator.AguardandoAnalise, null, null, dadosPropostos);
         }
 
@@ -49,7 +46,6 @@ namespace Eva.Services
         public async Task AprovarAsync(string tipo, string id, string analista) => await ProcessarTransicaoAsync(tipo, id, WorkflowValidator.Aprovado, analista);
         public async Task RejeitarAsync(string tipo, string id, string analista, string motivo) => await ProcessarTransicaoAsync(tipo, id, WorkflowValidator.Rejeitado, analista, motivo);
 
-        // Modified to accept 'novosDadosPropostos'
         private async Task ProcessarTransicaoAsync(string entidadeTipo, string entidadeId, string novoStatus, string? analistaEmail = null, string? motivo = null, string? novosDadosPropostos = null)
         {
             entidadeTipo = entidadeTipo.ToUpperInvariant();
@@ -59,10 +55,8 @@ namespace Eva.Services
 
             WorkflowValidator.ValidateTransition(atual?.Status, novoStatus, atual?.Analista, analistaEmail, motivo);
 
-            // If nothing changed, exit
             if (atual?.Status == novoStatus && novosDadosPropostos == null) return;
 
-            // 2. CARRY OVER: If the UI didn't pass a new draft (e.g., Analyst clicked "Aprovar"), pull it from the current ticket
             string? dadosPropostosFinais = novosDadosPropostos ?? atual?.DadosPropostos;
 
             var novaPendencia = new FluxoPendencia
@@ -72,26 +66,23 @@ namespace Eva.Services
                 Status = novoStatus,
                 Analista = analistaEmail,
                 Motivo = motivo,
-                DadosPropostos = dadosPropostosFinais, // Attach JSON to the new row
+                DadosPropostos = dadosPropostosFinais,
                 CriadoEm = DateTime.Now
             };
 
             _context.FluxoPendencias.Add(novaPendencia);
 
-            // 3. APPLY DATA: If approved, we map the JSON to the live tables
             if (novoStatus == WorkflowValidator.Aprovado && !string.IsNullOrEmpty(dadosPropostosFinais))
             {
                 await AplicarDadosAprovadosAsync(entidadeTipo, entidadeId, dadosPropostosFinais);
             }
 
-            await SyncEntityStatusAsync(entidadeTipo, entidadeId, novoStatus);
             await _context.SaveChangesAsync();
 
             if (novoStatus == WorkflowValidator.Aprovado)
                 await LinkApprovedDocumentsAsync(entidadeTipo, entidadeId, novaPendencia.Id);
         }
 
-        // Maps the JSON blob back to the real entity
         private async Task AplicarDadosAprovadosAsync(string tipo, string id, string json)
         {
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
@@ -134,7 +125,6 @@ namespace Eva.Services
             else if (tipo == "MOTORISTA" && int.TryParse(id, out int mId))
             {
                 var live = await _context.Motoristas.IgnoreQueryFilters().FirstOrDefaultAsync(m => m.Id == mId);
-                // Assuming we make a MotoristaVM later. Deserializing directly to Motorista model for now.
                 var draft = JsonSerializer.Deserialize<Motorista>(json, options);
                 if (live != null && draft != null)
                 {
@@ -155,13 +145,6 @@ namespace Eva.Services
 
             foreach (var doc in await docs.ToListAsync()) { doc.FluxoPendenciaId = fluxoId; doc.AprovadoEm = DateTime.Now; }
             await _context.SaveChangesAsync();
-        }
-
-        private async Task SyncEntityStatusAsync(string tipo, string id, string status)
-        {
-            if (tipo == "VEICULO") { var v = await _context.Veiculos.IgnoreQueryFilters().FirstOrDefaultAsync(v => v.Placa == id); if (v != null) v.EventualStatus = status; }
-            else if (tipo == "MOTORISTA" && int.TryParse(id, out int mId)) { var m = await _context.Motoristas.IgnoreQueryFilters().FirstOrDefaultAsync(m => m.Id == mId); if (m != null) m.EventualStatus = status; }
-            else if (tipo == "EMPRESA") { var e = await _context.Empresas.IgnoreQueryFilters().FirstOrDefaultAsync(e => e.Cnpj == id); if (e != null) e.EventualStatus = status; }
         }
 
         public async Task<List<FluxoPendencia>> GetHistoricoAsync(string tipo, string id) => await _context.FluxoPendencias.Where(p => p.EntidadeTipo == tipo.ToUpperInvariant() && p.EntidadeId == id).OrderByDescending(p => p.CriadoEm).ToListAsync();

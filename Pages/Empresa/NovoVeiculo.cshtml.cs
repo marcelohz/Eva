@@ -6,7 +6,7 @@ using Eva.Data;
 using Eva.Models;
 using Eva.Models.ViewModels;
 using Eva.Services;
-using Eva.Workflow; // ADDED
+using Eva.Workflow;
 using System.Security.Claims;
 
 namespace Eva.Pages.Empresa
@@ -62,8 +62,8 @@ namespace Eva.Pages.Empresa
                 VeiculoCombustivelNome = Input.VeiculoCombustivelNome,
                 NumeroLugares = Input.NumeroLugares,
                 AnoFabricacao = Input.AnoFabricacao,
-                ModeloAno = Input.ModeloAno,
-                EventualStatus = WorkflowValidator.AguardandoAnalise // Using validator
+                ModeloAno = Input.ModeloAno
+                // EventualStatus removed! The status is managed via FluxoPendencias
             };
 
             _context.Veiculos.Add(veiculo);
@@ -74,7 +74,7 @@ namespace Eva.Pages.Empresa
             if (UploadApolice != null) await _arquivoService.SalvarDocumentoAsync(UploadApolice, "APOLICE_SEGURO", "VEICULO", veiculo.Placa);
             if (UploadComprovante != null) await _arquivoService.SalvarDocumentoAsync(UploadComprovante, "COMPROVANTE_PAGAMENTO", "VEICULO", veiculo.Placa);
 
-            // CRITICAL FIX: Trigger the workflow so it appears in the Analyst's queue!
+            // This triggers the workflow and makes it appear in the Analyst's queue!
             await _pendenciaService.AvancarEntidadeAsync("VEICULO", veiculo.Placa);
 
             return RedirectToPage("./MeusVeiculos");

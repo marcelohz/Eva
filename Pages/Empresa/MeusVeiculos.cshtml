@@ -50,7 +50,8 @@
                         {
                             @foreach (var v in Model.Veiculos)
                             {
-                                var isLocked = v.EventualStatus == "EM_ANALISE";
+                                var health = Model.HealthReports.ContainsKey(v.Placa) ? Model.HealthReports[v.Placa] : new Eva.Models.EntityHealthReport();
+                                var isLocked = health.HasPendingChanges;
 
                                 <tr>
                                     <td class="ps-4">
@@ -70,23 +71,35 @@
                                         @(v.CorPrincipalNome ?? "-")
                                     </td>
                                     <td>
-                                        @switch (v.EventualStatus)
+                                        @if (health.IsLegal)
                                         {
-                                            case "AGUARDANDO_ANALISE":
-                                                <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split"></i> Aguardando</span>
-                                                break;
-                                            case "EM_ANALISE":
-                                                <span class="badge bg-info text-dark"><i class="bi bi-search"></i> Em Análise</span>
-                                                break;
-                                            case "APROVADO":
-                                                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Aprovado</span>
-                                                break;
-                                            case "REJEITADO":
-                                                <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Rejeitado</span>
-                                                break;
-                                            default:
-                                                <span class="badge bg-secondary"><i class="bi bi-file-earmark"></i> Pendente</span>
-                                                break;
+                                            <span class="badge bg-success"><i class="bi bi-check-circle"></i> Legalizado</span>
+                                        }
+                                        else if (health.HasPendingChanges)
+                                        {
+                                            <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split"></i> Em Análise</span>
+                                        }
+                                        else if (health.AnalystStatus == "INCOMPLETO")
+                                        {
+                                            <span class="badge bg-secondary"><i class="bi bi-file-earmark"></i> Incompleto</span>
+                                        }
+                                        else if (health.AnalystStatus == "REJEITADO")
+                                        {
+                                            <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Rejeitado</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger"><i class="bi bi-exclamation-triangle"></i> Bloqueado</span>
+                                            <div class="small text-muted mt-1">
+                                                @if (health.MissingMandatoryDocs.Any())
+                                                {
+                                                    <span>Falta doc</span>
+                                                }
+                                                @if (health.ExpiredDocs.Any())
+                                                {
+                                                    <span>Doc Vencido</span>
+                                                }
+                                            </div>
                                         }
                                     </td>
                                     <td class="text-end pe-4">

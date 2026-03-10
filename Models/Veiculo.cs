@@ -51,8 +51,5 @@ namespace Eva.Models
 
         [Column("data_inclusao_eventual")]
         public DateOnly? DataInclusaoEventual { get; set; }
-
-        [Column("eventual_status")]
-        public string? EventualStatus { get; set; }
     }
 }

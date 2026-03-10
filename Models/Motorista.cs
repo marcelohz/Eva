@@ -39,9 +39,6 @@ namespace Eva.Models
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public DateTime CriadoEm { get; set; }
 
-        [Column("eventual_status")]
-        public string? EventualStatus { get; set; }
-
         [ValidateNever]
         [ForeignKey("EmpresaCnpj")]
         public virtual Empresa? Empresa { get; set; }

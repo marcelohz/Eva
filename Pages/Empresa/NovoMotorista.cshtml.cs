@@ -4,9 +4,9 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Eva.Data;
 using Eva.Models;
-using Eva.Models.ViewModels; // ADDED
+using Eva.Models.ViewModels;
 using Eva.Services;
-using Eva.Workflow; // ADDED
+using Eva.Workflow;
 using System.Security.Claims;
 
 namespace Eva.Pages.Empresa
@@ -25,7 +25,6 @@ namespace Eva.Pages.Empresa
             _arquivoService = arquivoService;
         }
 
-        // CHANGED: Using VM for security consistency
         [BindProperty]
         public MotoristaVM Input { get; set; } = new();
 
@@ -50,8 +49,8 @@ namespace Eva.Pages.Empresa
                 Nome = Input.Nome,
                 Cpf = Input.Cpf,
                 Cnh = Input.Cnh,
-                Email = Input.Email,
-                EventualStatus = WorkflowValidator.AguardandoAnalise // CRITICAL FIX: Set initial status
+                Email = Input.Email
+                // EventualStatus removed! The status is managed via FluxoPendencias
             };
 
             _context.Motoristas.Add(motorista);
@@ -62,7 +61,7 @@ namespace Eva.Pages.Empresa
                 await _arquivoService.SalvarDocumentoAsync(UploadCnh, "CNH", "MOTORISTA", motorista.Id.ToString());
             }
 
-            // CRITICAL FIX: Trigger the workflow so it appears in the Analyst's queue!
+            // This triggers the workflow and makes it appear in the Analyst's queue!
             await _pendenciaService.AvancarEntidadeAsync("MOTORISTA", motorista.Id.ToString());
 
             return RedirectToPage("./MeusMotoristas");
