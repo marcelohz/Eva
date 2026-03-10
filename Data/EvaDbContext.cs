@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using System.Security.Claims;
+using System;
 using Eva.Models;
 
 namespace Eva.Data
@@ -17,13 +19,11 @@ namespace Eva.Data
         {
             var user = httpContextAccessor.HttpContext?.User;
 
-            // Access control flags
             _hasTotalAccess = (user?.IsInRole("ANALISTA") ?? false) || (user?.IsInRole("ADMIN") ?? false);
             _isEmpresaMaster = user?.IsInRole("EMPRESA") ?? false;
             _empresaCnpj = user?.FindFirstValue("EmpresaCnpj");
             _userEmail = user?.FindFirstValue(ClaimTypes.Email) ?? user?.Identity?.Name;
 
-            // Initialize DbSets to satisfy non-nullable warnings
             Usuarios = Set<Usuario>();
             Papeis = Set<Papel>();
             Empresas = Set<Empresa>();
@@ -38,6 +38,13 @@ namespace Eva.Data
             TokensValidacaoEmail = Set<TokenValidacaoEmail>();
             DocumentoTipos = Set<DocumentoTipo>();
             DocumentoTipoPermissoes = Set<DocumentoTipoPermissao>();
+
+            Viagens = Set<Viagem>();
+            ViagemTipos = Set<ViagemTipo>();
+            Passageiros = Set<Passageiro>();
+            DocumentoViagens = Set<DocumentoViagem>();
+            Regioes = Set<Regiao>();
+            Municipios = Set<Municipio>();
         }
 
         public DbSet<Usuario> Usuarios { get; set; }
@@ -54,6 +61,22 @@ namespace Eva.Data
         public DbSet<TokenValidacaoEmail> TokensValidacaoEmail { get; set; }
         public DbSet<DocumentoTipo> DocumentoTipos { get; set; }
         public DbSet<DocumentoTipoPermissao> DocumentoTipoPermissoes { get; set; }
+        public DbSet<Viagem> Viagens { get; set; }
+        public DbSet<ViagemTipo> ViagemTipos { get; set; }
+        public DbSet<Passageiro> Passageiros { get; set; }
+        public DbSet<DocumentoViagem> DocumentoViagens { get; set; }
+        public DbSet<Regiao> Regioes { get; set; }
+        public DbSet<Municipio> Municipios { get; set; }
+
+        protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+        {
+            base.ConfigureConventions(configurationBuilder);
+
+            // Apply the UTC converter globally to all DateTime properties (handles DateTime? automatically)
+            configurationBuilder
+                .Properties<DateTime>()
+                .HaveConversion<UtcDateTimeConverter>();
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -61,18 +84,18 @@ namespace Eva.Data
 
             modelBuilder.HasDefaultSchema("web");
 
-            // Table Mappings
             modelBuilder.Entity<Papel>().HasKey(p => p.Nome);
             modelBuilder.Entity<Empresa>().ToTable("empresa", "geral");
             modelBuilder.Entity<Veiculo>().ToTable("veiculo", "geral");
             modelBuilder.Entity<Motorista>().ToTable("motorista", "eventual");
+            modelBuilder.Entity<Regiao>().ToTable("regiao", "geral");
+            modelBuilder.Entity<Municipio>().ToTable("municipio", "geral");
             modelBuilder.Entity<VPendenciaAtual>().ToView("v_pendencia_atual", "eventual").HasKey(v => v.Id);
             modelBuilder.Entity<TokenValidacaoEmail>().ToTable("token_validacao_email", "web");
 
             modelBuilder.Entity<DocumentoTipoPermissao>()
                 .HasKey(dtp => new { dtp.TipoNome, dtp.EntidadeTipo });
 
-            // Token Configuration
             modelBuilder.Entity<TokenValidacaoEmail>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -83,14 +106,31 @@ namespace Eva.Data
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // Global Query Filters for Data Isolation
+            modelBuilder.Entity<Passageiro>()
+                .HasOne(p => p.Viagem)
+                .WithMany(v => v.Passageiros)
+                .HasForeignKey(p => p.ViagemId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             modelBuilder.Entity<Veiculo>().HasQueryFilter(v => _hasTotalAccess || v.EmpresaCnpj == _empresaCnpj);
             modelBuilder.Entity<Motorista>().HasQueryFilter(m => _hasTotalAccess || m.EmpresaCnpj == _empresaCnpj);
             modelBuilder.Entity<Empresa>().HasQueryFilter(e => _hasTotalAccess || e.Cnpj == _empresaCnpj);
+            modelBuilder.Entity<Viagem>().HasQueryFilter(v => _hasTotalAccess || v.EmpresaCnpj == _empresaCnpj);
 
             modelBuilder.Entity<Usuario>().HasQueryFilter(u => _hasTotalAccess ||
                                                               (_isEmpresaMaster && u.EmpresaCnpj == _empresaCnpj) ||
                                                               u.Email == _userEmail);
+        }
+    }
+
+    // PRODUCTION-READY GLOBAL FIX: Formal ValueConverter for PostgreSQL UTC requirement
+    public class UtcDateTimeConverter : ValueConverter<DateTime, DateTime>
+    {
+        public UtcDateTimeConverter()
+            : base(
+                v => v.Kind == DateTimeKind.Utc ? v : v.ToUniversalTime(),
+                v => DateTime.SpecifyKind(v, DateTimeKind.Utc))
+        {
         }
     }
 }

@@ -1,8 +1,12 @@
-﻿using System.Security.Cryptography;
+﻿using System;
+using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Eva.Data;
 using Eva.Models;
-using System.Text;
 
 namespace Eva.Services
 {
@@ -39,18 +43,29 @@ namespace Eva.Services
                 ContentType = file.ContentType,
                 Tamanho = file.Length,
                 Hash = hash,
-                DataUpload = DateTime.Now
+                DataUpload = DateTime.UtcNow // Always use UTC for PostgreSQL
             };
 
             _context.Documentos.Add(doc);
 
-            if (entTipo == "EMPRESA") _context.DocumentoEmpresas.Add(new DocumentoEmpresa { Documento = doc, EmpresaCnpj = entId });
-            else if (entTipo == "VEICULO") _context.DocumentoVeiculos.Add(new DocumentoVeiculo { Documento = doc, VeiculoPlaca = entId });
-            else if (entTipo == "MOTORISTA" && int.TryParse(entId, out int mId)) _context.DocumentoMotoristas.Add(new DocumentoMotorista { Documento = doc, MotoristaId = mId });
+            // Link the document to the correct entity table
+            if (entTipo == "EMPRESA")
+                _context.DocumentoEmpresas.Add(new DocumentoEmpresa { Documento = doc, EmpresaCnpj = entId });
+            else if (entTipo == "VEICULO")
+                _context.DocumentoVeiculos.Add(new DocumentoVeiculo { Documento = doc, VeiculoPlaca = entId });
+            else if (entTipo == "MOTORISTA" && int.TryParse(entId, out int mId))
+                _context.DocumentoMotoristas.Add(new DocumentoMotorista { Documento = doc, MotoristaId = mId });
+            else if (entTipo == "VIAGEM" && int.TryParse(entId, out int vId))
+                _context.DocumentoViagens.Add(new DocumentoViagem { Documento = doc, ViagemId = vId }); // THE FIX: Map Trip Documents
 
             await _context.SaveChangesAsync();
-            // RESTORED: Automatic workflow trigger
-            await _pendenciaService.AvancarEntidadeAsync(entTipo, entId);
+
+            // THE FIX: Only trigger the approval workflow if the entity actually requires approval
+            if (entTipo != "VIAGEM")
+            {
+                await _pendenciaService.AvancarEntidadeAsync(entTipo, entId);
+            }
+
             return doc;
         }
 
@@ -61,8 +76,12 @@ namespace Eva.Services
             {
                 _context.Documentos.Remove(doc);
                 await _context.SaveChangesAsync();
-                // RESTORED: Automatic workflow trigger
-                await _pendenciaService.AvancarEntidadeAsync(entTipo, entId);
+
+                // THE FIX: Only trigger the approval workflow if the entity actually requires approval
+                if (entTipo != "VIAGEM")
+                {
+                    await _pendenciaService.AvancarEntidadeAsync(entTipo, entId);
+                }
             }
         }
     }

@@ -1,0 +1,351 @@
+﻿@page
+@model Eva.Pages.Empresa.NovaViagemModel
+@{
+    ViewData["Title"] = "Cadastrar Nova Viagem - Eva";
+}
+
+<div class="container mt-5 mb-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Nova Viagem</li>
+        </ol>
+    </nav>
+
+    <div class="mb-4">
+        <h1 class="h3 mb-0">Cadastrar Nova Viagem</h1>
+        <p class="text-muted">Preencha os dados da viagem, defina os recursos e anexe a lista de passageiros.</p>
+    </div>
+
+    <form method="post" enctype="multipart/form-data">
+
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger shadow-sm"></div>
+
+        <div class="row g-4">
+            <div class="col-12">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-dark text-white rounded-top">
+                        <h5 class="mb-0"><i class="bi bi-file-earmark-text me-2"></i> 1. Dados do Contrato</h5>
+                    </div>
+                    <div class="card-body bg-light">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label asp-for="Input.ViagemTipoNome" class="form-label fw-bold">Tipo de Viagem <span class="text-danger">*</span></label>
+                                <select asp-for="Input.ViagemTipoNome" asp-items="Model.ViagemTipos" class="form-select shadow-sm">
+                                    <option value="">-- Selecione o Tipo --</option>
+                                </select>
+                                <span asp-validation-for="Input.ViagemTipoNome" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-5">
+                                <label asp-for="Input.NomeContratante" class="form-label fw-bold">Nome do Contratante <span class="text-danger">*</span></label>
+                                <input asp-for="Input.NomeContratante" class="form-control shadow-sm" placeholder="Nome ou Razão Social" />
+                                <span asp-validation-for="Input.NomeContratante" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Input.CpfCnpjContratante" class="form-label fw-bold">CPF/CNPJ Contratante <span class="text-danger">*</span></label>
+                                <input asp-for="Input.CpfCnpjContratante" class="form-control shadow-sm" placeholder="Apenas números" />
+                                <span asp-validation-for="Input.CpfCnpjContratante" class="text-danger small"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0"><i class="bi bi-map me-2"></i> 2. Logística e Itinerário</h5>
+                    </div>
+                    <div class="card-body bg-light">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="Input.IdaEm" class="form-label fw-bold">Data/Hora de Saída <span class="text-danger">*</span></label>
+                                <input asp-for="Input.IdaEm" type="datetime-local" class="form-control shadow-sm" />
+                                <span asp-validation-for="Input.IdaEm" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Input.VoltaEm" class="form-label fw-bold">Data/Hora de Retorno <span class="text-danger">*</span></label>
+                                <input asp-for="Input.VoltaEm" type="datetime-local" class="form-control shadow-sm" />
+                                <span asp-validation-for="Input.VoltaEm" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Input.RegiaoCodigo" class="form-label fw-bold">Região de Operação <span class="text-danger">*</span></label>
+                                <select asp-for="Input.RegiaoCodigo" asp-items="Model.Regioes" class="form-select shadow-sm" id="Input_RegiaoCodigo">
+                                    <option value="">-- Selecione a Região --</option>
+                                </select>
+                                <span asp-validation-for="Input.RegiaoCodigo" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Input.MunicipioOrigem" class="form-label fw-bold">Município de Origem <span class="text-danger">*</span></label>
+                                <select asp-for="Input.MunicipioOrigem" class="form-select shadow-sm" id="Input_MunicipioOrigem">
+                                    <option value="">-- Selecione o Município --</option>
+                                </select>
+                                <span asp-validation-for="Input.MunicipioOrigem" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Input.MunicipioDestino" class="form-label fw-bold">Município de Destino <span class="text-danger">*</span></label>
+                                <select asp-for="Input.MunicipioDestino" class="form-select shadow-sm" id="Input_MunicipioDestino">
+                                    <option value="">-- Selecione o Município --</option>
+                                </select>
+                                <span asp-validation-for="Input.MunicipioDestino" class="text-danger small"></span>
+                            </div>
+                            <div class="col-12">
+                                <label asp-for="Input.Descricao" class="form-label fw-bold">Descrição / Observações</label>
+                                <textarea asp-for="Input.Descricao" class="form-control shadow-sm" rows="2" placeholder="Detalhes adicionais da viagem (Opcional)"></textarea>
+                                <span asp-validation-for="Input.Descricao" class="text-danger small"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-dark text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="bi bi-bus-front me-2"></i> 3. Veículo e Motoristas</h5>
+                            <span class="badge bg-success"><i class="bi bi-check-circle"></i> Apenas recursos legalizados</span>
+                        </div>
+                    </div>
+                    <div class="card-body bg-light">
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label asp-for="Input.VeiculoPlaca" class="form-label fw-bold">Veículo <span class="text-danger">*</span></label>
+                                <select asp-for="Input.VeiculoPlaca" asp-items="Model.VeiculosValidos" class="form-select shadow-sm">
+                                    <option value="">-- Selecione o Veículo --</option>
+                                </select>
+                                <span asp-validation-for="Input.VeiculoPlaca" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Input.MotoristaId" class="form-label fw-bold">Motorista Principal <span class="text-danger">*</span></label>
+                                <select asp-for="Input.MotoristaId" asp-items="Model.MotoristasValidos" class="form-select shadow-sm">
+                                    <option value="">-- Selecione o Motorista --</option>
+                                </select>
+                                <span asp-validation-for="Input.MotoristaId" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Input.MotoristaAuxId" class="form-label fw-bold">Motorista Auxiliar (Opcional)</label>
+                                <select asp-for="Input.MotoristaAuxId" asp-items="Model.MotoristasValidos" class="form-select shadow-sm">
+                                    <option value="">-- Nenhum --</option>
+                                </select>
+                                <span asp-validation-for="Input.MotoristaAuxId" class="text-danger small"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card shadow-sm border-0 border-primary">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-people me-2"></i> 4. Lista de Passageiros</h5>
+                        <button type="button" class="btn btn-sm btn-light text-primary fw-bold" id="btnAdicionarPassageiro">
+                            <i class="bi bi-plus-lg"></i> Adicionar Passageiro
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <span asp-validation-for="Input.Passageiros" class="text-danger small d-block p-3"></span>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0" id="tabelaPassageiros">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="ps-4" style="width: 50%;">Nome Completo</th>
+                                        <th style="width: 40%;">Documento (CPF/RG)</th>
+                                        <th class="text-center" style="width: 10%;">Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (Model.Input.Passageiros != null && Model.Input.Passageiros.Any())
+                                    {
+                                        for (int i = 0; i < Model.Input.Passageiros.Count; i++)
+                                        {
+                                            <tr>
+                                                <td class="ps-4">
+                                                    <input type="text" name="Input.Passageiros[@i].Nome" value="@Model.Input.Passageiros[i].Nome" class="form-control form-control-sm" required placeholder="Nome completo" />
+                                                </td>
+                                                <td>
+                                                    <input type="text" name="Input.Passageiros[@i].Documento" value="@Model.Input.Passageiros[i].Documento" class="form-control form-control-sm" required placeholder="Nº do Documento" />
+                                                </td>
+                                                <td class="text-center">
+                                                    <button type="button" class="btn btn-sm btn-outline-danger btn-remove-passenger" title="Remover">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="emptyPassengersMessage" class="p-4 text-center text-muted">
+                            <i class="bi bi-person-x display-6 d-block mb-2"></i>
+                            Nenhum passageiro adicionado. Clique no botão acima para começar.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i> 5. Documentação</h5>
+                    </div>
+                    <div class="card-body bg-light">
+                        @if (!ViewData.ModelState.IsValid)
+                        {
+                            <div class="alert alert-warning py-2 mb-3">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                <strong>Atenção:</strong> Por motivos de segurança do navegador, você precisa selecionar o arquivo da <strong>Nota Fiscal</strong> novamente.
+                            </div>
+                        }
+
+                        <div class="mb-3">
+                            <label asp-for="UploadNotaFiscal" class="form-label fw-bold">Anexar Nota Fiscal (Obrigatório) <span class="text-danger">*</span></label>
+                            <input asp-for="UploadNotaFiscal" type="file" class="form-control shadow-sm" accept=".pdf,.jpg,.jpeg,.png" required />
+                            <span asp-validation-for="UploadNotaFiscal" class="text-danger small"></span>
+                            <div class="form-text text-muted"><i class="bi bi-info-circle"></i> Formatos aceitos: PDF, JPG, PNG. Tamanho máximo: 5MB.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 text-end mt-4 border-top pt-4">
+                <a href="/Empresa/MinhaEmpresa" class="btn btn-outline-secondary btn-lg me-2">Cancelar</a>
+                <button type="submit" class="btn btn-success btn-lg shadow">
+                    <i class="bi bi-check-circle"></i> Salvar e Registrar Viagem
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            // --- AJAX MUNICIPALITIES SCRIPT ---
+            const selectRegiao = document.getElementById('Input_RegiaoCodigo');
+            const selectOrigem = document.getElementById('Input_MunicipioOrigem');
+            const selectDestino = document.getElementById('Input_MunicipioDestino');
+
+            // THE FIX: Html.Raw prevents Razor from converting "São" to "S&#xE3;o", which breaks the JS comparison!
+            const selectedOrigem = '@Html.Raw(Model.Input.MunicipioOrigem)';
+            const selectedDestino = '@Html.Raw(Model.Input.MunicipioDestino)';
+
+            async function carregarMunicipios(regiaoCodigo, valOrigem, valDestino) {
+                selectOrigem.innerHTML = '<option value="">-- Carregando... --</option>';
+                selectDestino.innerHTML = '<option value="">-- Carregando... --</option>';
+
+                if (!regiaoCodigo) {
+                    selectOrigem.innerHTML = '<option value="">-- Selecione o Município --</option>';
+                    selectDestino.innerHTML = '<option value="">-- Selecione o Município --</option>';
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`?handler=Municipios&regiaoCodigo=${regiaoCodigo}`);
+                    const data = await response.json();
+
+                    selectOrigem.innerHTML = '<option value="">-- Selecione o Município --</option>';
+                    selectDestino.innerHTML = '<option value="">-- Selecione o Município --</option>';
+
+                    data.forEach(m => {
+                        selectOrigem.add(new Option(m.text, m.value));
+                        selectDestino.add(new Option(m.text, m.value));
+                    });
+
+                    // THE FIX: Set the value directly on the select element after generating options
+                    if (valOrigem) selectOrigem.value = valOrigem;
+                    if (valDestino) selectDestino.value = valDestino;
+
+                } catch (error) {
+                    console.error('Erro ao carregar municípios:', error);
+                    selectOrigem.innerHTML = '<option value="">-- Erro ao carregar --</option>';
+                    selectDestino.innerHTML = '<option value="">-- Erro ao carregar --</option>';
+                }
+            }
+
+            selectRegiao.addEventListener('change', function() {
+                carregarMunicipios(this.value, '', '');
+            });
+
+            if (selectRegiao.value) {
+                carregarMunicipios(selectRegiao.value, selectedOrigem, selectedDestino);
+            }
+
+            // --- PASSENGER TABLE SCRIPT ---
+            const tableBody = document.querySelector('#tabelaPassageiros tbody');
+            const btnAdd = document.getElementById('btnAdicionarPassageiro');
+            const emptyMessage = document.getElementById('emptyPassengersMessage');
+
+            let passengerIndex = @(Model.Input.Passageiros?.Count ?? 0);
+
+            function toggleEmptyMessage() {
+                if (tableBody.children.length === 0) {
+                    emptyMessage.style.display = 'block';
+                    tableBody.parentElement.style.display = 'none';
+                } else {
+                    emptyMessage.style.display = 'none';
+                    tableBody.parentElement.style.display = 'table';
+                }
+            }
+
+            function addPassengerRow() {
+                const tr = document.createElement('tr');
+
+                tr.innerHTML = `
+                    <td class="ps-4">
+                        <input type="text" name="Input.Passageiros[${passengerIndex}].Nome" class="form-control form-control-sm" required placeholder="Nome completo" />
+                    </td>
+                    <td>
+                        <input type="text" name="Input.Passageiros[${passengerIndex}].Documento" class="form-control form-control-sm" required placeholder="Nº do Documento" />
+                    </td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-remove-passenger" title="Remover">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                `;
+
+                tableBody.appendChild(tr);
+                passengerIndex++;
+                toggleEmptyMessage();
+            }
+
+            tableBody.addEventListener('click', function (e) {
+                if (e.target.closest('.btn-remove-passenger')) {
+                    const row = e.target.closest('tr');
+                    row.remove();
+                    reindexPassengers();
+                    toggleEmptyMessage();
+                }
+            });
+
+            function reindexPassengers() {
+                const rows = tableBody.querySelectorAll('tr');
+                passengerIndex = rows.length;
+
+                rows.forEach((row, newIndex) => {
+                    const inputs = row.querySelectorAll('input');
+                    inputs.forEach(input => {
+                        const oldName = input.getAttribute('name');
+                        if (oldName) {
+                            const newName = oldName.replace(/\[\d+\]/, `[${newIndex}]`);
+                            input.setAttribute('name', newName);
+                        }
+                    });
+                });
+            }
+
+            btnAdd.addEventListener('click', addPassengerRow);
+
+            if (passengerIndex === 0) {
+                addPassengerRow();
+            } else {
+                toggleEmptyMessage();
+            }
+        });
+    </script>
+}

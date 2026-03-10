@@ -51,6 +51,11 @@ namespace Eva.Services
                 .Select(g => g.OrderByDescending(f => f.CriadoEm).First())
                 .ToDictionaryAsync(f => f.EntidadeId, f => f.Status);
 
+            // 2.5 NEW: Fetch Absolute Latest Statuses (To fix the "Incompleto" bug on new entities)
+            var currentStatuses = await _context.VPendenciasAtuais
+                .Where(p => p.EntidadeTipo == entityType.ToUpper() && ids.Contains(p.EntidadeId))
+                .ToDictionaryAsync(p => p.EntidadeId, p => p.Status);
+
             // 3. Fetch Entity Documents based on Entity Type
             var entityDocs = await FetchDocumentsForEntitiesAsync(entityType.ToUpper(), ids);
 
@@ -63,6 +68,9 @@ namespace Eva.Services
 
                 // Set Analyst Status (Defaults to INCOMPLETO if no decisive record is found)
                 report.AnalystStatus = decisiveStatuses.TryGetValue(id, out var status) ? status : "INCOMPLETO";
+
+                // Set Current Status
+                report.CurrentStatus = currentStatuses.TryGetValue(id, out var currStatus) ? currStatus : "INCOMPLETO";
 
                 var docsForEntity = entityDocs.TryGetValue(id, out var docs) ? docs : new List<Documento>();
 

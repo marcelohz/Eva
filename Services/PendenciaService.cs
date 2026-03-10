@@ -32,7 +32,8 @@ namespace Eva.Services
                 if (ticket != null)
                 {
                     ticket.DadosPropostos = dadosPropostos;
-                    ticket.CriadoEm = DateTime.Now;
+                    // FIX: PostgreSQL requires UTC
+                    ticket.CriadoEm = DateTime.UtcNow;
                     await _context.SaveChangesAsync();
                     return;
                 }
@@ -67,7 +68,8 @@ namespace Eva.Services
                 Analista = analistaEmail,
                 Motivo = motivo,
                 DadosPropostos = dadosPropostosFinais,
-                CriadoEm = DateTime.Now
+                // FIX: PostgreSQL requires UTC
+                CriadoEm = DateTime.UtcNow
             };
 
             _context.FluxoPendencias.Add(novaPendencia);
@@ -143,7 +145,8 @@ namespace Eva.Services
             else if (tipo == "VEICULO") docs = docs.Where(d => _context.DocumentoVeiculos.Any(dv => dv.Id == d.Id && dv.VeiculoPlaca == id));
             else if (tipo == "MOTORISTA" && int.TryParse(id, out int mId)) docs = docs.Where(d => _context.DocumentoMotoristas.Any(dm => dm.Id == d.Id && dm.MotoristaId == mId));
 
-            foreach (var doc in await docs.ToListAsync()) { doc.FluxoPendenciaId = fluxoId; doc.AprovadoEm = DateTime.Now; }
+            // FIX: PostgreSQL requires UTC
+            foreach (var doc in await docs.ToListAsync()) { doc.FluxoPendenciaId = fluxoId; doc.AprovadoEm = DateTime.UtcNow; }
             await _context.SaveChangesAsync();
         }
 

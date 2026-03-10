@@ -19,6 +19,7 @@ namespace Eva.Services
         public string SenderName { get; set; } = string.Empty;
         public string SenderEmail { get; set; } = string.Empty;
         public string SmtpPassword { get; set; } = string.Empty;
+        public string AuthEmail { get; set; } = string.Empty;
     }
 
     public class EmailService : IEmailService
@@ -64,7 +65,7 @@ namespace Eva.Services
             using var smtp = new MailKit.Net.Smtp.SmtpClient();
 
             await smtp.ConnectAsync(_settings.SmtpServer, _settings.SmtpPort, SecureSocketOptions.StartTls);
-            await smtp.AuthenticateAsync(_settings.SenderEmail, _settings.SmtpPassword);
+            await smtp.AuthenticateAsync(_settings.AuthEmail, _settings.SmtpPassword);
             await smtp.SendAsync(email);
             await smtp.DisconnectAsync(true);
         }

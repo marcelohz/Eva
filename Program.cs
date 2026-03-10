@@ -31,6 +31,9 @@ builder.Services.Configure<TurnstileSettings>(builder.Configuration.GetSection("
 builder.Services.AddHttpClient<ITurnstileService, TurnstileService>();
 builder.Services.AddTransient<IEmailService, EmailService>(); // You'll need this for Hangfire
 
+// THE FIX: Register the EntityStatusService so NovaViagem (and the rest of the app) can use it!
+builder.Services.AddScoped<IEntityStatusService, EntityStatusService>();
+
 // --- HANGFIRE (Dedicated Schema) ---
 builder.Services.AddHangfire(config => config
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)

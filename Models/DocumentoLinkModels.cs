@@ -47,4 +47,19 @@ namespace Eva.Models
 
         public virtual Documento Documento { get; set; } = null!;
     }
+
+    // NEW: Links a Document to a Trip (e.g., Nota Fiscal)
+    [Table("documento_viagem", Schema = "eventual")]
+    public class DocumentoViagem
+    {
+        [Key]
+        [Column("id")]
+        [ForeignKey("Documento")]
+        public int Id { get; set; }
+
+        [Column("viagem_id")]
+        public int ViagemId { get; set; }
+
+        public virtual Documento Documento { get; set; } = null!;
+    }
 }
