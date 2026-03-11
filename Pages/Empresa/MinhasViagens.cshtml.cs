@@ -6,6 +6,7 @@ using Eva.Data;
 using Eva.Models;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace Eva.Pages.Empresa
@@ -24,9 +25,15 @@ namespace Eva.Pages.Empresa
 
         public async Task<IActionResult> OnGetAsync()
         {
-            // The EvaDbContext global query filter already ensures the logged-in
-            // company only sees its own trips!
+            var userEmail = User.FindFirstValue(ClaimTypes.Email);
+            var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == userEmail);
+
+            if (user == null || string.IsNullOrEmpty(user.EmpresaCnpj))
+                return RedirectToPage("/Login");
+
+            // Segurança: Garante que a empresa só veja suas próprias viagens
             Viagens = await _context.Viagens
+                .Where(v => v.EmpresaCnpj == user.EmpresaCnpj)
                 .OrderByDescending(v => v.Id)
                 .ToListAsync();
 

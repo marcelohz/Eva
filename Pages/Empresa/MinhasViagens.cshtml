@@ -5,6 +5,23 @@
 }
 
 <div class="container mt-5 mb-5">
+
+    @if (TempData["MensagemSucesso"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["MensagemSucesso"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["MensagemAviso"] != null)
+    {
+        <div class="alert alert-warning alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["MensagemAviso"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Dashboard</a></li>
@@ -58,7 +75,14 @@
                                         #@v.Id.ToString("D5")
                                     </td>
                                     <td>
-                                        <span class="badge bg-success"><i class="bi bi-check-circle"></i> Registrada</span>
+                                        @if (v.Pago)
+                                        {
+                                            <span class="badge bg-success"><i class="bi bi-check-circle"></i> Paga e Liberada</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split"></i> Aguardando Pagamento</span>
+                                        }
                                     </td>
                                     <td>
                                         <span class="d-inline-block text-truncate" style="max-width: 150px;" title="@v.NomeContratante">
@@ -82,6 +106,12 @@
                                     </td>
                                     <td class="text-end pe-4">
                                         <div class="btn-group">
+                                            @if (!v.Pago)
+                                            {
+                                                <a href="/Empresa/PagamentoViagem/@v.Id" class="btn btn-sm btn-success" title="Realizar Pagamento">
+                                                    <i class="bi bi-credit-card"></i> Pagar
+                                                </a>
+                                            }
                                             <button type="button" class="btn btn-sm btn-outline-primary" title="Visualizar Detalhes">
                                                 <i class="bi bi-eye"></i>
                                             </button>

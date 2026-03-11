@@ -59,6 +59,13 @@ namespace Eva.Models
         [Column("descricao")]
         public string? Descricao { get; set; }
 
+        // --- NOVOS CAMPOS FINANCEIROS ---
+        [Column("valor", TypeName = "numeric(12,2)")]
+        public decimal Valor { get; set; }
+
+        [Column("pago")]
+        public bool Pago { get; set; }
+
         // Navigation properties
         [ValidateNever]
         [ForeignKey("EmpresaCnpj")]

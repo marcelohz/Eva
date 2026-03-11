@@ -1,0 +1,131 @@
+﻿@page "{id:int}"
+@model Eva.Pages.Empresa.PagamentoViagemModel
+@{
+    ViewData["Title"] = "Revisão e Pagamento - Eva";
+}
+
+<div class="container mt-5 mb-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="/Empresa/MinhasViagens">Minhas Viagens</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Pagamento</li>
+        </ol>
+    </nav>
+
+    <div class="mb-4 d-flex justify-content-between align-items-end">
+        <div>
+            <h1 class="h3 mb-0">Revisão e Pagamento</h1>
+            <p class="text-muted">Confirme os dados da viagem e efetue o pagamento para liberar a licença. (Passo 2 de 2)</p>
+        </div>
+        <div>
+            <span class="badge bg-warning text-dark fs-6 px-3 py-2 border border-warning">
+                <i class="bi bi-hourglass-split me-1"></i> Aguardando Pagamento
+            </span>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="bi bi-file-text me-2"></i> Resumo da Solicitação (#@Model.ViagemAtual.Id.ToString("D5"))</h5>
+                </div>
+                <div class="card-body bg-light">
+
+                    <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">Contratante</h6>
+                    <div class="row mb-4">
+                        <div class="col-md-8">
+                            <span class="text-muted small d-block">Nome / Razão Social</span>
+                            <span class="fw-bold fs-5">@Model.ViagemAtual.NomeContratante</span>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="text-muted small d-block">Documento</span>
+                            <span class="fw-bold fs-5">@Model.ViagemAtual.CpfCnpjContratante</span>
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">Itinerário e Logística</h6>
+                    <div class="row mb-4 g-3">
+                        <div class="col-md-6">
+                            <div class="p-3 bg-white border rounded shadow-sm h-100">
+                                <span class="badge bg-secondary mb-2">ORIGEM</span>
+                                <h5 class="fw-bold mb-1">@Model.ViagemAtual.MunicipioOrigem</h5>
+                                <p class="text-muted mb-0"><i class="bi bi-calendar-event me-1"></i> Saída: @Model.ViagemAtual.IdaEm.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-white border rounded shadow-sm h-100">
+                                <span class="badge bg-primary mb-2">DESTINO</span>
+                                <h5 class="fw-bold mb-1">@Model.ViagemAtual.MunicipioDestino</h5>
+                                <p class="text-muted mb-0"><i class="bi bi-calendar-check me-1"></i> Retorno: @Model.ViagemAtual.VoltaEm.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">Recurso Alocado</h6>
+                    <div class="row">
+                        <div class="col-12">
+                            <span class="text-muted small d-block">Veículo Principal</span>
+                            <span class="fw-bold fs-5 text-uppercase">
+                                <i class="bi bi-bus-front me-2 text-secondary"></i>
+                                @Model.ViagemAtual.VeiculoPlaca
+                                @if (Model.ViagemAtual.Veiculo != null)
+                                {
+                                    <span class="fs-6 fw-normal text-muted ms-2">(@Model.ViagemAtual.Veiculo.Modelo)</span>
+                                }
+                            </span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow border-primary sticky-top" style="top: 2rem;">
+                <div class="card-header bg-primary text-white text-center py-3">
+                    <h5 class="mb-0"><i class="bi bi-credit-card me-2"></i> Checkout de Tarifa</h5>
+                </div>
+                <div class="card-body p-4">
+
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Tarifa Base</span>
+                        <span class="fw-bold">R$ 150,00</span>
+                    </div>
+
+                    @if (Model.ViagemAtual.Valor > 150.00m)
+                    {
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Acréscimo Intermunicipal</span>
+                            <span class="fw-bold">R$ @((Model.ViagemAtual.Valor - 150.00m).ToString("N2"))</span>
+                        </div>
+                    }
+
+                    <hr class="my-4">
+
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <span class="text-uppercase fw-bold text-secondary">Total a Pagar</span>
+                        <h2 class="text-success fw-bold mb-0">R$ @Model.ViagemAtual.Valor.ToString("N2")</h2>
+                    </div>
+
+                    <div class="alert alert-info py-2 small mb-4">
+                        <i class="bi bi-info-circle me-1"></i> O módulo de integração bancária encontra-se em desenvolvimento. Ao clicar abaixo, o pagamento será processado em ambiente de simulação.
+                    </div>
+
+                    <form method="post">
+                        <div class="d-grid gap-3">
+                            <button type="submit" class="btn btn-success btn-lg shadow fw-bold py-3">
+                                <i class="bi bi-check-circle-fill me-2"></i> Confirmar e Pagar
+                            </button>
+                            <a href="/Empresa/MinhasViagens" class="btn btn-outline-secondary">
+                                Pagar Depois (Voltar à Lista)
+                            </a>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

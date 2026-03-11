@@ -8,7 +8,6 @@ using Eva.Models;
 using Eva.Models.ViewModels;
 using Eva.Services;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -20,21 +19,18 @@ namespace Eva.Pages.Empresa
     {
         private readonly EvaDbContext _context;
         private readonly IEntityStatusService _statusService;
-        private readonly ArquivoService _arquivoService;
 
-        public NovaViagemModel(EvaDbContext context, IEntityStatusService statusService, ArquivoService arquivoService)
+        public NovaViagemModel(EvaDbContext context, IEntityStatusService statusService)
         {
             _context = context;
             _statusService = statusService;
-            _arquivoService = arquivoService;
         }
 
         [BindProperty]
         public NovaViagemVM Input { get; set; } = new();
 
         [BindProperty]
-        [Required(ErrorMessage = "A Nota Fiscal é obrigatória.")]
-        public IFormFile? UploadNotaFiscal { get; set; }
+        public string AcaoSubmit { get; set; } = string.Empty; // Mapeia o botão clicado
 
         public SelectList ViagemTipos { get; set; } = default!;
         public SelectList VeiculosValidos { get; set; } = default!;
@@ -51,7 +47,6 @@ namespace Eva.Pages.Empresa
             return Page();
         }
 
-        // --- AJAX HANDLER FOR MUNICIPALITIES ---
         public async Task<JsonResult> OnGetMunicipiosAsync(string regiaoCodigo)
         {
             if (string.IsNullOrEmpty(regiaoCodigo))
@@ -116,6 +111,14 @@ namespace Eva.Pages.Empresa
                 }
             }
 
+            // --- MOCK DE CÁLCULO DE TARIFA ---
+            // Simula uma matriz de distância. Valor base + acréscimo se for para outra cidade.
+            decimal valorCalculado = 150.00m;
+            if (Input.MunicipioOrigem.Trim().ToLower() != Input.MunicipioDestino.Trim().ToLower())
+            {
+                valorCalculado += 235.50m; // Acréscimo intermunicipal mockado
+            }
+
             var viagem = new Viagem
             {
                 EmpresaCnpj = user.EmpresaCnpj,
@@ -130,7 +133,9 @@ namespace Eva.Pages.Empresa
                 VeiculoPlaca = Input.VeiculoPlaca,
                 MotoristaId = Input.MotoristaId,
                 MotoristaAuxId = Input.MotoristaAuxId > 0 ? Input.MotoristaAuxId : null,
-                Descricao = Input.Descricao
+                Descricao = Input.Descricao,
+                Valor = valorCalculado, // Valor setado via Mock
+                Pago = false // Nasce sempre como não paga
             };
 
             foreach (var p in Input.Passageiros)
@@ -138,19 +143,21 @@ namespace Eva.Pages.Empresa
                 viagem.Passageiros.Add(new Passageiro
                 {
                     Nome = p.Nome,
-                    Cpf = p.Documento // THE FIX: Assign the ViewModel's 'Documento' to the Entity's 'Cpf'
+                    Cpf = p.Documento
                 });
             }
 
             _context.Viagens.Add(viagem);
             await _context.SaveChangesAsync();
 
-            if (UploadNotaFiscal != null)
+            // Roteamento baseado no botão clicado
+            if (AcaoSubmit == "PagarDepois")
             {
-                await _arquivoService.SalvarDocumentoAsync(UploadNotaFiscal, "NOTA_FISCAL", "VIAGEM", viagem.Id.ToString());
+                return RedirectToPage("/Empresa/MinhasViagens");
             }
 
-            return RedirectToPage("/Empresa/MinhaEmpresa");
+            // Se clicou em "Revisao" (ou qualquer outra coisa) avança para o checkout
+            return RedirectToPage("/Empresa/PagamentoViagem", new { id = viagem.Id });
         }
 
         private async Task LoadDropdownsAsync()
@@ -161,7 +168,6 @@ namespace Eva.Pages.Empresa
             var tipos = await _context.ViagemTipos.OrderBy(t => t.Nome).ToListAsync();
             ViagemTipos = new SelectList(tipos, "Nome", "Nome");
 
-            // Load Regioes
             var regioes = await _context.Regioes.OrderBy(r => r.Ordem).ThenBy(r => r.Nome).ToListAsync();
             Regioes = new SelectList(regioes, "Codigo", "Nome");
 

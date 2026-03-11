@@ -8,16 +8,17 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="/Empresa/MinhasViagens">Minhas Viagens</a></li>
             <li class="breadcrumb-item active" aria-current="page">Nova Viagem</li>
         </ol>
     </nav>
 
     <div class="mb-4">
         <h1 class="h3 mb-0">Cadastrar Nova Viagem</h1>
-        <p class="text-muted">Preencha os dados da viagem, defina os recursos e anexe a lista de passageiros.</p>
+        <p class="text-muted">Preencha os dados da viagem, defina os recursos e anexe a lista de passageiros. (Passo 1 de 2)</p>
     </div>
 
-    <form method="post" enctype="multipart/form-data">
+    <form method="post">
 
         <div asp-validation-summary="ModelOnly" class="alert alert-danger shadow-sm"></div>
 
@@ -185,35 +186,17 @@
                 </div>
             </div>
 
-            <div class="col-12">
-                <div class="card shadow-sm border-0">
-                    <div class="card-header bg-dark text-white">
-                        <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i> 5. Documentação</h5>
-                    </div>
-                    <div class="card-body bg-light">
-                        @if (!ViewData.ModelState.IsValid)
-                        {
-                            <div class="alert alert-warning py-2 mb-3">
-                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                                <strong>Atenção:</strong> Por motivos de segurança do navegador, você precisa selecionar o arquivo da <strong>Nota Fiscal</strong> novamente.
-                            </div>
-                        }
+            <div class="col-12 d-flex justify-content-between align-items-center mt-4 border-top pt-4">
+                <a href="/Empresa/MinhaEmpresa" class="btn btn-outline-secondary btn-lg shadow-sm">Cancelar</a>
 
-                        <div class="mb-3">
-                            <label asp-for="UploadNotaFiscal" class="form-label fw-bold">Anexar Nota Fiscal (Obrigatório) <span class="text-danger">*</span></label>
-                            <input asp-for="UploadNotaFiscal" type="file" class="form-control shadow-sm" accept=".pdf,.jpg,.jpeg,.png" required />
-                            <span asp-validation-for="UploadNotaFiscal" class="text-danger small"></span>
-                            <div class="form-text text-muted"><i class="bi bi-info-circle"></i> Formatos aceitos: PDF, JPG, PNG. Tamanho máximo: 5MB.</div>
-                        </div>
-                    </div>
+                <div>
+                    <button type="submit" name="AcaoSubmit" value="PagarDepois" class="btn btn-warning btn-lg shadow-sm me-2">
+                        <i class="bi bi-clock-history"></i> Salvar e Pagar Depois
+                    </button>
+                    <button type="submit" name="AcaoSubmit" value="Revisao" class="btn btn-success btn-lg shadow">
+                        Avançar para Revisão <i class="bi bi-arrow-right-circle ms-1"></i>
+                    </button>
                 </div>
-            </div>
-
-            <div class="col-12 text-end mt-4 border-top pt-4">
-                <a href="/Empresa/MinhaEmpresa" class="btn btn-outline-secondary btn-lg me-2">Cancelar</a>
-                <button type="submit" class="btn btn-success btn-lg shadow">
-                    <i class="bi bi-check-circle"></i> Salvar e Registrar Viagem
-                </button>
             </div>
         </div>
     </form>
@@ -230,7 +213,6 @@
             const selectOrigem = document.getElementById('Input_MunicipioOrigem');
             const selectDestino = document.getElementById('Input_MunicipioDestino');
 
-            // THE FIX: Html.Raw prevents Razor from converting "São" to "S&#xE3;o", which breaks the JS comparison!
             const selectedOrigem = '@Html.Raw(Model.Input.MunicipioOrigem)';
             const selectedDestino = '@Html.Raw(Model.Input.MunicipioDestino)';
 
@@ -256,7 +238,6 @@
                         selectDestino.add(new Option(m.text, m.value));
                     });
 
-                    // THE FIX: Set the value directly on the select element after generating options
                     if (valOrigem) selectOrigem.value = valOrigem;
                     if (valDestino) selectDestino.value = valDestino;
 
