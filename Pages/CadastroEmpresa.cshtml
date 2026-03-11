@@ -1,4 +1,5 @@
 ﻿@page
+@inject Microsoft.Extensions.Options.IOptions<Eva.Services.TurnstileSettings> TurnstileConfig
 @model Eva.Pages.CadastroEmpresaModel
 @{
     ViewData["Title"] = "Iniciar Cadastro - Eva";
@@ -33,9 +34,8 @@
                         </div>
 
                         <div class="mb-4 d-flex justify-content-center">
-                            <div class="cf-turnstile" data-sitekey="0x4AAAAAACoDXZxJk5MOTM0t"></div>
-                            @* <div class="cf-turnstile" data-sitekey="1x00000000000000000000AA"></div> *@
-                            
+                            @* <div class="cf-turnstile" data-sitekey="0x4AAAAAACoDXZxJk5MOTM0t"></div> *@
+                            <div class="cf-turnstile" data-sitekey="@TurnstileConfig.Value.SiteKey"></div>                            
                         </div>
 
                         <div class="d-grid gap-2">
