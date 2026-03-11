@@ -10,7 +10,7 @@ using System.Security.Claims;
 
 namespace Eva.Pages.Empresa
 {
-    [Authorize(Roles = "EMPRESA")]
+    [Authorize(Policy = "AcessoEmpresa")]
     public class NovoUsuarioModel : PageModel
     {
         private readonly EvaDbContext _context;

@@ -63,6 +63,13 @@ builder.Services.Configure<RequestLocalizationOptions>(options => {
     options.SupportedUICultures = supportedCultures.Select(c => new System.Globalization.CultureInfo(c)).ToList();
 });
 
+// --- AUTHORIZATION POLICIES ---
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AcessoEmpresa", policy =>
+        policy.RequireRole("EMPRESA", "USUARIO_EMPRESA"));
+});
+
 var app = builder.Build();
 
 app.UseRequestLocalization();

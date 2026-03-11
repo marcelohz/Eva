@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace Eva.Pages.Empresa
 {
-    [Authorize(Roles = "EMPRESA")]
+    [Authorize(Policy = "AcessoEmpresa")]
     public class NovaViagemModel : PageModel
     {
         private readonly EvaDbContext _context;

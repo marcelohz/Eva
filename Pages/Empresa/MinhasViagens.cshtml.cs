@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Eva.Pages.Empresa
 {
-    [Authorize(Roles = "EMPRESA,ANALISTA")]
+    [Authorize(Policy = "AcessoEmpresa")]
     public class MinhasViagensModel : PageModel
     {
         private readonly EvaDbContext _context;

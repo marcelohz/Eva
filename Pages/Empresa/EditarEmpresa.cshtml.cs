@@ -12,7 +12,7 @@ using System.Text.Json;
 
 namespace Eva.Pages.Empresa
 {
-    [Authorize(Roles = "EMPRESA")]
+    [Authorize(Policy = "AcessoEmpresa")]
     public class EditarEmpresaModel : PageModel
     {
         private readonly EvaDbContext _context;

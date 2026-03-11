@@ -11,7 +11,7 @@ using System.Security.Claims;
 
 namespace Eva.Pages.Empresa
 {
-    [Authorize(Roles = "EMPRESA")]
+    [Authorize(Policy = "AcessoEmpresa")]
     public class NovoMotoristaModel : PageModel
     {
         private readonly EvaDbContext _context;
