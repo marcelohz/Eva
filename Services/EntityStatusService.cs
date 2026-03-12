@@ -36,28 +36,30 @@ namespace Eva.Services
 
             if (!ids.Any()) return results;
 
-            // 1. Fetch Mandatory Document Types for this Entity Type
-            var mandatoryTypes = await _context.DocumentoTipoPermissoes
-                .Include(p => p.DocumentoTipo)
-                .Where(p => p.EntidadeTipo.ToUpper() == entityType.ToUpper() && p.DocumentoTipo!.Obrigatorio)
-                .Select(p => p.TipoNome)
+            var entityTypeSafe = entityType.Trim().ToUpper();
+
+            // 1. Fetch Mandatory Document Types for this Entity Type via Vinculos
+            var mandatoryTypes = await _context.DocumentoTipoVinculos
+                .Include(v => v.DocumentoTipo)
+                .Where(v => v.EntidadeTipo.Trim().ToUpper() == entityTypeSafe && v.DocumentoTipo != null && v.DocumentoTipo.Obrigatorio)
+                .Select(v => v.TipoNome)
                 .ToListAsync();
 
-            // 2. Fetch Latest Decisive Statuses (APROVADO or REJEITADO) for the requested entities
+            // 2. Fetch Latest Decisive Statuses
             var decisiveStatuses = await _context.FluxoPendencias
-                .Where(f => f.EntidadeTipo == entityType.ToUpper() && ids.Contains(f.EntidadeId) &&
+                .Where(f => f.EntidadeTipo.Trim().ToUpper() == entityTypeSafe && ids.Contains(f.EntidadeId) &&
                             (f.Status == "APROVADO" || f.Status == "REJEITADO"))
                 .GroupBy(f => f.EntidadeId)
                 .Select(g => g.OrderByDescending(f => f.CriadoEm).First())
                 .ToDictionaryAsync(f => f.EntidadeId, f => f.Status);
 
-            // 2.5 NEW: Fetch Absolute Latest Statuses (To fix the "Incompleto" bug on new entities)
+            // 2.5 Fetch Absolute Latest Statuses
             var currentStatuses = await _context.VPendenciasAtuais
-                .Where(p => p.EntidadeTipo == entityType.ToUpper() && ids.Contains(p.EntidadeId))
+                .Where(p => p.EntidadeTipo.Trim().ToUpper() == entityTypeSafe && ids.Contains(p.EntidadeId))
                 .ToDictionaryAsync(p => p.EntidadeId, p => p.Status);
 
             // 3. Fetch Entity Documents based on Entity Type
-            var entityDocs = await FetchDocumentsForEntitiesAsync(entityType.ToUpper(), ids);
+            var entityDocs = await FetchDocumentsForEntitiesAsync(entityTypeSafe, ids);
 
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
@@ -66,10 +68,7 @@ namespace Eva.Services
             {
                 var report = new EntityHealthReport();
 
-                // Set Analyst Status (Defaults to INCOMPLETO if no decisive record is found)
                 report.AnalystStatus = decisiveStatuses.TryGetValue(id, out var status) ? status : "INCOMPLETO";
-
-                // Set Current Status
                 report.CurrentStatus = currentStatuses.TryGetValue(id, out var currStatus) ? currStatus : "INCOMPLETO";
 
                 var docsForEntity = entityDocs.TryGetValue(id, out var docs) ? docs : new List<Documento>();
@@ -99,7 +98,6 @@ namespace Eva.Services
                     }
                 }
 
-                // The Master Switch: Only legal if previously APROVADO and no missing/expired docs
                 report.IsLegal = report.AnalystStatus == "APROVADO" &&
                                  !report.MissingMandatoryDocs.Any() &&
                                  !report.ExpiredDocs.Any();
@@ -119,7 +117,7 @@ namespace Eva.Services
                 case "EMPRESA":
                     var empDocs = await _context.DocumentoEmpresas
                         .Include(de => de.Documento)
-                        .Where(de => ids.Contains(de.EmpresaCnpj))
+                        .Where(de => ids.Contains(de.EmpresaCnpj) && de.Documento != null)
                         .ToListAsync();
                     dictionary = empDocs.GroupBy(de => de.EmpresaCnpj)
                                         .ToDictionary(g => g.Key, g => g.Select(de => de.Documento!).ToList());
@@ -128,7 +126,7 @@ namespace Eva.Services
                 case "VEICULO":
                     var veiDocs = await _context.DocumentoVeiculos
                         .Include(dv => dv.Documento)
-                        .Where(dv => ids.Contains(dv.VeiculoPlaca))
+                        .Where(dv => ids.Contains(dv.VeiculoPlaca) && dv.Documento != null)
                         .ToListAsync();
                     dictionary = veiDocs.GroupBy(dv => dv.VeiculoPlaca)
                                         .ToDictionary(g => g.Key, g => g.Select(dv => dv.Documento!).ToList());
@@ -138,7 +136,7 @@ namespace Eva.Services
                     var intIds = ids.Select(id => int.TryParse(id, out var val) ? val : 0).Where(val => val != 0).ToList();
                     var motDocs = await _context.DocumentoMotoristas
                         .Include(dm => dm.Documento)
-                        .Where(dm => intIds.Contains(dm.MotoristaId))
+                        .Where(dm => intIds.Contains(dm.MotoristaId) && dm.Documento != null)
                         .ToListAsync();
                     dictionary = motDocs.GroupBy(dm => dm.MotoristaId.ToString())
                                         .ToDictionary(g => g.Key, g => g.Select(dm => dm.Documento!).ToList());

@@ -3,8 +3,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Eva.Models
 {
-    [Table("documento_tipo_permissao", Schema = "eventual")]
-    public class DocumentoTipoPermissao
+    [Table("documento_tipo_vinculo", Schema = "eventual")]
+    public class DocumentoTipoVinculo
     {
         [Column("tipo_nome")]
         public string TipoNome { get; set; } = string.Empty;

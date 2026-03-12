@@ -7,17 +7,14 @@ using Hangfire.PostgreSql;
 using Serilog;
 using Serilog.Events;
 
-// 1. INITIAL LOGGING SETUP
-// This is configured before the builder to catch any startup or configuration errors.
+// 1. INITIAL LOGGING SETUP (Bootstrap Logger)
+// This catches setup errors before the DI container and Configuration are fully built.
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
-    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning) // Filters out verbose system logs
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
     .Enrich.FromLogContext()
     .WriteTo.Console()
-    .WriteTo.File("/var/log/eva/log-.txt",
-        rollingInterval: RollingInterval.Day,
-        retainedFileCountLimit: 7) // Keeps 7 days of logs
-    .CreateLogger();
+    .CreateBootstrapLogger();
 
 try
 {
@@ -25,8 +22,11 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
-    // Tell the host to use Serilog for all internal logging
-    builder.Host.UseSerilog();
+    // Tell the host to use Serilog and read configuration from the current appsettings.*.json
+    builder.Host.UseSerilog((context, services, configuration) => configuration
+        .ReadFrom.Configuration(context.Configuration)
+        .ReadFrom.Services(services)
+        .Enrich.FromLogContext());
 
     // --- SECURITY CHECK ---
     // Critical validation: refuses to start if security keys are missing from configuration.
@@ -101,7 +101,7 @@ try
 
     if (!app.Environment.IsDevelopment())
     {
-        // Production: Users see the Error page, while Serilog writes details to the log file.
+        // Production and Staging: Users see the Error page, while Serilog writes details to the log file.
         app.UseExceptionHandler("/Error");
         app.UseHsts();
     }

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Identity; // <-- Added for PasswordHasher
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -43,7 +43,8 @@ namespace Eva.Pages
             {
                 if (User.IsInRole("ANALISTA") || User.IsInRole("ADMIN"))
                 {
-                    return RedirectToPage("/Analista/Dashboard");
+                    // Fixed: Pointing to the correct Metroplan folder structure
+                    return RedirectToPage("/Metroplan/Analista/Index");
                 }
                 return RedirectToPage("/Empresa/MinhaEmpresa");
             }
@@ -164,7 +165,8 @@ namespace Eva.Pages
 
             if (isInternalStaff)
             {
-                return RedirectToPage("/Analista/Dashboard");
+                // Fixed: Pointing to the correct Metroplan folder structure
+                return RedirectToPage("/Metroplan/Analista/Index");
             }
 
             return RedirectToPage("/Empresa/MinhaEmpresa");

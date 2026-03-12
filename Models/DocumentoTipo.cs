@@ -17,6 +17,6 @@ namespace Eva.Models
         [Column("obrigatorio")]
         public bool Obrigatorio { get; set; }
 
-        public virtual ICollection<DocumentoTipoPermissao> Permissoes { get; set; } = new List<DocumentoTipoPermissao>();
+        public virtual ICollection<DocumentoTipoVinculo> Vinculos { get; set; } = new List<DocumentoTipoVinculo>();
     }
 }

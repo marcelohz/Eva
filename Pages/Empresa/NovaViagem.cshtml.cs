@@ -84,10 +84,37 @@ namespace Eva.Pages.Empresa
                 return Page();
             }
 
+            // --- 1. VALIDAÇÃO DE STATUS DA EMPRESA ---
+            var empresaHealth = await _statusService.GetHealthAsync("EMPRESA", user.EmpresaCnpj);
+            if (!empresaHealth.IsLegal)
+            {
+                ModelState.AddModelError(string.Empty, "Sua empresa possui pendências documentais ou de análise e não está autorizada a criar novas viagens.");
+                await LoadDropdownsAsync();
+                return Page();
+            }
+
+            // --- 2. VALIDAÇÃO DE PERTENCIMENTO E STATUS DO VEÍCULO ---
+            var veiculo = await _context.Veiculos.FirstOrDefaultAsync(v => v.Placa == Input.VeiculoPlaca && v.EmpresaCnpj == user.EmpresaCnpj);
+            if (veiculo == null)
+            {
+                ModelState.AddModelError("Input.VeiculoPlaca", "O veículo informado é inválido ou não pertence à sua empresa.");
+                await LoadDropdownsAsync();
+                return Page();
+            }
+
             var veiculoHealth = await _statusService.GetHealthAsync("VEICULO", Input.VeiculoPlaca);
             if (!veiculoHealth.IsLegal)
             {
                 ModelState.AddModelError("Input.VeiculoPlaca", "O veículo selecionado não está legalizado.");
+                await LoadDropdownsAsync();
+                return Page();
+            }
+
+            // --- 3. VALIDAÇÃO DE PERTENCIMENTO E STATUS DO MOTORISTA PRINCIPAL ---
+            var motorista = await _context.Motoristas.FirstOrDefaultAsync(m => m.Id == Input.MotoristaId && m.EmpresaCnpj == user.EmpresaCnpj);
+            if (motorista == null)
+            {
+                ModelState.AddModelError("Input.MotoristaId", "O motorista informado é inválido ou não pertence à sua empresa.");
                 await LoadDropdownsAsync();
                 return Page();
             }
@@ -100,8 +127,17 @@ namespace Eva.Pages.Empresa
                 return Page();
             }
 
+            // --- 4. VALIDAÇÃO DE PERTENCIMENTO E STATUS DO MOTORISTA AUXILIAR (SE HOUVER) ---
             if (Input.MotoristaAuxId.HasValue && Input.MotoristaAuxId.Value > 0)
             {
+                var motoristaAux = await _context.Motoristas.FirstOrDefaultAsync(m => m.Id == Input.MotoristaAuxId.Value && m.EmpresaCnpj == user.EmpresaCnpj);
+                if (motoristaAux == null)
+                {
+                    ModelState.AddModelError("Input.MotoristaAuxId", "O motorista auxiliar informado é inválido ou não pertence à sua empresa.");
+                    await LoadDropdownsAsync();
+                    return Page();
+                }
+
                 var auxHealth = await _statusService.GetHealthAsync("MOTORISTA", Input.MotoristaAuxId.Value.ToString());
                 if (!auxHealth.IsLegal)
                 {

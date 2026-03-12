@@ -37,7 +37,7 @@ namespace Eva.Data
             DocumentoMotoristas = Set<DocumentoMotorista>();
             TokensValidacaoEmail = Set<TokenValidacaoEmail>();
             DocumentoTipos = Set<DocumentoTipo>();
-            DocumentoTipoPermissoes = Set<DocumentoTipoPermissao>();
+            DocumentoTipoVinculos = Set<DocumentoTipoVinculo>();
 
             Viagens = Set<Viagem>();
             ViagemTipos = Set<ViagemTipo>();
@@ -60,7 +60,7 @@ namespace Eva.Data
         public DbSet<DocumentoMotorista> DocumentoMotoristas { get; set; }
         public DbSet<TokenValidacaoEmail> TokensValidacaoEmail { get; set; }
         public DbSet<DocumentoTipo> DocumentoTipos { get; set; }
-        public DbSet<DocumentoTipoPermissao> DocumentoTipoPermissoes { get; set; }
+        public DbSet<DocumentoTipoVinculo> DocumentoTipoVinculos { get; set; }
         public DbSet<Viagem> Viagens { get; set; }
         public DbSet<ViagemTipo> ViagemTipos { get; set; }
         public DbSet<Passageiro> Passageiros { get; set; }
@@ -72,7 +72,6 @@ namespace Eva.Data
         {
             base.ConfigureConventions(configurationBuilder);
 
-            // Apply the UTC converter globally to all DateTime properties (handles DateTime? automatically)
             configurationBuilder
                 .Properties<DateTime>()
                 .HaveConversion<UtcDateTimeConverter>();
@@ -93,8 +92,12 @@ namespace Eva.Data
             modelBuilder.Entity<VPendenciaAtual>().ToView("v_pendencia_atual", "eventual").HasKey(v => v.Id);
             modelBuilder.Entity<TokenValidacaoEmail>().ToTable("token_validacao_email", "web");
 
-            modelBuilder.Entity<DocumentoTipoPermissao>()
-                .HasKey(dtp => new { dtp.TipoNome, dtp.EntidadeTipo });
+            // --- PROTEÇÃO DE SCHEMA E REGRAS ---
+            modelBuilder.Entity<DocumentoTipo>().ToTable("documento_tipo", "eventual");
+            modelBuilder.Entity<DocumentoTipoVinculo>().ToTable("documento_tipo_vinculo", "eventual");
+
+            modelBuilder.Entity<DocumentoTipoVinculo>()
+                .HasKey(dtv => new { dtv.TipoNome, dtv.EntidadeTipo });
 
             modelBuilder.Entity<TokenValidacaoEmail>(entity =>
             {
@@ -123,7 +126,6 @@ namespace Eva.Data
         }
     }
 
-    // PRODUCTION-READY GLOBAL FIX: Formal ValueConverter for PostgreSQL UTC requirement
     public class UtcDateTimeConverter : ValueConverter<DateTime, DateTime>
     {
         public UtcDateTimeConverter()
