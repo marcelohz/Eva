@@ -6,7 +6,9 @@ using Eva.Models;
 using Eva.Models.ViewModels;
 using Eva.Services;
 using Hangfire;
+using System;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
 
 namespace Eva.Pages
 {
@@ -14,11 +16,13 @@ namespace Eva.Pages
     {
         private readonly EvaDbContext _context;
         private readonly ITurnstileService _turnstile;
+        private readonly IBackgroundJobClient _backgroundJobs;
 
-        public CadastroEmpresaModel(EvaDbContext context, ITurnstileService turnstile)
+        public CadastroEmpresaModel(EvaDbContext context, ITurnstileService turnstile, IBackgroundJobClient backgroundJobs)
         {
             _context = context;
             _turnstile = turnstile;
+            _backgroundJobs = backgroundJobs;
         }
 
         [BindProperty]
@@ -117,8 +121,8 @@ namespace Eva.Pages
                     values: new { token = secureToken },
                     protocol: Request.Scheme);
 
-                // ENQUEUE THE HANGFIRE JOB (Instead of Console Logging)
-                BackgroundJob.Enqueue<IEmailService>(x => x.SendEmailAsync(
+                // Use the injected IBackgroundJobClient instead of the static BackgroundJob class
+                _backgroundJobs.Enqueue<IEmailService>(x => x.SendEmailAsync(
                     Input.Email,
                     "Ativação de Conta - Fretamento Eventual",
                     $"<h1>Bem-vindo ao Fretamento Eventual</h1><p>Clique no link abaixo para criar sua senha e ativar sua conta:</p><a href='{callbackUrl}'>Confirmar E-mail</a>"

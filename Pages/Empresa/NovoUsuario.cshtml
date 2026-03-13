@@ -38,17 +38,11 @@
                         <hr class="my-4" />
                         <h6 class="fw-bold text-secondary mb-3">Dados de Acesso</h6>
 
-                        <div class="mb-3">
+                        <div class="mb-4">
                             <label asp-for="Input.Email" class="form-label fw-bold">E-mail (Login)</label>
                             <input asp-for="Input.Email" type="email" class="form-control" placeholder="joao@empresa.com.br" />
                             <span asp-validation-for="Input.Email" class="text-danger small"></span>
-                            <div class="form-text">Este e-mail será utilizado para entrar no sistema.</div>
-                        </div>
-
-                        <div class="mb-4">
-                            <label asp-for="Input.Senha" class="form-label fw-bold">Senha Inicial</label>
-                            <input asp-for="Input.Senha" type="password" class="form-control" />
-                            <span asp-validation-for="Input.Senha" class="text-danger small"></span>
+                            <div class="form-text">Um link será enviado para este e-mail para que o colaborador ative a conta e defina sua própria senha de acesso.</div>
                         </div>
 
                         <div class="d-flex justify-content-end gap-2 pt-3 border-top">

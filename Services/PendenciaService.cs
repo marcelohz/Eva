@@ -8,14 +8,20 @@ using Eva.Models.ViewModels;
 using Eva.Workflow;
 using System.Linq;
 using System.Text.Json;
+using Hangfire;
 
 namespace Eva.Services
 {
     public class PendenciaService
     {
         private readonly EvaDbContext _context;
+        private readonly IBackgroundJobClient _backgroundJobs;
 
-        public PendenciaService(EvaDbContext context) { _context = context; }
+        public PendenciaService(EvaDbContext context, IBackgroundJobClient backgroundJobs)
+        {
+            _context = context;
+            _backgroundJobs = backgroundJobs;
+        }
 
         public async Task SalvarDadosPropostosAsync(string tipo, string id, string dadosPropostos)
         {
@@ -32,7 +38,6 @@ namespace Eva.Services
                 if (ticket != null)
                 {
                     ticket.DadosPropostos = dadosPropostos;
-                    // FIX: PostgreSQL requires UTC
                     ticket.CriadoEm = DateTime.UtcNow;
                     await _context.SaveChangesAsync();
                     return;
@@ -68,7 +73,6 @@ namespace Eva.Services
                 Analista = analistaEmail,
                 Motivo = motivo,
                 DadosPropostos = dadosPropostosFinais,
-                // FIX: PostgreSQL requires UTC
                 CriadoEm = DateTime.UtcNow
             };
 
@@ -82,7 +86,52 @@ namespace Eva.Services
             await _context.SaveChangesAsync();
 
             if (novoStatus == WorkflowValidator.Aprovado)
+            {
                 await LinkApprovedDocumentsAsync(entidadeTipo, entidadeId, novaPendencia.Id);
+                await EnviarEmailNotificacaoAsync(entidadeTipo, entidadeId, novoStatus, null);
+            }
+            else if (novoStatus == WorkflowValidator.Rejeitado)
+            {
+                await EnviarEmailNotificacaoAsync(entidadeTipo, entidadeId, novoStatus, motivo);
+            }
+        }
+
+        private async Task EnviarEmailNotificacaoAsync(string tipo, string id, string status, string? motivo)
+        {
+            string? emailDestino = null;
+            string nomeEntidade = tipo;
+
+            if (tipo == "EMPRESA")
+            {
+                var emp = await _context.Empresas.IgnoreQueryFilters().FirstOrDefaultAsync(e => e.Cnpj == id);
+                emailDestino = emp?.Email;
+                nomeEntidade = $"Empresa {emp?.NomeFantasia ?? id}";
+            }
+            else if (tipo == "VEICULO")
+            {
+                var veic = await _context.Veiculos.IgnoreQueryFilters().Include(v => v.Empresa).FirstOrDefaultAsync(v => v.Placa == id);
+                emailDestino = veic?.Empresa?.Email;
+                nomeEntidade = $"Veículo {id}";
+            }
+            else if (tipo == "MOTORISTA" && int.TryParse(id, out int mId))
+            {
+                var mot = await _context.Motoristas.IgnoreQueryFilters().Include(m => m.Empresa).FirstOrDefaultAsync(m => m.Id == mId);
+                emailDestino = mot?.Empresa?.Email;
+                nomeEntidade = $"Motorista {mot?.Nome ?? id}";
+            }
+
+            if (!string.IsNullOrEmpty(emailDestino))
+            {
+                string assunto = status == WorkflowValidator.Aprovado
+                    ? $"Aprovação de {nomeEntidade}"
+                    : $"Pendência em {nomeEntidade}";
+
+                string corpo = status == WorkflowValidator.Aprovado
+                    ? $"<p>O cadastro para <strong>{nomeEntidade}</strong> foi analisado e <strong>Aprovado</strong> pela Metroplan.</p>"
+                    : $"<p>O cadastro para <strong>{nomeEntidade}</strong> foi analisado e requer ajustes.</p><p><strong>Motivo apontado:</strong> {motivo}</p><p>Acesse o sistema para regularizar a situação.</p>";
+
+                _backgroundJobs.Enqueue<IEmailService>(x => x.SendEmailAsync(emailDestino, assunto, corpo));
+            }
         }
 
         private async Task AplicarDadosAprovadosAsync(string tipo, string id, string json)
@@ -145,7 +194,6 @@ namespace Eva.Services
             else if (tipo == "VEICULO") docs = docs.Where(d => _context.DocumentoVeiculos.Any(dv => dv.Id == d.Id && dv.VeiculoPlaca == id));
             else if (tipo == "MOTORISTA" && int.TryParse(id, out int mId)) docs = docs.Where(d => _context.DocumentoMotoristas.Any(dm => dm.Id == d.Id && dm.MotoristaId == mId));
 
-            // FIX: PostgreSQL requires UTC
             foreach (var doc in await docs.ToListAsync()) { doc.FluxoPendenciaId = fluxoId; doc.AprovadoEm = DateTime.UtcNow; }
             await _context.SaveChangesAsync();
         }

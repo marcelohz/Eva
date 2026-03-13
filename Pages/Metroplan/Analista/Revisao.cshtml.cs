@@ -6,6 +6,7 @@ using Eva.Data;
 using Eva.Models;
 using Eva.Models.ViewModels;
 using Eva.Services;
+using System;
 using System.Security.Claims;
 using System.Text.Json;
 using System.Collections.Generic;
@@ -123,8 +124,19 @@ namespace Eva.Pages.Metroplan.Analista
         public async Task<IActionResult> OnPostIniciarAsync()
         {
             var email = User.FindFirstValue(ClaimTypes.Email);
-            if (email != null) await _pendenciaService.IniciarAnaliseAsync(Tipo, Id, email);
-            return RedirectToPage(new { tipo = Tipo, id = Id });
+            if (email == null) return RedirectToPage("/Login");
+
+            try
+            {
+                await _pendenciaService.IniciarAnaliseAsync(Tipo, Id, email);
+                return RedirectToPage(new { tipo = Tipo, id = Id });
+            }
+            catch (Exception ex) when (ex is InvalidOperationException || ex is ArgumentException || ex is UnauthorizedAccessException)
+            {
+                ModelState.AddModelError(string.Empty, ex.Message);
+                await LoadDataAsync();
+                return Page();
+            }
         }
 
         public async Task<IActionResult> OnPostAprovarAsync()
@@ -132,33 +144,60 @@ namespace Eva.Pages.Metroplan.Analista
             var email = User.FindFirstValue(ClaimTypes.Email);
             if (email == null) return RedirectToPage("/Login");
 
-            foreach (var kvp in Validades)
+            try
             {
-                if (kvp.Value.HasValue)
+                foreach (var kvp in Validades)
                 {
-                    var doc = await _context.Documentos.FindAsync(kvp.Key);
-                    if (doc != null) doc.Validade = kvp.Value.Value;
+                    if (kvp.Value.HasValue)
+                    {
+                        var doc = await _context.Documentos.FindAsync(kvp.Key);
+                        if (doc != null) doc.Validade = kvp.Value.Value;
+                    }
                 }
-            }
-            await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
 
-            var health = await _statusService.GetHealthAsync(Tipo, Id);
-            if (health.MissingMandatoryDocs.Any())
+                var health = await _statusService.GetHealthAsync(Tipo, Id);
+                if (health.MissingMandatoryDocs.Any())
+                {
+                    ModelState.AddModelError(string.Empty, $"Faltam documentos obrigatórios: {string.Join(", ", health.MissingMandatoryDocs)}.");
+                    await LoadDataAsync();
+                    return Page();
+                }
+
+                await _pendenciaService.AprovarAsync(Tipo, Id, email);
+                TempData["SuccessMessage"] = "Aprovação concluída com sucesso.";
+                return RedirectToPage("./Index");
+            }
+            catch (Exception ex) when (ex is InvalidOperationException || ex is ArgumentException || ex is UnauthorizedAccessException)
             {
-                ModelState.AddModelError(string.Empty, $"Faltam documentos obrigatórios: {string.Join(", ", health.MissingMandatoryDocs)}.");
+                ModelState.AddModelError(string.Empty, ex.Message);
                 await LoadDataAsync();
                 return Page();
             }
-
-            await _pendenciaService.AprovarAsync(Tipo, Id, email);
-            return RedirectToPage("./Index");
         }
 
         public async Task<IActionResult> OnPostRejeitarAsync()
         {
             var email = User.FindFirstValue(ClaimTypes.Email);
-            if (email != null && !string.IsNullOrWhiteSpace(MotivoRejeicao)) await _pendenciaService.RejeitarAsync(Tipo, Id, email, MotivoRejeicao);
-            return RedirectToPage("./Index");
+            if (email == null) return RedirectToPage("/Login");
+
+            try
+            {
+                if (string.IsNullOrWhiteSpace(MotivoRejeicao))
+                {
+                    throw new ArgumentException("O motivo é obrigatório para rejeições.");
+                }
+
+                await _pendenciaService.RejeitarAsync(Tipo, Id, email, MotivoRejeicao);
+                TempData["SuccessMessage"] = "Rejeição registrada com sucesso.";
+                return RedirectToPage("./Index");
+            }
+            catch (Exception ex) when (ex is InvalidOperationException || ex is ArgumentException || ex is UnauthorizedAccessException)
+            {
+                ModelState.AddModelError(string.Empty, ex.Message);
+                await LoadDataAsync();
+                return Page();
+            }
         }
 
         public async Task<IActionResult> OnGetVisualizarAsync(int docId)
