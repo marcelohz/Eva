@@ -59,16 +59,22 @@
                             @foreach (var u in Model.Usuarios)
                             {
                                 bool isMaster = u.PapelNome == "EMPRESA";
-                                <tr>
-                                    <td class="ps-4 fw-bold text-secondary">
+                                bool isInactive = !u.Ativo;
+
+                                <tr class="@(isInactive ? "opacity-50 bg-light" : "")">
+                                    <td class="ps-4 fw-bold @(isInactive ? "text-muted" : "text-secondary")">
                                         @u.Nome
                                         @if (isMaster)
                                         {
                                             <span class="badge bg-primary ms-2" style="font-size: 0.65em">CONTA PRINCIPAL</span>
                                         }
+                                        @if (isInactive)
+                                        {
+                                            <span class="badge bg-danger ms-2" style="font-size: 0.65em">ACESSO REVOGADO</span>
+                                        }
                                     </td>
-                                    <td>@u.Email</td>
-                                    <td>@(u.Cpf ?? "-")</td>
+                                    <td class="@(isInactive ? "text-muted" : "")">@u.Email</td>
+                                    <td class="@(isInactive ? "text-muted" : "")">@(u.Cpf ?? "-")</td>
                                     <td>
                                         @if (isMaster)
                                         {
@@ -82,12 +88,21 @@
                                     <td class="text-end pe-4">
                                         @if (!isMaster)
                                         {
-                                            <form method="post" asp-page-handler="Delete" class="d-inline" onsubmit="return confirm('Tem certeza que deseja remover o acesso de @u.Nome?');">
-                                                <input type="hidden" name="id" value="@u.Id" />
-                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Revogar Acesso">
-                                                    <i class="bi bi-trash"></i>
+                                            if (isInactive)
+                                            {
+                                                <button disabled class="btn btn-sm btn-outline-secondary border-0" title="Acesso já revogado">
+                                                    <i class="bi bi-dash-circle"></i>
                                                 </button>
-                                            </form>
+                                            }
+                                            else
+                                            {
+                                                <form method="post" asp-page-handler="Delete" class="d-inline" onsubmit="return confirm('Tem certeza que deseja revogar o acesso de @u.Nome?');">
+                                                    <input type="hidden" name="id" value="@u.Id" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Revogar Acesso">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            }
                                         }
                                     </td>
                                 </tr>

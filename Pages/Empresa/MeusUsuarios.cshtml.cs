@@ -4,7 +4,10 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Eva.Data;
 using Eva.Models;
+using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace Eva.Pages.Empresa
 {
@@ -23,9 +26,15 @@ namespace Eva.Pages.Empresa
 
         public async Task<IActionResult> OnGetAsync()
         {
-            // Global Query Filter guarantees only this CNPJ's users are returned
+            var cnpj = User.FindFirstValue("EmpresaCnpj");
+
+            // We use IgnoreQueryFilters so the admin can see revoked (Ativo = false) users for auditing.
+            // Because we ignore global filters, we MUST manually enforce the multi-tenant isolation (EmpresaCnpj).
             Usuarios = await _context.Usuarios
-                .OrderBy(u => u.Nome)
+                .IgnoreQueryFilters()
+                .Where(u => u.EmpresaCnpj == cnpj)
+                .OrderByDescending(u => u.Ativo) // Put active users at the top, revoked at the bottom
+                .ThenBy(u => u.Nome)
                 .ToListAsync();
 
             return Page();
@@ -34,7 +43,10 @@ namespace Eva.Pages.Empresa
         public async Task<IActionResult> OnPostDeleteAsync(int id)
         {
             var loggedInEmail = User.FindFirstValue(ClaimTypes.Email) ?? User.Identity?.Name;
-            var userToDelete = await _context.Usuarios.FirstOrDefaultAsync(u => u.Id == id);
+
+            var userToDelete = await _context.Usuarios
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(u => u.Id == id);
 
             if (userToDelete != null)
             {
@@ -45,7 +57,9 @@ namespace Eva.Pages.Empresa
                     return RedirectToPage();
                 }
 
-                _context.Usuarios.Remove(userToDelete);
+                // Phase 2: Convert Hard Delete to Soft Delete
+                userToDelete.Ativo = false;
+
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Acesso do usuário revogado com sucesso.";
             }

@@ -118,11 +118,24 @@ namespace Eva.Data
             modelBuilder.Entity<Veiculo>().HasQueryFilter(v => _hasTotalAccess || v.EmpresaCnpj == _empresaCnpj);
             modelBuilder.Entity<Motorista>().HasQueryFilter(m => _hasTotalAccess || m.EmpresaCnpj == _empresaCnpj);
             modelBuilder.Entity<Empresa>().HasQueryFilter(e => _hasTotalAccess || e.Cnpj == _empresaCnpj);
+
             modelBuilder.Entity<Viagem>().HasQueryFilter(v => _hasTotalAccess || v.EmpresaCnpj == _empresaCnpj);
 
-            modelBuilder.Entity<Usuario>().HasQueryFilter(u => _hasTotalAccess ||
+            // Phase 1: Match child query filter for Passageiro to eliminate EF Core warnings
+            modelBuilder.Entity<Passageiro>().HasQueryFilter(p => _hasTotalAccess || (p.Viagem != null && p.Viagem.EmpresaCnpj == _empresaCnpj));
+
+            // Phase 1: Apply global Ativo filter and maintain multi-tenancy access rules
+            modelBuilder.Entity<Usuario>().HasQueryFilter(u => u.Ativo &&
+                                                              (_hasTotalAccess ||
                                                               (_isEmpresaMaster && u.EmpresaCnpj == _empresaCnpj) ||
-                                                              u.Email == _userEmail);
+                                                              u.Email == _userEmail));
+
+            // Phase 1: Match child query filter for Token to eliminate EF Core warnings
+            modelBuilder.Entity<TokenValidacaoEmail>().HasQueryFilter(t => t.Usuario != null &&
+                                                                           t.Usuario.Ativo &&
+                                                                           (_hasTotalAccess ||
+                                                                           (_isEmpresaMaster && t.Usuario.EmpresaCnpj == _empresaCnpj) ||
+                                                                           t.Usuario.Email == _userEmail));
         }
     }
 
