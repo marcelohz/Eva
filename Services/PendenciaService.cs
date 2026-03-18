@@ -38,7 +38,8 @@ namespace Eva.Services
                 if (ticket != null)
                 {
                     ticket.DadosPropostos = dadosPropostos;
-                    ticket.CriadoEm = DateTime.UtcNow;
+                    // A data de criação (CriadoEm) NÃO deve ser alterada aqui para não quebrar 
+                    // a ordem temporal e a View v_pendencia_atual do banco de dados.
                     await _context.SaveChangesAsync();
                     return;
                 }
@@ -171,14 +172,14 @@ namespace Eva.Services
                 var draft = JsonSerializer.Deserialize<VeiculoVM>(json, options);
                 if (live != null && draft != null)
                 {
-                    live.ChassiNumero = draft.ChassiNumero;
-                    live.Renavan = draft.Renavan;
-                    live.Modelo = draft.Modelo;
-                    live.PotenciaMotor = draft.PotenciaMotor;
-                    live.NumeroLugares = draft.NumeroLugares;
-                    live.AnoFabricacao = draft.AnoFabricacao;
-                    live.ModeloAno = draft.ModeloAno;
-                    live.VeiculoCombustivelNome = draft.VeiculoCombustivelNome;
+                    if (draft.ChassiNumero != null) live.ChassiNumero = draft.ChassiNumero;
+                    if (draft.Renavan != null) live.Renavan = draft.Renavan;
+                    if (draft.Modelo != null) live.Modelo = draft.Modelo;
+                    if (draft.PotenciaMotor != null) live.PotenciaMotor = draft.PotenciaMotor;
+                    if (draft.NumeroLugares != 0) live.NumeroLugares = draft.NumeroLugares;
+                    if (draft.AnoFabricacao != 0) live.AnoFabricacao = draft.AnoFabricacao;
+                    if (draft.ModeloAno != 0) live.ModeloAno = draft.ModeloAno;
+                    if (draft.VeiculoCombustivelNome != null) live.VeiculoCombustivelNome = draft.VeiculoCombustivelNome;
                 }
             }
             else if (tipo == "EMPRESA")
@@ -187,17 +188,17 @@ namespace Eva.Services
                 var draft = JsonSerializer.Deserialize<EmpresaVM>(json, options);
                 if (live != null && draft != null)
                 {
-                    live.Nome = draft.Nome;
-                    live.NomeFantasia = draft.NomeFantasia;
-                    live.Email = draft.Email;
-                    live.Telefone = draft.Telefone;
-                    live.Endereco = draft.Endereco;
-                    live.Cep = draft.Cep;
-                    live.EnderecoNumero = draft.EnderecoNumero;
-                    live.EnderecoComplemento = draft.EnderecoComplemento;
-                    live.Bairro = draft.Bairro;
-                    live.Cidade = draft.Cidade;
-                    live.Estado = draft.Estado;
+                    if (draft.Nome != null) live.Nome = draft.Nome;
+                    if (draft.NomeFantasia != null) live.NomeFantasia = draft.NomeFantasia;
+                    if (draft.Email != null) live.Email = draft.Email;
+                    if (draft.Telefone != null) live.Telefone = draft.Telefone;
+                    if (draft.Endereco != null) live.Endereco = draft.Endereco;
+                    if (draft.Cep != null) live.Cep = draft.Cep;
+                    if (draft.EnderecoNumero != null) live.EnderecoNumero = draft.EnderecoNumero;
+                    if (draft.EnderecoComplemento != null) live.EnderecoComplemento = draft.EnderecoComplemento;
+                    if (draft.Bairro != null) live.Bairro = draft.Bairro;
+                    if (draft.Cidade != null) live.Cidade = draft.Cidade;
+                    if (draft.Estado != null) live.Estado = draft.Estado;
                 }
             }
             else if (tipo == "MOTORISTA" && int.TryParse(id, out int mId))
@@ -206,10 +207,10 @@ namespace Eva.Services
                 var draft = JsonSerializer.Deserialize<Motorista>(json, options);
                 if (live != null && draft != null)
                 {
-                    live.Cpf = draft.Cpf;
-                    live.Cnh = draft.Cnh;
-                    live.Nome = draft.Nome;
-                    live.Email = draft.Email;
+                    if (draft.Cpf != null) live.Cpf = draft.Cpf;
+                    if (draft.Cnh != null) live.Cnh = draft.Cnh;
+                    if (draft.Nome != null) live.Nome = draft.Nome;
+                    if (draft.Email != null) live.Email = draft.Email;
                 }
             }
         }
