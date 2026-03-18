@@ -45,13 +45,18 @@ namespace Eva.Services
                 .Select(v => v.TipoNome)
                 .ToListAsync();
 
-            // 2. Fetch Latest Decisive Statuses
-            var decisiveStatuses = await _context.FluxoPendencias
-                .Where(f => f.EntidadeTipo.Trim().ToUpper() == entityTypeSafe && ids.Contains(f.EntidadeId) &&
-                            (f.Status == "APROVADO" || f.Status == "REJEITADO"))
-                .GroupBy(f => f.EntidadeId)
-                .Select(g => g.OrderByDescending(f => f.CriadoEm).First())
-                .ToDictionaryAsync(f => f.EntidadeId, f => f.Status);
+            // 2. Fetch Latest Decisive Statuses (Optimized with Postgres DISTINCT ON)
+            // Replaces the dangerous EF Core GroupBy/First LINQ pattern with blazing fast native Postgres SQL
+            var decisiveStatusesList = await _context.FluxoPendencias
+                .FromSqlInterpolated($@"
+                    SELECT DISTINCT ON (entidade_id) * FROM eventual.fluxo_pendencia
+                    WHERE upper(trim(entidade_tipo)) = {entityTypeSafe}
+                      AND entidade_id = ANY({ids.ToArray()})
+                      AND status IN ('APROVADO', 'REJEITADO')
+                    ORDER BY entidade_id, criado_em DESC")
+                .ToListAsync();
+
+            var decisiveStatuses = decisiveStatusesList.ToDictionary(f => f.EntidadeId, f => f.Status);
 
             // 2.5 Fetch Absolute Latest Statuses
             var currentStatuses = await _context.VPendenciasAtuais

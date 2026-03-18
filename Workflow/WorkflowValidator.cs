@@ -9,8 +9,11 @@ namespace Eva.Workflow
         public const string Aprovado = "APROVADO";
         public const string Rejeitado = "REJEITADO";
 
-        public static void ValidateTransition(string? currentState, string nextState, string? currentAnalista, string? nextAnalista, string? motivo = null)
+        public static void ValidateTransition(string? currentState, string nextState, string? currentAnalista, string? nextAnalista, string? motivo = null, bool isOverride = false)
         {
+            // Admins can bypass workflow locks to resolve deadlocks
+            if (isOverride) return;
+
             if (currentState == nextState)
             {
                 if (nextState == EmAnalise && !string.IsNullOrWhiteSpace(currentAnalista) && currentAnalista != nextAnalista)
@@ -20,12 +23,13 @@ namespace Eva.Workflow
 
             if (nextState == AguardandoAnalise)
             {
-                if (currentState == EmAnalise)
-                    throw new InvalidOperationException("Não é possível alterar dados enquanto um analista está revisando o item.");
+                // Allow returning the item to the queue, but only if you are the current analyst
+                if (currentState == EmAnalise && !string.IsNullOrWhiteSpace(currentAnalista) && currentAnalista != nextAnalista)
+                    throw new InvalidOperationException("Apenas o analista atual pode devolver o item para a fila, ou solicite a um Administrador.");
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(nextAnalista))
+            if (string.IsNullOrWhiteSpace(nextAnalista) && nextState != AguardandoAnalise)
                 throw new ArgumentException("O e-mail do analista é obrigatório.");
 
             if (nextState == Rejeitado && string.IsNullOrWhiteSpace(motivo))

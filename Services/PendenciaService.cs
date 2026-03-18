@@ -23,7 +23,7 @@ namespace Eva.Services
             _backgroundJobs = backgroundJobs;
         }
 
-        public async Task SalvarDadosPropostosAsync(string tipo, string id, string dadosPropostos)
+        public async Task SalvarDadosPropostosAsync(string tipo, string id, string dadosPropostos, bool isOverride = false)
         {
             tipo = tipo.ToUpperInvariant();
             var atual = await _context.VPendenciasAtuais.FirstOrDefaultAsync(p => p.EntidadeTipo == tipo && p.EntidadeId == id);
@@ -44,55 +44,74 @@ namespace Eva.Services
                 }
             }
 
-            await ProcessarTransicaoAsync(tipo, id, WorkflowValidator.AguardandoAnalise, null, null, dadosPropostos);
+            await ProcessarTransicaoAsync(tipo, id, WorkflowValidator.AguardandoAnalise, null, null, dadosPropostos, isOverride);
         }
 
-        public async Task AvancarEntidadeAsync(string tipo, string id) => await ProcessarTransicaoAsync(tipo, id, WorkflowValidator.AguardandoAnalise);
-        public async Task IniciarAnaliseAsync(string tipo, string id, string analista) => await ProcessarTransicaoAsync(tipo, id, WorkflowValidator.EmAnalise, analista);
-        public async Task AprovarAsync(string tipo, string id, string analista) => await ProcessarTransicaoAsync(tipo, id, WorkflowValidator.Aprovado, analista);
-        public async Task RejeitarAsync(string tipo, string id, string analista, string motivo) => await ProcessarTransicaoAsync(tipo, id, WorkflowValidator.Rejeitado, analista, motivo);
+        public async Task AvancarEntidadeAsync(string tipo, string id, bool isOverride = false) => await ProcessarTransicaoAsync(tipo, id, WorkflowValidator.AguardandoAnalise, null, null, null, isOverride);
 
-        private async Task ProcessarTransicaoAsync(string entidadeTipo, string entidadeId, string novoStatus, string? analistaEmail = null, string? motivo = null, string? novosDadosPropostos = null)
+        public async Task DevolverParaFilaAsync(string tipo, string id, string analista, bool isOverride = false) => await ProcessarTransicaoAsync(tipo, id, WorkflowValidator.AguardandoAnalise, analista, null, null, isOverride);
+
+        public async Task IniciarAnaliseAsync(string tipo, string id, string analista, bool isOverride = false) => await ProcessarTransicaoAsync(tipo, id, WorkflowValidator.EmAnalise, analista, null, null, isOverride);
+        public async Task AprovarAsync(string tipo, string id, string analista, bool isOverride = false) => await ProcessarTransicaoAsync(tipo, id, WorkflowValidator.Aprovado, analista, null, null, isOverride);
+        public async Task RejeitarAsync(string tipo, string id, string analista, string motivo, bool isOverride = false) => await ProcessarTransicaoAsync(tipo, id, WorkflowValidator.Rejeitado, analista, motivo, null, isOverride);
+
+        private async Task ProcessarTransicaoAsync(string entidadeTipo, string entidadeId, string novoStatus, string? analistaEmail = null, string? motivo = null, string? novosDadosPropostos = null, bool isOverride = false)
         {
             entidadeTipo = entidadeTipo.ToUpperInvariant();
             analistaEmail = analistaEmail?.ToLowerInvariant();
 
             var atual = await _context.VPendenciasAtuais.FirstOrDefaultAsync(p => p.EntidadeTipo == entidadeTipo && p.EntidadeId == entidadeId);
 
-            WorkflowValidator.ValidateTransition(atual?.Status, novoStatus, atual?.Analista, analistaEmail, motivo);
+            WorkflowValidator.ValidateTransition(atual?.Status, novoStatus, atual?.Analista, analistaEmail, motivo, isOverride);
 
             if (atual?.Status == novoStatus && novosDadosPropostos == null) return;
 
             string? dadosPropostosFinais = novosDadosPropostos ?? atual?.DadosPropostos;
 
-            var novaPendencia = new FluxoPendencia
-            {
-                EntidadeTipo = entidadeTipo,
-                EntidadeId = entidadeId,
-                Status = novoStatus,
-                Analista = analistaEmail,
-                Motivo = motivo,
-                DadosPropostos = dadosPropostosFinais,
-                CriadoEm = DateTime.UtcNow
-            };
+            using var transaction = await _context.Database.BeginTransactionAsync();
 
-            _context.FluxoPendencias.Add(novaPendencia);
-
-            if (novoStatus == WorkflowValidator.Aprovado && !string.IsNullOrEmpty(dadosPropostosFinais))
+            try
             {
-                await AplicarDadosAprovadosAsync(entidadeTipo, entidadeId, dadosPropostosFinais);
+                var novaPendencia = new FluxoPendencia
+                {
+                    EntidadeTipo = entidadeTipo,
+                    EntidadeId = entidadeId,
+                    Status = novoStatus,
+                    Analista = analistaEmail,
+                    Motivo = motivo,
+                    DadosPropostos = dadosPropostosFinais,
+                    CriadoEm = DateTime.UtcNow
+                };
+
+                _context.FluxoPendencias.Add(novaPendencia);
+
+                if (novoStatus == WorkflowValidator.Aprovado && !string.IsNullOrEmpty(dadosPropostosFinais))
+                {
+                    await AplicarDadosAprovadosAsync(entidadeTipo, entidadeId, dadosPropostosFinais);
+                }
+
+                await _context.SaveChangesAsync();
+
+                if (novoStatus == WorkflowValidator.Aprovado)
+                {
+                    await LinkApprovedDocumentsAsync(entidadeTipo, entidadeId, novaPendencia.Id);
+                }
+
+                await transaction.CommitAsync();
+
+                if (novoStatus == WorkflowValidator.Aprovado)
+                {
+                    await EnviarEmailNotificacaoAsync(entidadeTipo, entidadeId, novoStatus, null);
+                }
+                else if (novoStatus == WorkflowValidator.Rejeitado)
+                {
+                    await EnviarEmailNotificacaoAsync(entidadeTipo, entidadeId, novoStatus, motivo);
+                }
             }
-
-            await _context.SaveChangesAsync();
-
-            if (novoStatus == WorkflowValidator.Aprovado)
+            catch
             {
-                await LinkApprovedDocumentsAsync(entidadeTipo, entidadeId, novaPendencia.Id);
-                await EnviarEmailNotificacaoAsync(entidadeTipo, entidadeId, novoStatus, null);
-            }
-            else if (novoStatus == WorkflowValidator.Rejeitado)
-            {
-                await EnviarEmailNotificacaoAsync(entidadeTipo, entidadeId, novoStatus, motivo);
+                await transaction.RollbackAsync();
+                throw;
             }
         }
 
@@ -189,12 +208,30 @@ namespace Eva.Services
 
         private async Task LinkApprovedDocumentsAsync(string tipo, string id, int fluxoId)
         {
-            IQueryable<Documento> docs = _context.Documentos.Where(d => d.FluxoPendenciaId == null);
-            if (tipo == "EMPRESA") docs = docs.Where(d => _context.DocumentoEmpresas.Any(de => de.Id == d.Id && de.EmpresaCnpj == id));
-            else if (tipo == "VEICULO") docs = docs.Where(d => _context.DocumentoVeiculos.Any(dv => dv.Id == d.Id && dv.VeiculoPlaca == id));
-            else if (tipo == "MOTORISTA" && int.TryParse(id, out int mId)) docs = docs.Where(d => _context.DocumentoMotoristas.Any(dm => dm.Id == d.Id && dm.MotoristaId == mId));
+            IQueryable<Documento> query = _context.Documentos.Where(d => d.FluxoPendenciaId == null);
 
-            foreach (var doc in await docs.ToListAsync()) { doc.FluxoPendenciaId = fluxoId; doc.AprovadoEm = DateTime.UtcNow; }
+            if (tipo == "EMPRESA")
+                query = query.Where(d => _context.DocumentoEmpresas.Any(de => de.Id == d.Id && de.EmpresaCnpj == id));
+            else if (tipo == "VEICULO")
+                query = query.Where(d => _context.DocumentoVeiculos.Any(dv => dv.Id == d.Id && dv.VeiculoPlaca == id));
+            else if (tipo == "MOTORISTA" && int.TryParse(id, out int mId))
+                query = query.Where(d => _context.DocumentoMotoristas.Any(dm => dm.Id == d.Id && dm.MotoristaId == mId));
+            else
+                return;
+
+            var allUnlinkedDocs = await query.ToListAsync();
+
+            var docsToApprove = allUnlinkedDocs
+                .GroupBy(d => d.DocumentoTipoNome)
+                .Select(g => g.OrderByDescending(d => d.DataUpload).ThenByDescending(d => d.Id).First())
+                .ToList();
+
+            foreach (var doc in docsToApprove)
+            {
+                doc.FluxoPendenciaId = fluxoId;
+                doc.AprovadoEm = DateTime.UtcNow;
+            }
+
             await _context.SaveChangesAsync();
         }
 
