@@ -117,39 +117,47 @@ namespace Eva.Services
 
         private async Task EnviarEmailNotificacaoAsync(string tipo, string id, string status, string? motivo)
         {
-            string? emailDestino = null;
-            string nomeEntidade = tipo;
-
-            if (tipo == "EMPRESA")
+            try
             {
-                var emp = await _context.Empresas.IgnoreQueryFilters().FirstOrDefaultAsync(e => e.Cnpj == id);
-                emailDestino = emp?.Email;
-                nomeEntidade = $"Empresa {emp?.NomeFantasia ?? id}";
+                string? emailDestino = null;
+                string nomeEntidade = tipo;
+
+                if (tipo == "EMPRESA")
+                {
+                    var emp = await _context.Empresas.IgnoreQueryFilters().FirstOrDefaultAsync(e => e.Cnpj == id);
+                    emailDestino = emp?.Email;
+                    nomeEntidade = $"Empresa {emp?.NomeFantasia ?? id}";
+                }
+                else if (tipo == "VEICULO")
+                {
+                    var veic = await _context.Veiculos.IgnoreQueryFilters().Include(v => v.Empresa).FirstOrDefaultAsync(v => v.Placa == id);
+                    emailDestino = veic?.Empresa?.Email;
+                    nomeEntidade = $"Veículo {id}";
+                }
+                else if (tipo == "MOTORISTA" && int.TryParse(id, out int mId))
+                {
+                    var mot = await _context.Motoristas.IgnoreQueryFilters().Include(m => m.Empresa).FirstOrDefaultAsync(m => m.Id == mId);
+                    emailDestino = mot?.Empresa?.Email;
+                    nomeEntidade = $"Motorista {mot?.Nome ?? id}";
+                }
+
+                if (!string.IsNullOrEmpty(emailDestino))
+                {
+                    string assunto = status == WorkflowValidator.Aprovado
+                        ? $"Aprovação de {nomeEntidade}"
+                        : $"Pendência em {nomeEntidade}";
+
+                    string corpo = status == WorkflowValidator.Aprovado
+                        ? $"<p>O cadastro para <strong>{nomeEntidade}</strong> foi analisado e <strong>Aprovado</strong> pela Metroplan.</p>"
+                        : $"<p>O cadastro para <strong>{nomeEntidade}</strong> foi analisado e requer ajustes.</p><p><strong>Motivo apontado:</strong> {motivo}</p><p>Acesse o sistema para regularizar a situação.</p>";
+
+                    _backgroundJobs.Enqueue<IEmailService>(x => x.SendEmailAsync(emailDestino, assunto, corpo));
+                }
             }
-            else if (tipo == "VEICULO")
+            catch (Exception ex)
             {
-                var veic = await _context.Veiculos.IgnoreQueryFilters().Include(v => v.Empresa).FirstOrDefaultAsync(v => v.Placa == id);
-                emailDestino = veic?.Empresa?.Email;
-                nomeEntidade = $"Veículo {id}";
-            }
-            else if (tipo == "MOTORISTA" && int.TryParse(id, out int mId))
-            {
-                var mot = await _context.Motoristas.IgnoreQueryFilters().Include(m => m.Empresa).FirstOrDefaultAsync(m => m.Id == mId);
-                emailDestino = mot?.Empresa?.Email;
-                nomeEntidade = $"Motorista {mot?.Nome ?? id}";
-            }
-
-            if (!string.IsNullOrEmpty(emailDestino))
-            {
-                string assunto = status == WorkflowValidator.Aprovado
-                    ? $"Aprovação de {nomeEntidade}"
-                    : $"Pendência em {nomeEntidade}";
-
-                string corpo = status == WorkflowValidator.Aprovado
-                    ? $"<p>O cadastro para <strong>{nomeEntidade}</strong> foi analisado e <strong>Aprovado</strong> pela Metroplan.</p>"
-                    : $"<p>O cadastro para <strong>{nomeEntidade}</strong> foi analisado e requer ajustes.</p><p><strong>Motivo apontado:</strong> {motivo}</p><p>Acesse o sistema para regularizar a situação.</p>";
-
-                _backgroundJobs.Enqueue<IEmailService>(x => x.SendEmailAsync(emailDestino, assunto, corpo));
+                // Silently trap the error so the workflow transition does not crash the UI
+                Console.WriteLine($"Erro ao tentar enfileirar notificação de e-mail: {ex.Message}");
             }
         }
 
