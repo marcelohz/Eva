@@ -35,13 +35,14 @@
                             <th>E-mail</th>
                             <th>Status</th>
                             <th>Data de Cadastro</th>
+                            <th class="text-end pe-4">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         @if (!Model.Analistas.Any())
                         {
                             <tr>
-                                <td colspan="4" class="text-center py-5 text-muted">
+                                <td colspan="5" class="text-center py-5 text-muted">
                                     <i class="bi bi-people display-4 d-block mb-2"></i>
                                     Nenhum analista cadastrado no sistema ainda.
                                 </td>
@@ -52,7 +53,9 @@
                             foreach (var analista in Model.Analistas)
                             {
                                 <tr>
-                                    <td class="ps-4 fw-bold text-secondary">@analista.Nome</td>
+                                    <td class="ps-4 fw-bold">
+                                        <a href="/Metroplan/Admin/DetalhesAnalista/@analista.Id" class="text-decoration-none text-primary">@analista.Nome</a>
+                                    </td>
                                     <td>@analista.Email</td>
                                     <td>
                                         @if (analista.EmailValidado)
@@ -65,6 +68,11 @@
                                         }
                                     </td>
                                     <td>@analista.CriadoEm.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td class="text-end pe-4">
+                                        <a href="/Metroplan/Admin/DetalhesAnalista/@analista.Id" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-gear-fill"></i> Gerenciar
+                                        </a>
+                                    </td>
                                 </tr>
                             }
                         }
