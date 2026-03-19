@@ -8,62 +8,35 @@
     <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
         <div>
             <h1 class="h2"><i class="bi bi-shield-lock-fill text-warning me-2"></i>Painel Administrativo</h1>
-            <p class="text-muted">Gerenciamento de acessos internos e analistas da Metroplan.</p>
+            <p class="text-muted">Visão geral e gerenciamento do sistema.</p>
         </div>
-        <a href="/Metroplan/Admin/NovoAnalista" class="btn btn-primary">
-            <i class="bi bi-person-plus-fill"></i> Novo Analista
-        </a>
     </div>
 
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-dark text-white">
-            <h5 class="mb-0">Analistas Cadastrados</h5>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="ps-4">Nome</th>
-                            <th>E-mail</th>
-                            <th>Status</th>
-                            <th>Data de Cadastro</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (!Model.Analistas.Any())
-                        {
-                            <tr>
-                                <td colspan="4" class="text-center py-5 text-muted">
-                                    <i class="bi bi-people display-4 d-block mb-2"></i>
-                                    Nenhum analista cadastrado no sistema ainda.
-                                </td>
-                            </tr>
-                        }
-                        else
-                        {
-                            foreach (var analista in Model.Analistas)
-                            {
-                                <tr>
-                                    <td class="ps-4 fw-bold text-secondary">@analista.Nome</td>
-                                    <td>@analista.Email</td>
-                                    <td>
-                                        @if (analista.EmailValidado)
-                                        {
-                                            <span class="badge bg-success">Ativo</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-warning text-dark">Pendente</span>
-                                        }
-                                    </td>
-                                    <td>@analista.CriadoEm.ToString("dd/MM/yyyy HH:mm")</td>
-                                </tr>
-                            }
-                        }
-                    </tbody>
-                </table>
-            </div>
+    <div class="row g-4">
+        <div class="col-md-6 col-lg-4">
+            <a href="/Metroplan/Admin/Analistas" class="text-decoration-none">
+                <div class="card h-100 shadow-sm border-0 hover-card">
+                    <div class="card-body text-center p-4">
+                        <div class="mb-3">
+                            <i class="bi bi-people-fill text-primary display-4"></i>
+                        </div>
+                        <h5 class="card-title text-dark fw-bold mb-2">Gerenciar Analistas</h5>
+                        <p class="card-text text-muted">
+                            Visualizar, editar e adicionar analistas responsáveis pela avaliação de documentos.
+                        </p>
+                    </div>
+                </div>
+            </a>
         </div>
     </div>
 </div>
+
+<style>
+    .hover-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .hover-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+</style>

@@ -58,7 +58,7 @@ namespace Eva.Pages.Metroplan.Admin
                 Email = Input.Email,
                 PapelNome = "ANALISTA",
                 EmailValidado = true,
-                CriadoEm = DateTime.UtcNow // CHANGED HERE
+                CriadoEm = DateTime.UtcNow
             };
 
             var hasher = new PasswordHasher<Usuario>();
@@ -67,7 +67,7 @@ namespace Eva.Pages.Metroplan.Admin
             _context.Usuarios.Add(novoUsuario);
             await _context.SaveChangesAsync();
 
-            return RedirectToPage("./Index");
+            return RedirectToPage("./Analistas");
         }
     }
 }
