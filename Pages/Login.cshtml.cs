@@ -43,10 +43,16 @@ namespace Eva.Pages
         {
             if (User.Identity?.IsAuthenticated == true)
             {
-                if (User.IsInRole("ANALISTA") || User.IsInRole("ADMIN"))
+                if (User.IsInRole("ADMIN"))
+                {
+                    return RedirectToPage("/Metroplan/Admin/Index");
+                }
+
+                if (User.IsInRole("ANALISTA"))
                 {
                     return RedirectToPage("/Metroplan/Analista/Index");
                 }
+
                 return RedirectToPage("/Empresa/MinhaEmpresa");
             }
 
@@ -91,7 +97,9 @@ namespace Eva.Pages
                 await _context.SaveChangesAsync();
             }
 
-            bool isInternalStaff = user.PapelNome?.ToUpper() == "ANALISTA" || user.PapelNome?.ToUpper() == "ADMIN";
+            bool isAdmin = user.PapelNome?.ToUpper() == "ADMIN";
+            bool isAnalista = user.PapelNome?.ToUpper() == "ANALISTA";
+            bool isInternalStaff = isAdmin || isAnalista;
 
             if (!user.EmailValidado && !isInternalStaff)
             {
@@ -141,7 +149,12 @@ namespace Eva.Pages
                 return LocalRedirect(ReturnUrl);
             }
 
-            if (isInternalStaff)
+            if (isAdmin)
+            {
+                return RedirectToPage("/Metroplan/Admin/Index");
+            }
+
+            if (isAnalista)
             {
                 return RedirectToPage("/Metroplan/Analista/Index");
             }
