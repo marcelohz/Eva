@@ -8,7 +8,7 @@ using System.Security.Claims;
 
 namespace Eva.Pages.Metroplan.Analista
 {
-    [Authorize(Roles = "ANALISTA")]
+    [Authorize(Policy = "AcessoAnalista")]
     public class IndexModel : PageModel
     {
         private readonly EvaDbContext _context;
@@ -32,6 +32,37 @@ namespace Eva.Pages.Metroplan.Analista
                 // SECONDARY SORT: Oldest tickets first
                 .ThenBy(p => p.CriadoEm)
                 .ToListAsync();
+        }
+
+        public async Task<IActionResult> OnPostDesatribuirAsync(string tipo, string id)
+        {
+            if (!User.IsInRole("ADMIN"))
+            {
+                return Forbid();
+            }
+
+            var lastPendencia = await _context.FluxoPendencias
+                .Where(f => f.EntidadeTipo == tipo && f.EntidadeId == id)
+                .OrderByDescending(f => f.CriadoEm)
+                .FirstOrDefaultAsync();
+
+            if (lastPendencia != null && lastPendencia.Status == "EM_ANALISE")
+            {
+                var novaPendencia = new FluxoPendencia
+                {
+                    EntidadeTipo = tipo,
+                    EntidadeId = id,
+                    Status = "AGUARDANDO_ANALISE",
+                    Analista = null,
+                    Motivo = "Desatribuição forçada por Administrador.",
+                    CriadoEm = DateTime.UtcNow
+                };
+
+                _context.FluxoPendencias.Add(novaPendencia);
+                await _context.SaveChangesAsync();
+            }
+
+            return RedirectToPage();
         }
     }
 }

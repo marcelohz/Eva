@@ -2,7 +2,6 @@
 @model Eva.Pages.Metroplan.Analista.RevisaoModel
 @{
     ViewData["Title"] = "Revisão de Ticket - Eva";
-
     var fieldsToRender = new List<(string Label, object? LiveVal, object? DraftVal)>();
     bool hasDraftData = false;
     string headerLabel = "";
@@ -229,11 +228,11 @@
 
                                         <div class="btn-group shadow-sm" role="group">
                                             <a href="/Metroplan/Analista/Revisao?handler=Visualizar&docId=@doc.Id"
-                                               target="_blank" class="btn btn-sm btn-outline-primary bg-white" title="Abrir em nova guia">
+                                                   target="_blank" class="btn btn-sm btn-outline-primary bg-white" title="Abrir em nova guia">
                                                 <i class="bi bi-eye"></i> Visualizar
                                             </a>
                                             <a href="/Metroplan/Analista/Revisao?handler=Download&docId=@doc.Id"
-                                               class="btn btn-sm btn-outline-primary bg-white" title="Baixar arquivo">
+                                                   class="btn btn-sm btn-outline-primary bg-white" title="Baixar arquivo">
                                                 <i class="bi bi-download"></i> Baixar
                                             </a>
                                         </div>

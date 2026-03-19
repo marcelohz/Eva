@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace Eva.Pages.Metroplan.Analista
 {
-    [Authorize(Roles = "ANALISTA")]
+    [Authorize(Policy = "AcessoAnalista")]
     public class RevisaoModel : PageModel
     {
         private readonly EvaDbContext _context;
@@ -90,7 +90,6 @@ namespace Eva.Pages.Metroplan.Analista
                 if (hasDraft) EmpresaDraft = JsonSerializer.Deserialize<EmpresaVM>(Ticket.DadosPropostos!, jsonOpts);
             }
 
-            // --- MOUNT THE DOCUMENT CHECKLIST COM VINCULOS ---
             var tipoSafe = Tipo.Trim().ToUpper();
 
             var regrasEsperadas = await _context.DocumentoTipoVinculos

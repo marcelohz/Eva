@@ -2,6 +2,7 @@
 @model Eva.Pages.Metroplan.Analista.IndexModel
 @{
     ViewData["Title"] = "Fila de Análise - Eva";
+    bool isAdmin = User.IsInRole("ADMIN");
 }
 
 <div class="container mt-5">
@@ -74,8 +75,18 @@
                                         }
                                     </td>
                                     <td class="text-end pe-4">
+                                        @if (isLockedByOther && isAdmin)
+                                        {
+                                            <form method="post" asp-page-handler="Desatribuir" class="d-inline">
+                                                <input type="hidden" name="tipo" value="@item.EntidadeTipo" />
+                                                <input type="hidden" name="id" value="@item.EntidadeId" />
+                                                <button type="submit" class="btn btn-sm btn-danger me-2" title="Forçar desatribuição" onclick="return confirm('Tem certeza que deseja desatribuir este ticket?');">
+                                                    <i class="bi bi-unlock-fill"></i> Desatribuir
+                                                </button>
+                                            </form>
+                                        }
                                         <a href="/Metroplan/Analista/Revisao?tipo=@item.EntidadeTipo&id=@item.EntidadeId"
-                                           class="btn btn-sm btn-primary">
+                                               class="btn btn-sm btn-primary">
                                             <i class="bi bi-eye"></i> Visualizar
                                         </a>
                                     </td>
