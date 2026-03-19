@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Eva.Data;
 using Eva.Services;
-using Eva.Configuration; // <-- NEW: Centralized Configuration Namespace
+using Eva.Configuration;
 using Hangfire;
 using Hangfire.PostgreSql;
 using Serilog;
@@ -100,6 +100,9 @@ try
     {
         options.AddPolicy("AcessoEmpresa", policy =>
             policy.RequireRole("EMPRESA", "USUARIO_EMPRESA"));
+
+        options.AddPolicy("AcessoAnalista", policy =>
+            policy.RequireRole("ANALISTA", "ADMIN"));
     });
 
     var app = builder.Build();
