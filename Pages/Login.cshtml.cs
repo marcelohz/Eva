@@ -15,11 +15,13 @@ namespace Eva.Pages
     {
         private readonly EvaDbContext _context;
         private readonly ILogger<LoginModel> _logger;
+        private readonly PasswordHasher<Usuario> _passwordHasher;
 
         public LoginModel(EvaDbContext context, ILogger<LoginModel> logger)
         {
             _context = context;
             _logger = logger;
+            _passwordHasher = new PasswordHasher<Usuario>();
         }
 
         [BindProperty]
@@ -43,7 +45,6 @@ namespace Eva.Pages
             {
                 if (User.IsInRole("ANALISTA") || User.IsInRole("ADMIN"))
                 {
-                    // Fixed: Pointing to the correct Metroplan folder structure
                     return RedirectToPage("/Metroplan/Analista/Index");
                 }
                 return RedirectToPage("/Empresa/MinhaEmpresa");
@@ -68,62 +69,42 @@ namespace Eva.Pages
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(u => u.Email.ToLower() == cleanEmail);
 
-            if (user == null)
+            if (user == null || string.IsNullOrEmpty(user.Senha))
             {
                 ModelState.AddModelError(string.Empty, "E-mail ou senha inválidos.");
                 return Page();
             }
 
-            // --- THE SMART PASSWORD VERIFIER ---
-            bool isPasswordValid = false;
+            // Secure Verification: Only allow hashed passwords
+            var result = _passwordHasher.VerifyHashedPassword(user, user.Senha, Input.Senha);
 
-            // 1. Check if it matches plain text (for the new Empresas we just registered)
-            if (user.Senha == Input.Senha)
-            {
-                isPasswordValid = true;
-            }
-            else
-            {
-                // 2. Check if it matches the ASP.NET Core Identity Hash (AQAAAA...)
-                var hasher = new PasswordHasher<Usuario>();
-                try
-                {
-                    var result = hasher.VerifyHashedPassword(user, user.Senha ?? "", Input.Senha);
-                    if (result == PasswordVerificationResult.Success || result == PasswordVerificationResult.SuccessRehashNeeded)
-                    {
-                        isPasswordValid = true;
-                    }
-                }
-                catch
-                {
-                    // Failsafe in case the string in DB isn't a valid base64 hash at all
-                }
-            }
-
-            if (!isPasswordValid)
+            if (result == PasswordVerificationResult.Failed)
             {
                 ModelState.AddModelError(string.Empty, "E-mail ou senha inválidos.");
                 return Page();
             }
 
-            // Identify if the user is internal staff
+            // Re-hash if the algorithm has been upgraded
+            if (result == PasswordVerificationResult.SuccessRehashNeeded)
+            {
+                user.Senha = _passwordHasher.HashPassword(user, Input.Senha);
+                await _context.SaveChangesAsync();
+            }
+
             bool isInternalStaff = user.PapelNome?.ToUpper() == "ANALISTA" || user.PapelNome?.ToUpper() == "ADMIN";
 
-            // Block unverified accounts (bypass for internal staff)
             if (!user.EmailValidado && !isInternalStaff)
             {
                 ModelState.AddModelError(string.Empty, "Esta conta ainda não foi confirmada. Verifique seu e-mail e clique no link de ativação.");
                 return Page();
             }
 
-            // Block manually deactivated accounts
             if (!user.Ativo)
             {
                 ModelState.AddModelError(string.Empty, "Esta conta está inativa. Entre em contato com o suporte.");
                 return Page();
             }
 
-            // --- BUILD THE USER SESSION ---
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
@@ -131,13 +112,11 @@ namespace Eva.Pages
                 new Claim(ClaimTypes.Name, user.Nome ?? user.Email)
             };
 
-            // Only add the EmpresaCnpj claim if the user actually belongs to one
             if (!string.IsNullOrEmpty(user.EmpresaCnpj))
             {
                 claims.Add(new Claim("EmpresaCnpj", user.EmpresaCnpj));
             }
 
-            // Assign standard role for Authorize attributes
             if (!string.IsNullOrEmpty(user.PapelNome))
             {
                 claims.Add(new Claim(ClaimTypes.Role, user.PapelNome.ToUpper()));
@@ -146,7 +125,6 @@ namespace Eva.Pages
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var principal = new ClaimsPrincipal(identity);
 
-            // Log the user in
             await HttpContext.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme,
                 principal,
@@ -165,7 +143,6 @@ namespace Eva.Pages
 
             if (isInternalStaff)
             {
-                // Fixed: Pointing to the correct Metroplan folder structure
                 return RedirectToPage("/Metroplan/Analista/Index");
             }
 
