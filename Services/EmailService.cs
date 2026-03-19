@@ -1,8 +1,12 @@
-﻿using MailKit.Security;
-using Microsoft.Extensions.Hosting; // Required for environment checks
+﻿using System;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MimeKit;
+using MimeKit.Text;
+using MailKit.Net.Smtp;
+using MailKit.Security;
+using Eva.Configuration;
 
 namespace Eva.Services
 {
@@ -11,63 +15,56 @@ namespace Eva.Services
         Task SendEmailAsync(string toEmail, string subject, string htmlMessage);
     }
 
-    public class EmailSettings
-    {
-        public bool EnableEmailSend { get; set; } = false;
-        public string SmtpServer { get; set; } = string.Empty;
-        public int SmtpPort { get; set; }
-        public string SenderName { get; set; } = string.Empty;
-        public string SenderEmail { get; set; } = string.Empty;
-        public string SmtpPassword { get; set; } = string.Empty;
-        public string AuthEmail { get; set; } = string.Empty;
-    }
-
     public class EmailService : IEmailService
     {
         private readonly EmailSettings _settings;
         private readonly ILogger<EmailService> _logger;
-        private readonly IHostEnvironment _env;
 
-        public EmailService(
-            IOptions<EmailSettings> settings,
-            ILogger<EmailService> logger,
-            IHostEnvironment env)
+        public EmailService(IOptions<EmailSettings> options, ILogger<EmailService> logger)
         {
-            _settings = settings.Value;
+            _settings = options.Value;
             _logger = logger;
-            _env = env; // Injected to check if we are in Production
         }
 
         public async Task SendEmailAsync(string toEmail, string subject, string htmlMessage)
         {
-            // FAIL-SAFE: The mock is ONLY allowed if we are explicitly in Development 
-            // AND the toggle is set to false. In Production, this is always bypassed.
-            if (_env.IsDevelopment() && !_settings.EnableEmailSend)
+            if (!_settings.EnableEmailSend)
             {
-                _logger.LogWarning("==========================================================");
-                _logger.LogWarning("MOCK EMAIL (SENDING DISABLED IN DEV CONFIG)");
-                _logger.LogWarning("TO: {ToEmail}", toEmail);
-                _logger.LogWarning("SUBJECT: {Subject}", subject);
-                _logger.LogWarning("BODY: {Body}", htmlMessage);
-                _logger.LogWarning("==========================================================");
-
+                _logger.LogInformation("Email sending is disabled in configuration. Skipping email to {ToEmail}", toEmail);
                 return;
             }
 
-            var email = new MimeMessage();
-            email.From.Add(new MailboxAddress(_settings.SenderName, _settings.SenderEmail));
-            email.To.Add(MailboxAddress.Parse(toEmail));
-            email.Subject = subject;
+            try
+            {
+                var email = new MimeMessage();
+                email.From.Add(new MailboxAddress(_settings.SenderName, _settings.SenderEmail));
+                email.To.Add(MailboxAddress.Parse(toEmail));
+                email.Subject = subject;
+                email.Body = new TextPart(TextFormat.Html) { Text = htmlMessage };
 
-            var builder = new BodyBuilder { HtmlBody = htmlMessage };
-            email.Body = builder.ToMessageBody();
+                using var smtp = new SmtpClient();
 
-            using var smtp = new MailKit.Net.Smtp.SmtpClient();
+                // Connect to the SMTP server (e.g., Office365)
+                await smtp.ConnectAsync(_settings.SmtpServer, _settings.SmtpPort, SecureSocketOptions.StartTls);
 
-            await smtp.ConnectAsync(_settings.SmtpServer, _settings.SmtpPort, SecureSocketOptions.StartTls);
-            await smtp.AuthenticateAsync(_settings.AuthEmail, _settings.SmtpPassword);
-            await smtp.SendAsync(email);
-            await smtp.DisconnectAsync(true);
+                // Authenticate using the specific AuthEmail and App Password
+                await smtp.AuthenticateAsync(_settings.AuthEmail, _settings.SmtpPassword);
+
+                // Send the payload
+                await smtp.SendAsync(email);
+
+                // Disconnect cleanly
+                await smtp.DisconnectAsync(true);
+
+                _logger.LogInformation("Successfully sent email to {ToEmail} with subject '{Subject}'", toEmail, subject);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send email to {ToEmail}. SMTP Server: {SmtpServer}:{SmtpPort}, Auth User: {AuthUser}",
+                    toEmail, _settings.SmtpServer, _settings.SmtpPort, _settings.AuthEmail);
+                // We rethrow the exception so Hangfire marks the job as failed and triggers its retry logic
+                throw;
+            }
         }
     }
 }

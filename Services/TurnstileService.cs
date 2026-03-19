@@ -1,57 +1,77 @@
-﻿using Microsoft.Extensions.Options;
+﻿using System;
+using System.Collections.Generic;
+using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Eva.Configuration;
 
 namespace Eva.Services
 {
     public interface ITurnstileService
     {
-        // Added '?' to explicitly allow nulls, satisfying the compiler warning
-        Task<bool> VerifyTokenAsync(string? token);
-    }
-
-    public class TurnstileSettings
-    {
-        public string SecretKey { get; set; } = string.Empty;
-        public string SiteKey { get; set; } = string.Empty;
-        public string ApiUrl { get; set; } = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
+        Task<bool> VerifyTokenAsync(string token);
     }
 
     public class TurnstileService : ITurnstileService
     {
         private readonly HttpClient _httpClient;
         private readonly TurnstileSettings _settings;
+        private readonly ILogger<TurnstileService> _logger;
 
-        public TurnstileService(HttpClient httpClient, IOptions<TurnstileSettings> settings)
+        public TurnstileService(HttpClient httpClient, IOptions<TurnstileSettings> options, ILogger<TurnstileService> logger)
         {
             _httpClient = httpClient;
-            _settings = settings.Value;
+            _settings = options.Value;
+            _logger = logger;
         }
 
-        public async Task<bool> VerifyTokenAsync(string? token)
+        public async Task<bool> VerifyTokenAsync(string token)
         {
-            // Now gracefully handles nulls without compiler warnings
-            if (string.IsNullOrEmpty(token)) return false;
-
-            var content = new FormUrlEncodedContent(new[]
+            if (string.IsNullOrWhiteSpace(token))
             {
-                new KeyValuePair<string, string>("secret", _settings.SecretKey),
-                new KeyValuePair<string, string>("response", token)
-            });
+                _logger.LogWarning("Turnstile verification failed: Token is null or empty.");
+                return false;
+            }
 
-            var response = await _httpClient.PostAsync(_settings.ApiUrl, content);
-            if (!response.IsSuccessStatusCode) return false;
+            try
+            {
+                var content = new FormUrlEncodedContent(new[]
+                {
+                    new KeyValuePair<string, string>("secret", _settings.SecretKey),
+                    new KeyValuePair<string, string>("response", token)
+                });
 
-            var jsonString = await response.Content.ReadAsStringAsync();
-            var result = JsonSerializer.Deserialize<TurnstileResponse>(jsonString);
+                var response = await _httpClient.PostAsync(_settings.ApiUrl, content);
+                response.EnsureSuccessStatusCode();
 
-            return result?.Success ?? false;
+                var jsonResponse = await response.Content.ReadAsStringAsync();
+                var turnstileResult = JsonSerializer.Deserialize<TurnstileResponse>(jsonResponse);
+
+                if (turnstileResult != null && turnstileResult.Success)
+                {
+                    return true;
+                }
+
+                _logger.LogWarning("Turnstile verification failed. Result: {Result}", jsonResponse);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred during Turnstile verification.");
+                return false;
+            }
         }
+    }
 
-        private class TurnstileResponse
-        {
-            [JsonPropertyName("success")]
-            public bool Success { get; set; }
-        }
+    public class TurnstileResponse
+    {
+        [JsonPropertyName("success")]
+        public bool Success { get; set; }
+
+        [JsonPropertyName("error-codes")]
+        public string[] ErrorCodes { get; set; } = Array.Empty<string>();
     }
 }

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Eva.Data;
 using Eva.Services;
+using Eva.Configuration; // <-- NEW: Centralized Configuration Namespace
 using Hangfire;
 using Hangfire.PostgreSql;
 using Serilog;
@@ -28,14 +29,24 @@ try
         .ReadFrom.Services(services)
         .Enrich.FromLogContext());
 
-    // --- SECURITY CHECK ---
-    // Critical validation: refuses to start if security keys are missing from configuration.
-    var turnstileSecret = builder.Configuration["Turnstile:SecretKey"];
-    if (string.IsNullOrEmpty(turnstileSecret))
-    {
-        Log.Fatal("CRITICAL ERROR: 'Turnstile:SecretKey' is missing from configuration.");
-        throw new Exception("CRITICAL ERROR: 'Turnstile:SecretKey' is missing from configuration.");
-    }
+    // --- STRICT OPTIONS VALIDATION ---
+    // Replaces old Configure calls and manual checks.
+    // Automatically throws an OptionsValidationException on startup if any required variable is missing or invalid.
+
+    builder.Services.AddOptions<DatabaseSettings>()
+        .BindConfiguration("ConnectionStrings")
+        .ValidateDataAnnotations()
+        .ValidateOnStart();
+
+    builder.Services.AddOptions<TurnstileSettings>()
+        .BindConfiguration("Turnstile")
+        .ValidateDataAnnotations()
+        .ValidateOnStart();
+
+    builder.Services.AddOptions<EmailSettings>()
+        .BindConfiguration("EmailSettings")
+        .ValidateDataAnnotations()
+        .ValidateOnStart();
 
     // --- DATABASE & CONTEXT ---
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -51,8 +62,6 @@ try
     builder.Services.AddScoped<IEntityStatusService, EntityStatusService>();
 
     // External Integrations (Email & Turnstile)
-    builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
-    builder.Services.Configure<TurnstileSettings>(builder.Configuration.GetSection("Turnstile"));
     builder.Services.AddHttpClient<ITurnstileService, TurnstileService>();
     builder.Services.AddTransient<IEmailService, EmailService>();
 
