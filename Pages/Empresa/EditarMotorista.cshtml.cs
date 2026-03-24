@@ -7,7 +7,6 @@ using Eva.Models;
 using Eva.Models.ViewModels;
 using Eva.Services;
 using Eva.Workflow;
-using System.Security.Claims;
 using System.Text.Json;
 
 namespace Eva.Pages.Empresa
@@ -18,10 +17,21 @@ namespace Eva.Pages.Empresa
         private readonly EvaDbContext _context;
         private readonly PendenciaService _pendenciaService;
         private readonly ArquivoService _arquivoService;
+        private readonly ICurrentUserService _currentUserService;
+        private readonly IEmpresaEntityEditGuardService _editGuardService;
 
-        public EditarMotoristaModel(EvaDbContext context, PendenciaService pendenciaService, ArquivoService arquivoService)
+        public EditarMotoristaModel(
+            EvaDbContext context,
+            PendenciaService pendenciaService,
+            ArquivoService arquivoService,
+            ICurrentUserService currentUserService,
+            IEmpresaEntityEditGuardService editGuardService)
         {
-            _context = context; _pendenciaService = pendenciaService; _arquivoService = arquivoService;
+            _context = context;
+            _pendenciaService = pendenciaService;
+            _arquivoService = arquivoService;
+            _currentUserService = currentUserService;
+            _editGuardService = editGuardService;
         }
 
         [BindProperty] public MotoristaVM Input { get; set; } = new();
@@ -33,16 +43,22 @@ namespace Eva.Pages.Empresa
 
         public async Task<IActionResult> OnGetAsync(int id)
         {
+            if (string.IsNullOrWhiteSpace(_currentUserService.GetCurrentEmpresaCnpj())) return RedirectToPage("/Login");
+
+            var guard = await _editGuardService.CheckMotoristaAsync(id);
+            if (!guard.HasCurrentEmpresa) return RedirectToPage("/Login");
+            if (!guard.ExistsAndBelongsToCurrentEmpresa) return NotFound();
+
             var ticket = await _context.VPendenciasAtuais.FirstOrDefaultAsync(p => p.EntidadeTipo == "MOTORISTA" && p.EntidadeId == id.ToString());
 
-            if (ticket != null && (ticket.Status == WorkflowValidator.AguardandoAnalise || ticket.Status == WorkflowValidator.EmAnalise || ticket.Status == WorkflowValidator.Rejeitado) && !string.IsNullOrEmpty(ticket.DadosPropostos))
+            if (ticket != null && (ticket.Status == WorkflowValidator.Incompleto || ticket.Status == WorkflowValidator.AguardandoAnalise || ticket.Status == WorkflowValidator.EmAnalise || ticket.Status == WorkflowValidator.Rejeitado) && !string.IsNullOrEmpty(ticket.DadosPropostos))
             {
                 Input = JsonSerializer.Deserialize<MotoristaVM>(ticket.DadosPropostos, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new MotoristaVM();
                 Input.Id = id;
             }
             else
             {
-                var dbMotorista = await _context.Motoristas.FirstOrDefaultAsync(m => m.Id == id);
+                var dbMotorista = await _context.Motoristas.FirstOrDefaultAsync(m => m.Id == id && m.EmpresaCnpj == guard.CurrentEmpresaCnpj);
                 if (dbMotorista == null) return NotFound();
 
                 Input = new MotoristaVM
@@ -72,10 +88,12 @@ namespace Eva.Pages.Empresa
         {
             if (!ModelState.IsValid) { await LoadAuxiliaryData(Input.Id); return Page(); }
 
-            var status = await _pendenciaService.GetStatusAsync("MOTORISTA", Input.Id.ToString());
-            if (status == WorkflowValidator.EmAnalise)
+            var guard = await _editGuardService.CheckMotoristaAsync(Input.Id);
+            if (!guard.HasCurrentEmpresa) return RedirectToPage("/Login");
+            if (!guard.ExistsAndBelongsToCurrentEmpresa) return NotFound();
+            if (guard.IsLocked)
             {
-                ModelState.AddModelError("", "Este registro está em análise e não pode ser alterado no momento.");
+                ModelState.AddModelError("", EmpresaEntityEditGuardService.LockedMessage);
                 await LoadAuxiliaryData(Input.Id);
                 return Page();
             }
@@ -88,9 +106,11 @@ namespace Eva.Pages.Empresa
 
         public async Task<IActionResult> OnPostUploadAsync([FromRoute] int id)
         {
-            var status = await _pendenciaService.GetStatusAsync("MOTORISTA", id.ToString());
+            var guard = await _editGuardService.CheckMotoristaAsync(id);
+            if (!guard.HasCurrentEmpresa) return RedirectToPage("/Login");
+            if (!guard.ExistsAndBelongsToCurrentEmpresa) return NotFound();
 
-            if (status == WorkflowValidator.EmAnalise)
+            if (guard.IsLocked)
             {
                 Input.Id = id;
                 await LoadAuxiliaryData(id);
@@ -104,7 +124,6 @@ namespace Eva.Pages.Empresa
                 await _arquivoService.SalvarDocumentoAsync(UploadArquivo, "CNH", "MOTORISTA", id.ToString());
             }
 
-            // SAFETY LOCK 3: Model Refill
             Input.Id = id;
             await LoadAuxiliaryData(id);
             return Partial("_MotoristaDocs", this);
@@ -112,9 +131,11 @@ namespace Eva.Pages.Empresa
 
         public async Task<IActionResult> OnPostDeleteDocAsync(int docId, [FromRoute] int id)
         {
-            var status = await _pendenciaService.GetStatusAsync("MOTORISTA", id.ToString());
+            var guard = await _editGuardService.CheckMotoristaAsync(id);
+            if (!guard.HasCurrentEmpresa) return RedirectToPage("/Login");
+            if (!guard.ExistsAndBelongsToCurrentEmpresa) return NotFound();
 
-            if (status == WorkflowValidator.EmAnalise)
+            if (guard.IsLocked)
             {
                 Input.Id = id;
                 await LoadAuxiliaryData(id);
@@ -123,7 +144,6 @@ namespace Eva.Pages.Empresa
 
             await _arquivoService.DeletarDocumentoAsync(docId, "MOTORISTA", id.ToString());
 
-            // SAFETY LOCK 3: Model Refill
             Input.Id = id;
             await LoadAuxiliaryData(id);
             return Partial("_MotoristaDocs", this);

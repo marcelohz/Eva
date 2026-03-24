@@ -9,7 +9,6 @@ using Eva.Models.ViewModels;
 using Eva.Services;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace Eva.Pages.Empresa
@@ -18,29 +17,49 @@ namespace Eva.Pages.Empresa
     public class NovaViagemModel : PageModel
     {
         private readonly EvaDbContext _context;
+        private readonly ICurrentUserService _currentUserService;
         private readonly IEntityStatusService _statusService;
+        private readonly IViagemCreationService _viagemCreationService;
+        private readonly IViagemRulesService _viagemRulesService;
 
-        public NovaViagemModel(EvaDbContext context, IEntityStatusService statusService)
+        public NovaViagemModel(
+            EvaDbContext context,
+            ICurrentUserService currentUserService,
+            IEntityStatusService statusService,
+            IViagemCreationService viagemCreationService,
+            IViagemRulesService viagemRulesService)
         {
             _context = context;
+            _currentUserService = currentUserService;
             _statusService = statusService;
+            _viagemCreationService = viagemCreationService;
+            _viagemRulesService = viagemRulesService;
         }
 
         [BindProperty]
         public NovaViagemVM Input { get; set; } = new();
 
         [BindProperty]
-        public string AcaoSubmit { get; set; } = string.Empty; // Mapeia o botão clicado
+        public string AcaoSubmit { get; set; } = string.Empty;
 
         public SelectList ViagemTipos { get; set; } = default!;
         public SelectList Regioes { get; set; } = default!;
-
-        // Alterado de SelectList para IEnumerable<SelectListItem> para permitir a propriedade Disabled
         public IEnumerable<SelectListItem> VeiculosValidos { get; set; } = new List<SelectListItem>();
         public IEnumerable<SelectListItem> MotoristasValidos { get; set; } = new List<SelectListItem>();
 
         public async Task<IActionResult> OnGetAsync()
         {
+            var user = await _currentUserService.GetCurrentUserAsync();
+            if (user == null || string.IsNullOrEmpty(user.EmpresaCnpj))
+                return RedirectToPage("/Login");
+
+            var empresaHealth = await _statusService.GetHealthAsync("EMPRESA", user.EmpresaCnpj);
+            if (!empresaHealth.IsLegal)
+            {
+                TempData["MensagemAviso"] = "Sua empresa precisa estar com o cadastro e a documentacao regularizados para cadastrar novas viagens.";
+                return RedirectToPage("/Empresa/MinhasViagens");
+            }
+
             await LoadDropdownsAsync();
 
             Input.IdaEm = System.DateTime.Now.AddDays(1).Date.AddHours(8);
@@ -65,20 +84,10 @@ namespace Eva.Pages.Empresa
 
         public async Task<IActionResult> OnPostAsync()
         {
-            var userEmail = User.FindFirstValue(ClaimTypes.Email);
-            var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == userEmail);
+            var user = await _currentUserService.GetCurrentUserAsync();
 
             if (user == null || string.IsNullOrEmpty(user.EmpresaCnpj))
                 return RedirectToPage("/Login");
-
-            if (Input.VoltaEm <= Input.IdaEm)
-                ModelState.AddModelError("Input.VoltaEm", "A Data/Hora de Retorno deve ser posterior à Saída.");
-
-            if (Input.MotoristaId != 0 && Input.MotoristaAuxId != 0 && Input.MotoristaId == Input.MotoristaAuxId)
-                ModelState.AddModelError("Input.MotoristaAuxId", "O motorista auxiliar não pode ser o mesmo que o principal.");
-
-            if (!Input.Passageiros.Any())
-                ModelState.AddModelError("Input.Passageiros", "A lista de passageiros não pode estar vazia.");
 
             if (!ModelState.IsValid)
             {
@@ -86,122 +95,79 @@ namespace Eva.Pages.Empresa
                 return Page();
             }
 
-            // --- 1. VALIDAÇÃO DE STATUS DA EMPRESA ---
-            var empresaHealth = await _statusService.GetHealthAsync("EMPRESA", user.EmpresaCnpj);
-            if (!empresaHealth.IsLegal)
-            {
-                ModelState.AddModelError(string.Empty, "Sua empresa possui pendências documentais ou de análise e não está autorizada a criar novas viagens.");
-                await LoadDropdownsAsync();
-                return Page();
-            }
-
-            // --- 2. VALIDAÇÃO DE PERTENCIMENTO E STATUS DO VEÍCULO ---
-            var veiculo = await _context.Veiculos.FirstOrDefaultAsync(v => v.Placa == Input.VeiculoPlaca && v.EmpresaCnpj == user.EmpresaCnpj);
-            if (veiculo == null)
-            {
-                ModelState.AddModelError("Input.VeiculoPlaca", "O veículo informado é inválido ou não pertence à sua empresa.");
-                await LoadDropdownsAsync();
-                return Page();
-            }
-
-            var veiculoHealth = await _statusService.GetHealthAsync("VEICULO", Input.VeiculoPlaca);
-            if (!veiculoHealth.IsLegal)
-            {
-                ModelState.AddModelError("Input.VeiculoPlaca", "O veículo selecionado não está legalizado.");
-                await LoadDropdownsAsync();
-                return Page();
-            }
-
-            // --- 3. VALIDAÇÃO DE PERTENCIMENTO E STATUS DO MOTORISTA PRINCIPAL ---
-            var motorista = await _context.Motoristas.FirstOrDefaultAsync(m => m.Id == Input.MotoristaId && m.EmpresaCnpj == user.EmpresaCnpj);
-            if (motorista == null)
-            {
-                ModelState.AddModelError("Input.MotoristaId", "O motorista informado é inválido ou não pertence à sua empresa.");
-                await LoadDropdownsAsync();
-                return Page();
-            }
-
-            var motoristaHealth = await _statusService.GetHealthAsync("MOTORISTA", Input.MotoristaId.ToString());
-            if (!motoristaHealth.IsLegal)
-            {
-                ModelState.AddModelError("Input.MotoristaId", "O motorista principal selecionado não está legalizado.");
-                await LoadDropdownsAsync();
-                return Page();
-            }
-
-            // --- 4. VALIDAÇÃO DE PERTENCIMENTO E STATUS DO MOTORISTA AUXILIAR (SE HOUVER) ---
-            if (Input.MotoristaAuxId.HasValue && Input.MotoristaAuxId.Value > 0)
-            {
-                var motoristaAux = await _context.Motoristas.FirstOrDefaultAsync(m => m.Id == Input.MotoristaAuxId.Value && m.EmpresaCnpj == user.EmpresaCnpj);
-                if (motoristaAux == null)
-                {
-                    ModelState.AddModelError("Input.MotoristaAuxId", "O motorista auxiliar informado é inválido ou não pertence à sua empresa.");
-                    await LoadDropdownsAsync();
-                    return Page();
-                }
-
-                var auxHealth = await _statusService.GetHealthAsync("MOTORISTA", Input.MotoristaAuxId.Value.ToString());
-                if (!auxHealth.IsLegal)
-                {
-                    ModelState.AddModelError("Input.MotoristaAuxId", "O motorista auxiliar selecionado não está legalizado.");
-                    await LoadDropdownsAsync();
-                    return Page();
-                }
-            }
-
-            // --- MOCK DE CÁLCULO DE TARIFA ---
-            // Simula uma matriz de distância. Valor base + acréscimo se for para outra cidade.
-            decimal valorCalculado = 150.00m;
-            if (Input.MunicipioOrigem.Trim().ToLower() != Input.MunicipioDestino.Trim().ToLower())
-            {
-                valorCalculado += 235.50m; // Acréscimo intermunicipal mockado
-            }
-
-            var viagem = new Viagem
+            var eligibility = await _viagemRulesService.ValidateEligibilityAsync(new ViagemEligibilityRequest
             {
                 EmpresaCnpj = user.EmpresaCnpj,
-                ViagemTipoNome = Input.ViagemTipoNome,
-                NomeContratante = Input.NomeContratante,
-                CpfCnpjContratante = Input.CpfCnpjContratante,
-                RegiaoCodigo = Input.RegiaoCodigo,
                 IdaEm = Input.IdaEm,
                 VoltaEm = Input.VoltaEm,
-                MunicipioOrigem = Input.MunicipioOrigem,
-                MunicipioDestino = Input.MunicipioDestino,
                 VeiculoPlaca = Input.VeiculoPlaca,
                 MotoristaId = Input.MotoristaId,
-                MotoristaAuxId = Input.MotoristaAuxId > 0 ? Input.MotoristaAuxId : null,
-                Descricao = Input.Descricao,
-                Valor = valorCalculado, // Valor setado via Mock
-                Pago = false // Nasce sempre como não paga
-            };
+                MotoristaAuxId = Input.MotoristaAuxId,
+                PassageiroCount = Input.Passageiros.Count
+            });
 
-            foreach (var p in Input.Passageiros)
+            if (!eligibility.IsAllowed)
             {
-                viagem.Passageiros.Add(new Passageiro
-                {
-                    Nome = p.Nome,
-                    Cpf = p.Documento
-                });
+                AddEligibilityError(eligibility);
+                await LoadDropdownsAsync();
+                return Page();
             }
 
-            _context.Viagens.Add(viagem);
-            await _context.SaveChangesAsync();
+            var creationResult = await _viagemCreationService.CreateAsync(new ViagemCreationRequest
+            {
+                EmpresaCnpj = user.EmpresaCnpj,
+                Input = Input
+            });
 
-            // Roteamento baseado no botão clicado
             if (AcaoSubmit == "PagarDepois")
             {
                 return RedirectToPage("/Empresa/MinhasViagens");
             }
 
-            // Se clicou em "Revisao" (ou qualquer outra coisa) avança para o checkout
-            return RedirectToPage("/Empresa/PagamentoViagem", new { id = viagem.Id });
+            return RedirectToPage("/Empresa/PagamentoViagem", new { id = creationResult.ViagemId });
+        }
+
+        private void AddEligibilityError(ViagemEligibilityResult eligibility)
+        {
+            switch (eligibility.Failure)
+            {
+                case ViagemEligibilityFailure.ReturnBeforeDeparture:
+                    ModelState.AddModelError("Input.VoltaEm", "A Data/Hora de Retorno deve ser posterior à Saída.");
+                    break;
+                case ViagemEligibilityFailure.DuplicateDriver:
+                    ModelState.AddModelError("Input.MotoristaAuxId", "O motorista auxiliar não pode ser o mesmo que o principal.");
+                    break;
+                case ViagemEligibilityFailure.EmptyPassengers:
+                    ModelState.AddModelError("Input.Passageiros", "A lista de passageiros não pode estar vazia.");
+                    break;
+                case ViagemEligibilityFailure.CompanyNotLegal:
+                    ModelState.AddModelError(string.Empty, "Sua empresa possui pendências documentais ou de análise e não está autorizada a criar novas viagens.");
+                    break;
+                case ViagemEligibilityFailure.VehicleNotFound:
+                    ModelState.AddModelError("Input.VeiculoPlaca", "O veículo informado é inválido ou não pertence à sua empresa.");
+                    break;
+                case ViagemEligibilityFailure.VehicleNotLegal:
+                    ModelState.AddModelError("Input.VeiculoPlaca", "O veículo selecionado não está legalizado.");
+                    break;
+                case ViagemEligibilityFailure.DriverNotFound:
+                    ModelState.AddModelError("Input.MotoristaId", "O motorista informado é inválido ou não pertence à sua empresa.");
+                    break;
+                case ViagemEligibilityFailure.DriverNotLegal:
+                    ModelState.AddModelError("Input.MotoristaId", "O motorista principal selecionado não está legalizado.");
+                    break;
+                case ViagemEligibilityFailure.AuxDriverNotFound:
+                    ModelState.AddModelError("Input.MotoristaAuxId", "O motorista auxiliar informado é inválido ou não pertence à sua empresa.");
+                    break;
+                case ViagemEligibilityFailure.AuxDriverNotLegal:
+                    ModelState.AddModelError("Input.MotoristaAuxId", "O motorista auxiliar selecionado não está legalizado.");
+                    break;
+            }
         }
 
         private async Task LoadDropdownsAsync()
         {
-            var userEmail = User.FindFirstValue(ClaimTypes.Email);
-            var cnpj = (await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == userEmail))?.EmpresaCnpj;
+            var cnpj = _currentUserService.GetCurrentEmpresaCnpj() ??
+                       (await _currentUserService.GetCurrentUserAsync())?.EmpresaCnpj;
 
             var tipos = await _context.ViagemTipos.OrderBy(t => t.Nome).ToListAsync();
             ViagemTipos = new SelectList(tipos, "Nome", "Nome");
@@ -209,7 +175,6 @@ namespace Eva.Pages.Empresa
             var regioes = await _context.Regioes.OrderBy(r => r.Ordem).ThenBy(r => r.Nome).ToListAsync();
             Regioes = new SelectList(regioes, "Codigo", "Nome");
 
-            // Fetch and map Vehicles
             var veiculos = await _context.Veiculos.Where(v => v.EmpresaCnpj == cnpj).ToListAsync();
             var veiculoIds = veiculos.Select(v => v.Placa).ToList();
             var veiculosHealth = await _statusService.GetBulkHealthAsync("VEICULO", veiculoIds);
@@ -224,11 +189,10 @@ namespace Eva.Pages.Empresa
                     Disabled = !isLegal
                 };
             })
-            .OrderBy(v => v.Disabled) // Valid ones on top
+            .OrderBy(v => v.Disabled)
             .ThenBy(v => v.Text)
             .ToList();
 
-            // Fetch and map Drivers
             var motoristas = await _context.Motoristas.Where(m => m.EmpresaCnpj == cnpj).ToListAsync();
             var motoristaIds = motoristas.Select(m => m.Id.ToString()).ToList();
             var motoristasHealth = await _statusService.GetBulkHealthAsync("MOTORISTA", motoristaIds);
@@ -243,7 +207,7 @@ namespace Eva.Pages.Empresa
                     Disabled = !isLegal
                 };
             })
-            .OrderBy(m => m.Disabled) // Valid ones on top
+            .OrderBy(m => m.Disabled)
             .ThenBy(m => m.Text)
             .ToList();
         }

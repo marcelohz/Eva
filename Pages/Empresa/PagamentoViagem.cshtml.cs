@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -6,6 +5,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Eva.Data;
 using Eva.Models;
+using Eva.Services;
 
 namespace Eva.Pages.Empresa
 {
@@ -13,10 +13,17 @@ namespace Eva.Pages.Empresa
     public class PagamentoViagemModel : PageModel
     {
         private readonly EvaDbContext _context;
+        private readonly ICurrentUserService _currentUserService;
+        private readonly IViagemRulesService _viagemRulesService;
 
-        public PagamentoViagemModel(EvaDbContext context)
+        public PagamentoViagemModel(
+            EvaDbContext context,
+            ICurrentUserService currentUserService,
+            IViagemRulesService viagemRulesService)
         {
             _context = context;
+            _currentUserService = currentUserService;
+            _viagemRulesService = viagemRulesService;
         }
 
         [BindProperty(SupportsGet = true)]
@@ -26,25 +33,29 @@ namespace Eva.Pages.Empresa
 
         public async Task<IActionResult> OnGetAsync()
         {
-            var userEmail = User.FindFirstValue(ClaimTypes.Email);
-            var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == userEmail);
+            var user = await _currentUserService.GetCurrentUserAsync();
 
             if (user == null || string.IsNullOrEmpty(user.EmpresaCnpj))
                 return RedirectToPage("/Login");
 
-            // Segurança: Busca a viagem exigindo que ela pertença ao CNPJ da empresa logada
             var viagem = await _context.Viagens
                 .Include(v => v.Veiculo)
                 .FirstOrDefaultAsync(v => v.Id == Id && v.EmpresaCnpj == user.EmpresaCnpj);
 
             if (viagem == null)
-                return NotFound("Viagem não encontrada ou acesso negado.");
+                return NotFound("Viagem nao encontrada ou acesso negado.");
 
             if (viagem.Pago)
             {
-                // Se já estiver paga, não faz sentido acessar o checkout. Redireciona para a lista.
-                TempData["MensagemAviso"] = "Esta viagem já encontra-se paga e ativa.";
+                TempData["MensagemAviso"] = "Esta viagem ja encontra-se paga e ativa.";
                 return RedirectToPage("/Empresa/MinhasViagens");
+            }
+
+            var eligibility = await BuildEligibilityAsync(viagem);
+            if (!eligibility.IsAllowed)
+            {
+                TempData["MensagemAviso"] = "Esta viagem possui pendencias e nao pode ser paga enquanto a empresa, o veiculo ou os motoristas nao estiverem regulares.";
+                return RedirectToPage("/Empresa/EditarViagem", new { id = viagem.Id });
             }
 
             ViagemAtual = viagem;
@@ -53,8 +64,7 @@ namespace Eva.Pages.Empresa
 
         public async Task<IActionResult> OnPostAsync()
         {
-            var userEmail = User.FindFirstValue(ClaimTypes.Email);
-            var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == userEmail);
+            var user = await _currentUserService.GetCurrentUserAsync();
 
             if (user == null || string.IsNullOrEmpty(user.EmpresaCnpj))
                 return RedirectToPage("/Login");
@@ -68,16 +78,33 @@ namespace Eva.Pages.Empresa
             if (viagem.Pago)
                 return RedirectToPage("/Empresa/MinhasViagens");
 
-            // --- MOCK DE INTEGRAÇÃO DE PAGAMENTO ---
-            // Aqui futuramente entrará a chamada para a API do Banco (Gateway de Pagamento / PIX).
-            // Por enquanto, apenas consolidamos a transação simulada mudando o status no banco.
+            var eligibility = await BuildEligibilityAsync(viagem);
+            if (!eligibility.IsAllowed)
+            {
+                TempData["MensagemAviso"] = "Esta viagem possui pendencias e nao pode ser paga enquanto a empresa, o veiculo ou os motoristas nao estiverem regulares.";
+                return RedirectToPage("/Empresa/EditarViagem", new { id = viagem.Id });
+            }
 
             viagem.Pago = true;
             await _context.SaveChangesAsync();
 
-            TempData["MensagemSucesso"] = $"Pagamento da viagem #{viagem.Id:D5} confirmado com sucesso! A viagem agora está ativa.";
+            TempData["MensagemSucesso"] = $"Pagamento da viagem #{viagem.Id:D5} confirmado com sucesso! A viagem agora esta ativa.";
 
             return RedirectToPage("/Empresa/MinhasViagens");
+        }
+
+        private async Task<ViagemEligibilityResult> BuildEligibilityAsync(Viagem viagem)
+        {
+            return await _viagemRulesService.ValidateEligibilityAsync(new ViagemEligibilityRequest
+            {
+                EmpresaCnpj = viagem.EmpresaCnpj,
+                IdaEm = viagem.IdaEm,
+                VoltaEm = viagem.VoltaEm,
+                VeiculoPlaca = viagem.VeiculoPlaca,
+                MotoristaId = viagem.MotoristaId,
+                MotoristaAuxId = viagem.MotoristaAuxId,
+                PassageiroCount = await _context.Passageiros.CountAsync(p => p.ViagemId == viagem.Id)
+            });
         }
     }
 }

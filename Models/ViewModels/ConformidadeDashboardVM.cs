@@ -1,5 +1,6 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
+using Eva.Workflow;
 
 namespace Eva.Models.ViewModels
 {
@@ -18,7 +19,7 @@ namespace Eva.Models.ViewModels
         public string Id { get; set; } = string.Empty;
         public string Nome { get; set; } = string.Empty;
 
-        // Expected values: APROVADO, REJEITADO, INCOMPLETO, EM_ANALISE
+        // Expected values: APROVADO, REJEITADO, INCOMPLETO, AGUARDANDO_ANALISE, EM_ANALISE
         public string StatusGeral { get; set; } = string.Empty;
 
         // Populated if an analyst explicitly rejected the entity
@@ -29,8 +30,8 @@ namespace Eva.Models.ViewModels
         public List<string> DocumentosEmAnalise { get; set; } = new List<string>();
 
         // Determines if this entity is prevented from participating in new trips
-        public bool IsBlocked => StatusGeral == "REJEITADO" ||
-                                 StatusGeral == "INCOMPLETO" ||
+        public bool IsBlocked => StatusGeral == WorkflowStatus.Rejeitado ||
+                                 StatusGeral == WorkflowStatus.Incompleto ||
                                  DocumentosFaltantes.Any() ||
                                  DocumentosVencidos.Any();
     }

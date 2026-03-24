@@ -1,7 +1,7 @@
-ï»¿@page
+@page
 @model Eva.Pages.Metroplan.Admin.NovoAnalistaModel
 @{
-    ViewData["Title"] = "Novo Analista - Eva";
+    ViewData["Title"] = "Novo Analista - Fretamento Eventual";
 }
 
 <div class="container mt-5">
@@ -23,7 +23,7 @@
 
                 <div class="mb-3">
                     <label asp-for="Input.Nome" class="form-label fw-bold">Nome Completo</label>
-                    <input asp-for="Input.Nome" class="form-control" placeholder="JoÃ£o da Silva" />
+                    <input asp-for="Input.Nome" class="form-control" placeholder="João da Silva" />
                     <span asp-validation-for="Input.Nome" class="text-danger small"></span>
                 </div>
 
@@ -34,10 +34,10 @@
                 </div>
 
                 <div class="mb-4">
-                    <label asp-for="Input.Senha" class="form-label fw-bold">Senha ProvisÃ³ria</label>
+                    <label asp-for="Input.Senha" class="form-label fw-bold">Senha Provisória</label>
                     <input asp-for="Input.Senha" type="password" class="form-control" />
                     <span asp-validation-for="Input.Senha" class="text-danger small"></span>
-                    <div class="form-text">ForneÃ§a esta senha para o analista realizar o primeiro acesso.</div>
+                    <div class="form-text">Forneça esta senha para o analista realizar o primeiro acesso.</div>
                 </div>
 
                 <div class="d-flex justify-content-end gap-2 border-top pt-3">

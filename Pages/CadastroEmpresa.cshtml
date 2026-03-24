@@ -1,8 +1,8 @@
-ï»¿@page
+@page
 @inject Microsoft.Extensions.Options.IOptions<Eva.Configuration.TurnstileSettings> TurnstileConfig
 @model Eva.Pages.CadastroEmpresaModel
 @{
-    ViewData["Title"] = "Iniciar Cadastro - Eva";
+    ViewData["Title"] = "Iniciar Cadastro - Fretamento Eventual";
 }
 
 <div class="container mt-5 mb-5">
@@ -15,7 +15,7 @@
                 <div class="card-body p-4">
                     <p class="text-muted text-center mb-4">
                         Digite o CNPJ e o E-mail para iniciar seu cadastro.
-                        Enviaremos um link de confirmaÃ§Ã£o para o seu e-mail.
+                        Enviaremos um link de confirmação para o seu e-mail.
                     </p>
 
                     <form method="post" novalidate>
@@ -42,7 +42,7 @@
                             <button type="submit" class="btn btn-primary btn-lg shadow-sm">Iniciar Cadastro</button>
                             <hr class="my-3" />
                             <a asp-page="/Login" class="btn btn-link text-muted text-decoration-none text-center">
-                                <i class="bi bi-arrow-left"></i> JÃ¡ tenho conta? Ir para Login
+                                <i class="bi bi-arrow-left"></i> Já tenho conta? Ir para Login
                             </a>
                         </div>
                     </form>

@@ -43,8 +43,8 @@ CREATE FUNCTION eventual.fn_analista_obrigatorio() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 BEGIN
-    -- analista must be present whenever status is NOT AGUARDANDO_ANALISE
-    IF NEW.status <> 'AGUARDANDO_ANALISE' THEN
+-- analista must be present whenever status is not a company-side draft state
+IF NEW.status NOT IN ('AGUARDANDO_ANALISE', 'INCOMPLETO') THEN
         IF NEW.analista IS NULL OR btrim(NEW.analista) = '' THEN
             RAISE EXCEPTION 'analista cannot be NULL when status = %', NEW.status;
         END IF;
@@ -871,6 +871,7 @@ COPY eventual.passageiro (id, viagem_id, nome, cpf) FROM stdin;
 --
 
 COPY eventual.status_pendencia (status, nome) FROM stdin;
+INCOMPLETO	Incompleto
 AGUARDANDO_ANALISE	Aguardando Análise
 EM_ANALISE	Em Análise
 APROVADO	Aprovado
@@ -1750,4 +1751,3 @@ ALTER TABLE ONLY web.usuario
 --
 -- PostgreSQL database dump complete
 --
-

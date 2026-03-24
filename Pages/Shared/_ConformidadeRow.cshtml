@@ -4,39 +4,26 @@
     <td class="fw-bold text-dark">@Model.Entidade.Nome</td>
     
     <td>
-        @if (Model.Entidade.StatusGeral == "APROVADO")
-        {
-            <span class="badge bg-success rounded-pill">Aprovado</span>
-        }
-        else if (Model.Entidade.StatusGeral == "REJEITADO")
-        {
-            <span class="badge bg-danger rounded-pill">Rejeitado</span>
-        }
-        else if (Model.Entidade.StatusGeral == "EM_ANALISE" || Model.Entidade.StatusGeral == "AGUARDANDO_ANALISE")
-        {
-            <span class="badge bg-info text-dark rounded-pill">Em Análise</span>
-        }
-        else
-        {
-            <span class="badge bg-warning text-dark rounded-pill">Incompleto</span>
-        }
+        <span class="badge @WorkflowStatus.GetBadgeClass(Model.Entidade.StatusGeral) rounded-pill">
+            @WorkflowStatus.GetDisplayLabel(Model.Entidade.StatusGeral)
+        </span>
     </td>
 
     <td>
-        @if (Model.Entidade.StatusGeral == "APROVADO")
+        @if (Model.Entidade.StatusGeral == WorkflowStatus.Aprovado)
         {
-            <span class="text-muted small"><i class="bi bi-check2"></i> Operação Regular</span>
+            <span class="text-muted small"><i class="bi bi-check2"></i> @WorkflowStatus.GetConformidadeHint(Model.Entidade.StatusGeral)</span>
         }
-        else if (Model.Entidade.StatusGeral == "EM_ANALISE" || Model.Entidade.StatusGeral == "AGUARDANDO_ANALISE")
+        else if (WorkflowStatus.IsPending(Model.Entidade.StatusGeral))
         {
-            <span class="text-muted small"><i class="bi bi-hourglass-split"></i> Aguardando revisão da Metroplan</span>
+            <span class="text-muted small"><i class="bi bi-hourglass-split"></i> @WorkflowStatus.GetConformidadeHint(Model.Entidade.StatusGeral)</span>
         }
         else
         {
             <div class="d-flex flex-column gap-1">
                 @if (!string.IsNullOrEmpty(Model.Entidade.MotivoRejeicao))
                 {
-                    <div class="text-danger small">
+                    <div class="text-danger small preserve-newlines">
                         <strong>Motivo:</strong> @Model.Entidade.MotivoRejeicao
                     </div>
                 }
@@ -66,3 +53,5 @@
         }
     </td>
 </tr>
+
+

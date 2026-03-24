@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Eva</title>
+    <title>@ViewData["Title"]</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
@@ -12,76 +12,86 @@
     @inject Microsoft.AspNetCore.Authorization.IAuthorizationService AuthorizationService
 
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-primary border-bottom box-shadow mb-3">
-            <div class="container">
-                <a class="navbar-brand fw-bold" asp-area="" asp-page="/Index">EVA</a>
+        <nav class="navbar navbar-expand-lg navbar-light app-navbar border-bottom box-shadow mb-3">
+            <div class="container navbar-shell">
+                <a class="navbar-logo-link" asp-area="" asp-page="/Index" aria-label="Página inicial">
+                    <img src="~/images/logo-metroplan.png" asp-append-version="true" alt="Metroplan" class="header-logo header-logo-metroplan" />
+                </a>
 
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
+                <div class="navbar-center">
+                    <button class="navbar-toggler ms-auto app-navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar"
+                            aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="navbar-collapse collapse" id="mainNavbar">
+                        <div class="navbar-menu-wrap">
+                            <ul class="navbar-nav flex-grow-1 justify-content-lg-center">
 
-                        @if ((await AuthorizationService.AuthorizeAsync(User, null, "AcessoEmpresa")).Succeeded)
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link text-white" href="/Empresa/MinhaEmpresa">Dashboard</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-white" href="/Empresa/MeusVeiculos">Veículos</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-white" href="/Empresa/MeusMotoristas">Motoristas</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-white" href="/Empresa/MinhasViagens">Viagens</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-white" href="/Empresa/EditarEmpresa">Empresa</a>
-                            </li>
+                                @if ((await AuthorizationService.AuthorizeAsync(User, null, "AcessoEmpresa")).Succeeded)
+                                {
+                                    <li class="nav-item">
+                                        <a class="nav-link app-nav-link" href="/Empresa/MinhaEmpresa">Painel</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link app-nav-link" href="/Empresa/MeusVeiculos">Veículos</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link app-nav-link" href="/Empresa/MeusMotoristas">Motoristas</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link app-nav-link" href="/Empresa/MinhasViagens">Viagens</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link app-nav-link" href="/Empresa/EditarEmpresa">Empresa</a>
+                                    </li>
 
-                            @if (User.IsInRole("EMPRESA"))
-                            {
-                                <li class="nav-item">
-                                    <a class="nav-link text-white" href="/Empresa/MeusUsuarios">Usuários</a>
-                                </li>
-                            }
-                        }
+                                    @if (User.IsInRole("EMPRESA"))
+                                    {
+                                        <li class="nav-item">
+                                            <a class="nav-link app-nav-link" href="/Empresa/MeusUsuarios">Usuários</a>
+                                        </li>
+                                    }
+                                }
 
-                        @if (User.IsInRole("ANALISTA"))
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link text-white fw-bold" href="/Metroplan/Analista"><i class="bi bi-inboxes-fill"></i> Fila de Análise</a>
-                            </li>
-                        }
+                                @if (User.IsInRole("ANALISTA"))
+                                {
+                                    <li class="nav-item">
+                                        <a class="nav-link app-nav-link fw-bold" href="/Metroplan/Analista"><i class="bi bi-inboxes-fill"></i> Fila de Análise</a>
+                                    </li>
+                                }
 
-                        @if (User.IsInRole("ADMIN"))
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link text-warning fw-bold" href="/Metroplan/Admin"><i class="bi bi-shield-lock-fill"></i> Painel Admin</a>
-                            </li>
-                        }
-                    </ul>
+                                @if (User.IsInRole("ADMIN"))
+                                {
+                                    <li class="nav-item">
+                                        <a class="nav-link app-nav-link app-nav-link-admin fw-bold" href="/Metroplan/Admin"><i class="bi bi-shield-lock-fill"></i> Painel Admin</a>
+                                    </li>
+                                }
+                            </ul>
 
-                    <ul class="navbar-nav">
-                        @if (User.Identity?.IsAuthenticated == true)
-                        {
-                            <li class="nav-item">
-                                <span class="nav-link text-white-50">Olá, @User.Identity.Name</span>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-white" href="/Logout">Sair</a>
-                            </li>
-                        }
-                        else
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link text-white" href="/Login">Entrar</a>
-                            </li>
-                        }
-                    </ul>
+                            <ul class="navbar-nav navbar-user-menu">
+                                @if (User.Identity?.IsAuthenticated == true)
+                                {
+                                    <li class="nav-item">
+                                        <span class="nav-link app-nav-user">Olá, @User.Identity.Name</span>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link app-nav-link" href="/Logout">Sair</a>
+                                    </li>
+                                }
+                                else
+                                {
+                                    <li class="nav-item">
+                                        <a class="nav-link app-nav-link" href="/Login">Entrar</a>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    </div>
                 </div>
+
+                <a class="navbar-logo-link" asp-area="" asp-page="/Index" aria-label="Página inicial">
+                    <img src="~/images/brasao-rs.png" asp-append-version="true" alt="Brasão do Rio Grande do Sul" class="header-logo header-logo-rs" />
+                </a>
             </div>
         </nav>
     </header>
@@ -94,7 +104,7 @@
 
     <footer class="border-top footer text-muted">
         <div class="container text-center">
-            &copy; 2026 - Eva Metroplan
+            &copy; 2026 - Fretamento Eventual
         </div>
     </footer>
 

@@ -1,7 +1,7 @@
-ï»¿@page
+@page
 @model Eva.Pages.Empresa.MinhasViagensModel
 @{
-    ViewData["Title"] = "Minhas Viagens - Eva";
+    ViewData["Title"] = "Minhas Viagens - Fretamento Eventual";
 }
 
 <div class="container mt-5 mb-5">
@@ -24,19 +24,32 @@
 
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Painel</a></li>
             <li class="breadcrumb-item active" aria-current="page">Minhas Viagens</li>
         </ol>
     </nav>
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1 class="h3 mb-0">GestÃ£o de Viagens</h1>
+            <h1 class="h3 mb-0">Gestão de Viagens</h1>
             <p class="text-muted">Consulte e gerencie as viagens eventuais cadastradas pela sua empresa.</p>
         </div>
-        <a href="/Empresa/NovaViagem" class="btn btn-primary shadow-sm">
-            <i class="bi bi-plus-circle me-1"></i> Nova Viagem
-        </a>
+        @if (Model.PodeCriarNovaViagem)
+        {
+            <a href="/Empresa/NovaViagem" class="btn btn-primary shadow-sm">
+                <i class="bi bi-plus-circle me-1"></i> Nova Viagem
+            </a>
+        }
+        else
+        {
+            <div class="text-end">
+                <button type="button" class="btn btn-secondary shadow-sm" disabled title="@Model.BloqueioNovaViagemMensagem">
+                    <i class="bi bi-lock me-1"></i> Nova Viagem Bloqueada
+                </button>
+                <div class="small text-muted mt-2">@Model.BloqueioNovaViagemMensagem</div>
+                <a href="/Empresa/CentralConformidade" class="small">Resolver pendências na Central de Conformidade</a>
+            </div>
+        }
     </div>
 
     <div class="card shadow-sm border-0">
@@ -46,14 +59,14 @@
                     <thead class="table-light">
                         <tr>
                             <th class="ps-4">Protocolo</th>
-                            <th>SituaÃ§Ã£o</th>
+                            <th>Situação</th>
                             <th>Contratante</th>
                             <th>Placa</th>
                             <th>Origem</th>
                             <th>Destino</th>
-                            <th>Data / Hora SaÃ­da</th>
+                            <th>Data / Hora Saída</th>
                             <th>Data / Hora Retorno</th>
-                            <th class="text-end pe-4">AÃ§Ãµes</th>
+                            <th class="text-end pe-4">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -112,12 +125,12 @@
                                                     <i class="bi bi-credit-card"></i> Pagar
                                                 </a>
                                             }
-                                            <button type="button" class="btn btn-sm btn-outline-primary" title="Visualizar Detalhes">
-                                                <i class="bi bi-eye"></i>
-                                            </button>
-                                            <button type="button" class="btn btn-sm btn-outline-danger" title="Baixar PDF">
-                                                <i class="bi bi-file-earmark-pdf"></i>
-                                            </button>
+                                            @{
+                                                var access = Model.ViagemAccess[v.Id];
+                                            }
+                                            <a href="/Empresa/EditarViagem/@v.Id" class="btn btn-sm btn-outline-primary" title="@access.ActionLabel">
+                                                <i class="bi @(access.IsReadOnly ? "bi-eye" : "bi-pencil-square")"></i> @access.ActionLabel
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>

@@ -1,10 +1,11 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Eva.Data;
 using Eva.Models;
 using Eva.Services;
+using Eva.Workflow;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -45,7 +46,7 @@ namespace Eva.Pages.Empresa
             if (id <= 0) return RedirectToPage();
 
             var status = await _pendenciaService.GetStatusAsync("MOTORISTA", id.ToString());
-            if (status == "EM_ANALISE") return RedirectToPage();
+            if (status == WorkflowStatus.EmAnalise) return RedirectToPage();
 
             var motoristaInDb = await _context.Motoristas.FirstOrDefaultAsync(m => m.Id == id);
 

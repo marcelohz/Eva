@@ -1,13 +1,14 @@
-﻿using System;
+using System;
 
 namespace Eva.Workflow
 {
     public static class WorkflowValidator
     {
-        public const string AguardandoAnalise = "AGUARDANDO_ANALISE";
-        public const string EmAnalise = "EM_ANALISE";
-        public const string Aprovado = "APROVADO";
-        public const string Rejeitado = "REJEITADO";
+        public const string Incompleto = WorkflowStatus.Incompleto;
+        public const string AguardandoAnalise = WorkflowStatus.AguardandoAnalise;
+        public const string EmAnalise = WorkflowStatus.EmAnalise;
+        public const string Aprovado = WorkflowStatus.Aprovado;
+        public const string Rejeitado = WorkflowStatus.Rejeitado;
 
         public static void ValidateTransition(string? currentState, string nextState, string? currentAnalista, string? nextAnalista, string? motivo = null, bool isOverride = false)
         {
@@ -21,15 +22,15 @@ namespace Eva.Workflow
                 return;
             }
 
-            if (nextState == AguardandoAnalise)
+            if (nextState == AguardandoAnalise || nextState == Incompleto)
             {
-                // Allow returning the item to the queue, but only if you are the current analyst
+                // Allow returning the item to the queue or back to draft, but only if you are the current analyst
                 if (currentState == EmAnalise && !string.IsNullOrWhiteSpace(currentAnalista) && currentAnalista != nextAnalista)
                     throw new InvalidOperationException("Apenas o analista atual pode devolver o item para a fila, ou solicite a um Administrador.");
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(nextAnalista) && nextState != AguardandoAnalise)
+            if (string.IsNullOrWhiteSpace(nextAnalista))
                 throw new ArgumentException("O e-mail do analista é obrigatório.");
 
             if (nextState == Rejeitado && string.IsNullOrWhiteSpace(motivo))

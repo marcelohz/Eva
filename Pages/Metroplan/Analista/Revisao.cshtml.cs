@@ -6,8 +6,7 @@ using Eva.Data;
 using Eva.Models;
 using Eva.Models.ViewModels;
 using Eva.Services;
-using System;
-using System.Security.Claims;
+using Eva.Workflow;
 using System.Text.Json;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,14 +18,20 @@ namespace Eva.Pages.Metroplan.Analista
     public class RevisaoModel : PageModel
     {
         private readonly EvaDbContext _context;
+        private readonly ICurrentUserService _currentUserService;
+        private readonly IAnalystReviewService _reviewService;
         private readonly PendenciaService _pendenciaService;
-        private readonly IEntityStatusService _statusService;
 
-        public RevisaoModel(EvaDbContext context, PendenciaService pendenciaService, IEntityStatusService statusService)
+        public RevisaoModel(
+            EvaDbContext context,
+            ICurrentUserService currentUserService,
+            IAnalystReviewService reviewService,
+            PendenciaService pendenciaService)
         {
             _context = context;
+            _currentUserService = currentUserService;
+            _reviewService = reviewService;
             _pendenciaService = pendenciaService;
-            _statusService = statusService;
         }
 
         [BindProperty(SupportsGet = true)] public string Tipo { get; set; } = string.Empty;
@@ -63,31 +68,63 @@ namespace Eva.Pages.Metroplan.Analista
             Ticket = await _context.VPendenciasAtuais.FirstOrDefaultAsync(p => p.EntidadeTipo == Tipo && p.EntidadeId == Id);
             if (Ticket == null) return;
 
-            var email = User.FindFirstValue(ClaimTypes.Email);
-            IsLockedByMe = Ticket.Status == "EM_ANALISE" && Ticket.Analista == email;
-            IsLockedByOther = Ticket.Status == "EM_ANALISE" && Ticket.Analista != email;
+            var email = _currentUserService.GetCurrentEmail();
+            IsLockedByMe = Ticket.Status == WorkflowStatus.EmAnalise && Ticket.Analista == email;
+            IsLockedByOther = Ticket.Status == WorkflowStatus.EmAnalise && Ticket.Analista != email;
             Historico = await _pendenciaService.GetHistoricoAsync(Tipo, Id);
 
-            bool hasDraft = (Ticket.Status == "AGUARDANDO_ANALISE" || Ticket.Status == "EM_ANALISE") && !string.IsNullOrEmpty(Ticket.DadosPropostos);
+            var hasDraft = WorkflowStatus.IsPending(Ticket.Status) &&
+                           !string.IsNullOrEmpty(Ticket.DadosPropostos);
             var jsonOpts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
             if (Tipo == "VEICULO")
             {
-                Veiculo = await _context.Veiculos.IgnoreQueryFilters().Include(v => v.Empresa).FirstOrDefaultAsync(v => v.Placa == Id);
-                Documentos = await _context.DocumentoVeiculos.Where(dv => dv.VeiculoPlaca == Id && dv.Documento != null).Select(dv => dv.Documento!).OrderByDescending(d => d.DataUpload).ToListAsync();
-                if (hasDraft) VeiculoDraft = JsonSerializer.Deserialize<VeiculoVM>(Ticket.DadosPropostos!, jsonOpts);
+                Veiculo = await _context.Veiculos.IgnoreQueryFilters()
+                    .Include(v => v.Empresa)
+                    .FirstOrDefaultAsync(v => v.Placa == Id);
+
+                Documentos = await _context.DocumentoVeiculos
+                    .Where(dv => dv.VeiculoPlaca == Id && dv.Documento != null)
+                    .Select(dv => dv.Documento!)
+                    .OrderByDescending(d => d.DataUpload)
+                    .ToListAsync();
+
+                if (hasDraft)
+                {
+                    VeiculoDraft = JsonSerializer.Deserialize<VeiculoVM>(Ticket.DadosPropostos!, jsonOpts);
+                }
             }
-            else if (Tipo == "MOTORISTA" && int.TryParse(Id, out int mId))
+            else if (Tipo == "MOTORISTA" && int.TryParse(Id, out var motoristaId))
             {
-                Motorista = await _context.Motoristas.IgnoreQueryFilters().Include(m => m.Empresa).FirstOrDefaultAsync(m => m.Id == mId);
-                Documentos = await _context.DocumentoMotoristas.Where(dm => dm.MotoristaId == mId && dm.Documento != null).Select(dm => dm.Documento!).OrderByDescending(d => d.DataUpload).ToListAsync();
-                if (hasDraft) MotoristaDraft = JsonSerializer.Deserialize<MotoristaVM>(Ticket.DadosPropostos!, jsonOpts);
+                Motorista = await _context.Motoristas.IgnoreQueryFilters()
+                    .Include(m => m.Empresa)
+                    .FirstOrDefaultAsync(m => m.Id == motoristaId);
+
+                Documentos = await _context.DocumentoMotoristas
+                    .Where(dm => dm.MotoristaId == motoristaId && dm.Documento != null)
+                    .Select(dm => dm.Documento!)
+                    .OrderByDescending(d => d.DataUpload)
+                    .ToListAsync();
+
+                if (hasDraft)
+                {
+                    MotoristaDraft = JsonSerializer.Deserialize<MotoristaVM>(Ticket.DadosPropostos!, jsonOpts);
+                }
             }
             else if (Tipo == "EMPRESA")
             {
                 Empresa = await _context.Empresas.IgnoreQueryFilters().FirstOrDefaultAsync(e => e.Cnpj == Id);
-                Documentos = await _context.DocumentoEmpresas.Where(de => de.EmpresaCnpj == Id && de.Documento != null).Select(de => de.Documento!).OrderByDescending(d => d.DataUpload).ToListAsync();
-                if (hasDraft) EmpresaDraft = JsonSerializer.Deserialize<EmpresaVM>(Ticket.DadosPropostos!, jsonOpts);
+
+                Documentos = await _context.DocumentoEmpresas
+                    .Where(de => de.EmpresaCnpj == Id && de.Documento != null)
+                    .Select(de => de.Documento!)
+                    .OrderByDescending(d => d.DataUpload)
+                    .ToListAsync();
+
+                if (hasDraft)
+                {
+                    EmpresaDraft = JsonSerializer.Deserialize<EmpresaVM>(Ticket.DadosPropostos!, jsonOpts);
+                }
             }
 
             var tipoSafe = Tipo.Trim().ToUpper();
@@ -106,103 +143,100 @@ namespace Eva.Pages.Metroplan.Analista
 
             var expectedTypeNames = regrasEsperadas.Select(r => r.TipoNome).ToList();
             var unexpectedDocs = Documentos.Where(d => !expectedTypeNames.Contains(d.DocumentoTipoNome));
-            foreach (var un in unexpectedDocs)
+            foreach (var documento in unexpectedDocs)
             {
-                DocumentosRevisao.Add(new DocumentoRevisaoVM { TipoNome = un.DocumentoTipoNome, Obrigatorio = false, Documento = un });
+                DocumentosRevisao.Add(new DocumentoRevisaoVM
+                {
+                    TipoNome = documento.DocumentoTipoNome,
+                    Obrigatorio = false,
+                    Documento = documento
+                });
             }
         }
 
         public async Task<IActionResult> OnGetAsync()
         {
-            if (string.IsNullOrEmpty(Tipo) || string.IsNullOrEmpty(Id)) return RedirectToPage("./Index");
+            if (string.IsNullOrEmpty(Tipo) || string.IsNullOrEmpty(Id))
+            {
+                return RedirectToPage("./Index");
+            }
+
             await LoadDataAsync();
-            if (Ticket == null) return RedirectToPage("./Index");
+            if (Ticket == null)
+            {
+                return RedirectToPage("./Index");
+            }
+
             return Page();
         }
 
         public async Task<IActionResult> OnPostIniciarAsync()
         {
-            var email = User.FindFirstValue(ClaimTypes.Email);
-            if (email == null) return RedirectToPage("/Login");
-
-            try
+            var email = _currentUserService.GetCurrentEmail();
+            if (email == null)
             {
-                await _pendenciaService.IniciarAnaliseAsync(Tipo, Id, email);
+                return RedirectToPage("/Login");
+            }
+
+            var result = await _reviewService.IniciarAnaliseAsync(Tipo, Id, email);
+            if (result.Success)
+            {
                 return RedirectToPage(new { tipo = Tipo, id = Id });
             }
-            catch (Exception ex) when (ex is InvalidOperationException || ex is ArgumentException || ex is UnauthorizedAccessException)
-            {
-                ModelState.AddModelError(string.Empty, ex.Message);
-                await LoadDataAsync();
-                return Page();
-            }
+
+            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "NÃ£o foi possÃ­vel iniciar a anÃ¡lise.");
+            await LoadDataAsync();
+            return Page();
         }
 
         public async Task<IActionResult> OnPostAprovarAsync()
         {
-            var email = User.FindFirstValue(ClaimTypes.Email);
-            if (email == null) return RedirectToPage("/Login");
-
-            try
+            var email = _currentUserService.GetCurrentEmail();
+            if (email == null)
             {
-                foreach (var kvp in Validades)
-                {
-                    if (kvp.Value.HasValue)
-                    {
-                        var doc = await _context.Documentos.FindAsync(kvp.Key);
-                        if (doc != null) doc.Validade = kvp.Value.Value;
-                    }
-                }
-                await _context.SaveChangesAsync();
+                return RedirectToPage("/Login");
+            }
 
-                var health = await _statusService.GetHealthAsync(Tipo, Id);
-                if (health.MissingMandatoryDocs.Any())
-                {
-                    ModelState.AddModelError(string.Empty, $"Faltam documentos obrigatórios: {string.Join(", ", health.MissingMandatoryDocs)}.");
-                    await LoadDataAsync();
-                    return Page();
-                }
-
-                await _pendenciaService.AprovarAsync(Tipo, Id, email);
-                TempData["SuccessMessage"] = "Aprovação concluída com sucesso.";
+            var result = await _reviewService.AprovarAsync(Tipo, Id, email, Validades);
+            if (result.Success)
+            {
+                TempData["SuccessMessage"] = result.SuccessMessage;
                 return RedirectToPage("./Index");
             }
-            catch (Exception ex) when (ex is InvalidOperationException || ex is ArgumentException || ex is UnauthorizedAccessException)
-            {
-                ModelState.AddModelError(string.Empty, ex.Message);
-                await LoadDataAsync();
-                return Page();
-            }
+
+            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "NÃ£o foi possÃ­vel aprovar o item.");
+            await LoadDataAsync();
+            return Page();
         }
 
         public async Task<IActionResult> OnPostRejeitarAsync()
         {
-            var email = User.FindFirstValue(ClaimTypes.Email);
-            if (email == null) return RedirectToPage("/Login");
-
-            try
+            var email = _currentUserService.GetCurrentEmail();
+            if (email == null)
             {
-                if (string.IsNullOrWhiteSpace(MotivoRejeicao))
-                {
-                    throw new ArgumentException("O motivo é obrigatório para rejeições.");
-                }
+                return RedirectToPage("/Login");
+            }
 
-                await _pendenciaService.RejeitarAsync(Tipo, Id, email, MotivoRejeicao);
-                TempData["SuccessMessage"] = "Rejeição registrada com sucesso.";
+            var result = await _reviewService.RejeitarAsync(Tipo, Id, email, MotivoRejeicao);
+            if (result.Success)
+            {
+                TempData["SuccessMessage"] = result.SuccessMessage;
                 return RedirectToPage("./Index");
             }
-            catch (Exception ex) when (ex is InvalidOperationException || ex is ArgumentException || ex is UnauthorizedAccessException)
-            {
-                ModelState.AddModelError(string.Empty, ex.Message);
-                await LoadDataAsync();
-                return Page();
-            }
+
+            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "NÃ£o foi possÃ­vel rejeitar o item.");
+            await LoadDataAsync();
+            return Page();
         }
 
         public async Task<IActionResult> OnGetVisualizarAsync(int docId)
         {
             var doc = await _context.Documentos.FindAsync(docId);
-            if (doc == null) return NotFound();
+            if (doc == null)
+            {
+                return NotFound();
+            }
+
             return File(doc.Conteudo, doc.ContentType);
         }
     }

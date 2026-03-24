@@ -1,5 +1,6 @@
-﻿using Eva.Data;
+using Eva.Data;
 using Eva.Models;
+using Eva.Workflow;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -57,7 +58,7 @@ namespace Eva.Services
 
             var decisiveStatuses = decisiveStatusesList.ToDictionary(f => f.EntidadeId, f => f.Status);
 
-            // 2.5 Fetch Absolute Latest Statuses
+            // 2.5 Fetch Absolute Latest Workflow Statuses
             var currentStatuses = await _context.VPendenciasAtuais
                 .Where(p => p.EntidadeTipo.Trim().ToUpper() == entityTypeSafe && ids.Contains(p.EntidadeId))
                 .ToDictionaryAsync(p => p.EntidadeId, p => p.Status);
@@ -70,10 +71,14 @@ namespace Eva.Services
             // 4. Calculate Health for each Entity
             foreach (var id in ids)
             {
-                var report = new EntityHealthReport();
+                var report = new EntityHealthReport
+                {
+                    AnalystStatus = decisiveStatuses.TryGetValue(id, out var status) ? status : WorkflowStatus.Incompleto
+                };
 
-                report.AnalystStatus = decisiveStatuses.TryGetValue(id, out var status) ? status : "INCOMPLETO";
-                report.CurrentStatus = currentStatuses.TryGetValue(id, out var currStatus) ? currStatus : "INCOMPLETO";
+                var rawCurrentStatus = currentStatuses.TryGetValue(id, out var currStatus)
+                    ? currStatus
+                    : WorkflowStatus.Incompleto;
 
                 var docsForEntity = entityDocs.TryGetValue(id, out var docs) ? docs : new List<Documento>();
 
@@ -102,9 +107,15 @@ namespace Eva.Services
                     }
                 }
 
-                report.IsLegal = report.AnalystStatus == "APROVADO" &&
+                report.IsLegal = report.AnalystStatus == WorkflowStatus.Aprovado &&
                                  !report.MissingMandatoryDocs.Any() &&
                                  !report.ExpiredDocs.Any();
+
+                report.CurrentStatus = WorkflowStatus.IsPending(rawCurrentStatus)
+                    ? rawCurrentStatus
+                    : report.MissingMandatoryDocs.Any() || report.ExpiredDocs.Any()
+                        ? WorkflowStatus.Incompleto
+                        : rawCurrentStatus;
 
                 results[id] = report;
             }

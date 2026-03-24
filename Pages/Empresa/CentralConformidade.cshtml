@@ -1,14 +1,14 @@
-ï»¿@page
+@page
 @model Eva.Pages.Empresa.CentralConformidadeModel
 @{
-    ViewData["Title"] = "Central de Conformidade - Eva";
+    ViewData["Title"] = "Central de Conformidade - Fretamento Eventual";
 }
 
 <div class="container mt-5">
     <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
         <div>
             <h1 class="h2">Central de Conformidade</h1>
-            <p class="text-muted">Acompanhe e resolva pendÃªncias de cadastro e documentaÃ§Ã£o.</p>
+            <p class="text-muted">Acompanhe e resolva pendências de cadastro e documentação.</p>
         </div>
         <a href="/Empresa/MinhaEmpresa" class="btn btn-outline-secondary">Voltar ao Painel</a>
     </div>
@@ -16,19 +16,19 @@
     @if (Model.ResumoConformidade.TemPendenciasCriticas)
     {
         <div class="alert alert-danger shadow-sm mb-4">
-            <i class="bi bi-exclamation-octagon-fill me-2"></i> <strong>AÃ§Ã£o NecessÃ¡ria:</strong> Existem pendÃªncias que impedem o uso de seus recursos em novas viagens. Resolva os itens destacados abaixo.
+            <i class="bi bi-exclamation-octagon-fill me-2"></i> <strong>Ação Necessária:</strong> Existem pendências que impedem o uso de seus recursos em novas viagens. Resolva os itens destacados abaixo.
         </div>
     }
     else
     {
         <div class="alert alert-success shadow-sm mb-4">
-            <i class="bi bi-check-circle-fill me-2"></i> <strong>Tudo Certo!</strong> Sua empresa, veÃ­culos e motoristas estÃ£o com a documentaÃ§Ã£o em dia.
+            <i class="bi bi-check-circle-fill me-2"></i> <strong>Tudo Certo!</strong> Sua empresa, veículos e motoristas estão com a documentação em dia.
         </div>
     }
 
     <div class="card shadow-sm mb-4">
         <div class="card-header bg-white py-3">
-            <h5 class="mb-0 text-primary"><i class="bi bi-building me-2"></i> DocumentaÃ§Ã£o da Empresa</h5>
+            <h5 class="mb-0 text-primary"><i class="bi bi-building me-2"></i> Documentação da Empresa</h5>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -38,7 +38,7 @@
                             <th>Entidade</th>
                             <th>Status Geral</th>
                             <th>O que precisa ser feito?</th>
-                            <th class="text-end">AÃ§Ã£o</th>
+                            <th class="text-end">Ação</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -54,17 +54,17 @@
 
     <div class="card shadow-sm mb-4">
         <div class="card-header bg-white py-3">
-            <h5 class="mb-0 text-primary"><i class="bi bi-truck me-2"></i> Frota de VeÃ­culos</h5>
+            <h5 class="mb-0 text-primary"><i class="bi bi-truck me-2"></i> Frota de Veículos</h5>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>VeÃ­culo (Placa)</th>
+                            <th>Veículo (Placa)</th>
                             <th>Status Geral</th>
                             <th>O que precisa ser feito?</th>
-                            <th class="text-end">AÃ§Ã£o</th>
+                            <th class="text-end">Ação</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -74,7 +74,7 @@
                         }
                         @if (!Model.ResumoConformidade.Veiculos.Any())
                         {
-                            <tr><td colspan="4" class="text-center text-muted py-4">Nenhum veÃ­culo cadastrado.</td></tr>
+                            <tr><td colspan="4" class="text-center text-muted py-4">Nenhum veículo cadastrado.</td></tr>
                         }
                     </tbody>
                 </table>
@@ -94,7 +94,7 @@
                             <th>Nome do Motorista</th>
                             <th>Status Geral</th>
                             <th>O que precisa ser feito?</th>
-                            <th class="text-end">AÃ§Ã£o</th>
+                            <th class="text-end">Ação</th>
                         </tr>
                     </thead>
                     <tbody>

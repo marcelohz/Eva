@@ -1,7 +1,7 @@
-Ôªø@page "{id:int}"
+@page "{id:int}"
 @model Eva.Pages.Metroplan.Admin.DetalhesAnalistaModel
 @{
-    ViewData["Title"] = "Detalhes do Analista - Eva";
+    ViewData["Title"] = "Detalhes do Analista - Fretamento Eventual";
 }
 
 <div class="container mt-5 mb-5">
@@ -58,7 +58,7 @@
         <div class="col-lg-8">
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-primary text-white rounded-top d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="bi bi-lock-fill me-2"></i> Tickets Retidos (Em An√°lise)</h5>
+                    <h5 class="mb-0"><i class="bi bi-lock-fill me-2"></i> Tickets Retidos (Em An·lise)</h5>
                     <span class="badge bg-light text-primary rounded-pill">@Model.TicketsEmAnalise.Count</span>
                 </div>
                 <div class="card-body p-0">
@@ -69,7 +69,7 @@
                                     <th class="ps-4">Data Captura</th>
                                     <th>Tipo</th>
                                     <th>Identificador</th>
-                                    <th class="text-end pe-4">A√ß√£o</th>
+                                    <th class="text-end pe-4">AÁ„o</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -78,7 +78,7 @@
                                     <tr>
                                         <td colspan="4" class="text-center py-5 text-muted">
                                             <i class="bi bi-inbox display-4 d-block mb-2 text-secondary"></i>
-                                            Este analista n√£o possui nenhum ticket retido no momento.
+                                            Este analista n„o possui nenhum ticket retido no momento.
                                         </td>
                                     </tr>
                                 }
@@ -94,8 +94,8 @@
                                                 <form method="post" asp-page-handler="Desatribuir" class="d-inline">
                                                     <input type="hidden" name="tipo" value="@ticket.EntidadeTipo" />
                                                     <input type="hidden" name="entidadeId" value="@ticket.EntidadeId" />
-                                                    <button type="submit" class="btn btn-sm btn-danger shadow-sm" title="Retornar para a fila geral" onclick="return confirm('Tem certeza que deseja for√ßar a desatribui√ß√£o deste ticket? Ele retornar√° para a fila geral.');">
-                                                        <i class="bi bi-unlock-fill"></i> For√ßar Desatribui√ß√£o
+                                                    <button type="submit" class="btn btn-sm btn-danger shadow-sm" title="Retornar para a fila geral" onclick="return confirm('Tem certeza que deseja forÁar a desatribuiÁ„o deste ticket? Ele retornar· para a fila geral.');">
+                                                        <i class="bi bi-unlock-fill"></i> ForÁar DesatribuiÁ„o
                                                     </button>
                                                 </form>
                                             </td>

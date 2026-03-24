@@ -7,7 +7,6 @@ using Eva.Models;
 using Eva.Models.ViewModels;
 using Eva.Services;
 using Eva.Workflow;
-using System.Security.Claims;
 using System.Text.Json;
 
 namespace Eva.Pages.Empresa
@@ -18,10 +17,21 @@ namespace Eva.Pages.Empresa
         private readonly EvaDbContext _context;
         private readonly PendenciaService _pendenciaService;
         private readonly ArquivoService _arquivoService;
+        private readonly ICurrentUserService _currentUserService;
+        private readonly IEmpresaEntityEditGuardService _editGuardService;
 
-        public EditarEmpresaModel(EvaDbContext context, PendenciaService pendenciaService, ArquivoService arquivoService)
+        public EditarEmpresaModel(
+            EvaDbContext context,
+            PendenciaService pendenciaService,
+            ArquivoService arquivoService,
+            ICurrentUserService currentUserService,
+            IEmpresaEntityEditGuardService editGuardService)
         {
-            _context = context; _pendenciaService = pendenciaService; _arquivoService = arquivoService;
+            _context = context;
+            _pendenciaService = pendenciaService;
+            _arquivoService = arquivoService;
+            _currentUserService = currentUserService;
+            _editGuardService = editGuardService;
         }
 
         [BindProperty] public EmpresaVM Input { get; set; } = new();
@@ -39,35 +49,35 @@ namespace Eva.Pages.Empresa
 
         public async Task<IActionResult> OnGetAsync()
         {
-            var cnpj = User.FindFirstValue("EmpresaCnpj");
+            var cnpj = _currentUserService.GetCurrentEmpresaCnpj();
             if (string.IsNullOrEmpty(cnpj)) return RedirectToPage("/Login");
 
             var ticket = await _context.VPendenciasAtuais.FirstOrDefaultAsync(p => p.EntidadeTipo == "EMPRESA" && p.EntidadeId == cnpj);
 
-            if (ticket != null && (ticket.Status == WorkflowValidator.AguardandoAnalise || ticket.Status == WorkflowValidator.EmAnalise || ticket.Status == WorkflowValidator.Rejeitado) && !string.IsNullOrEmpty(ticket.DadosPropostos))
+            if (ticket != null && (ticket.Status == WorkflowValidator.Incompleto || ticket.Status == WorkflowValidator.AguardandoAnalise || ticket.Status == WorkflowValidator.EmAnalise || ticket.Status == WorkflowValidator.Rejeitado) && !string.IsNullOrEmpty(ticket.DadosPropostos))
             {
                 Input = JsonSerializer.Deserialize<EmpresaVM>(ticket.DadosPropostos, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new EmpresaVM();
                 Input.Cnpj = cnpj;
             }
             else
             {
-                var e = await _context.Empresas.FirstOrDefaultAsync(e => e.Cnpj == cnpj);
-                if (e == null) return NotFound();
+                var empresa = await _context.Empresas.FirstOrDefaultAsync(e => e.Cnpj == cnpj);
+                if (empresa == null) return NotFound();
 
                 Input = new EmpresaVM
                 {
-                    Cnpj = e.Cnpj,
-                    Nome = e.Nome,
-                    NomeFantasia = e.NomeFantasia,
-                    Endereco = e.Endereco,
-                    EnderecoNumero = e.EnderecoNumero,
-                    EnderecoComplemento = e.EnderecoComplemento,
-                    Bairro = e.Bairro,
-                    Cidade = e.Cidade,
-                    Estado = e.Estado,
-                    Cep = e.Cep,
-                    Email = e.Email,
-                    Telefone = e.Telefone
+                    Cnpj = empresa.Cnpj,
+                    Nome = empresa.Nome,
+                    NomeFantasia = empresa.NomeFantasia,
+                    Endereco = empresa.Endereco,
+                    EnderecoNumero = empresa.EnderecoNumero,
+                    EnderecoComplemento = empresa.EnderecoComplemento,
+                    Bairro = empresa.Bairro,
+                    Cidade = empresa.Cidade,
+                    Estado = empresa.Estado,
+                    Cep = empresa.Cep,
+                    Email = empresa.Email,
+                    Telefone = empresa.Telefone
                 };
             }
 
@@ -93,10 +103,12 @@ namespace Eva.Pages.Empresa
         {
             if (!ModelState.IsValid) { await LoadAuxiliaryData(Input.Cnpj); return Page(); }
 
-            var status = await _pendenciaService.GetStatusAsync("EMPRESA", Input.Cnpj);
-            if (status == WorkflowValidator.EmAnalise)
+            var guard = await _editGuardService.CheckEmpresaAsync(Input.Cnpj);
+            if (!guard.HasCurrentEmpresa) return RedirectToPage("/Login");
+            if (!guard.ExistsAndBelongsToCurrentEmpresa) return NotFound();
+            if (guard.IsLocked)
             {
-                ModelState.AddModelError("", "Este registro está em análise e não pode ser alterado no momento.");
+                ModelState.AddModelError("", EmpresaEntityEditGuardService.LockedMessage);
                 await LoadAuxiliaryData(Input.Cnpj);
                 return Page();
             }
@@ -109,11 +121,13 @@ namespace Eva.Pages.Empresa
 
         public async Task<IActionResult> OnPostUploadAsync()
         {
-            var cnpj = User.FindFirstValue("EmpresaCnpj")!;
-            var status = await _pendenciaService.GetStatusAsync("EMPRESA", cnpj);
+            var cnpj = _currentUserService.GetCurrentEmpresaCnpj();
+            if (string.IsNullOrEmpty(cnpj)) return RedirectToPage("/Login");
 
-            // If locked, return the partial immediately with no changes
-            if (status == WorkflowValidator.EmAnalise)
+            var guard = await _editGuardService.CheckEmpresaAsync(cnpj);
+            if (!guard.ExistsAndBelongsToCurrentEmpresa) return NotFound();
+
+            if (guard.IsLocked)
             {
                 Input.Cnpj = cnpj;
                 await LoadAuxiliaryData(cnpj);
@@ -124,13 +138,17 @@ namespace Eva.Pages.Empresa
             {
                 if (TipoDocumentoUpload != "IDENTIDADE_SOCIO")
                 {
-                    var existingId = await _context.DocumentoEmpresas.Where(de => de.EmpresaCnpj == cnpj && de.Documento.DocumentoTipoNome == TipoDocumentoUpload).Select(de => de.Documento.Id).FirstOrDefaultAsync();
+                    var existingId = await _context.DocumentoEmpresas
+                        .Where(de => de.EmpresaCnpj == cnpj && de.Documento.DocumentoTipoNome == TipoDocumentoUpload)
+                        .Select(de => de.Documento.Id)
+                        .FirstOrDefaultAsync();
+
                     if (existingId > 0) await _arquivoService.DeletarDocumentoAsync(existingId, "EMPRESA", cnpj);
                 }
+
                 await _arquivoService.SalvarDocumentoAsync(UploadArquivo, TipoDocumentoUpload, "EMPRESA", cnpj);
             }
 
-            // SAFETY LOCK 3: Model Refill & Partial Return
             Input.Cnpj = cnpj;
             await LoadAuxiliaryData(cnpj);
             return Partial("_EmpresaDocs", this);
@@ -138,11 +156,13 @@ namespace Eva.Pages.Empresa
 
         public async Task<IActionResult> OnPostDeleteDocAsync(int id)
         {
-            var cnpj = User.FindFirstValue("EmpresaCnpj")!;
-            var status = await _pendenciaService.GetStatusAsync("EMPRESA", cnpj);
+            var cnpj = _currentUserService.GetCurrentEmpresaCnpj();
+            if (string.IsNullOrEmpty(cnpj)) return RedirectToPage("/Login");
 
-            // If locked, return the partial immediately with no changes
-            if (status == WorkflowValidator.EmAnalise)
+            var guard = await _editGuardService.CheckEmpresaAsync(cnpj);
+            if (!guard.ExistsAndBelongsToCurrentEmpresa) return NotFound();
+
+            if (guard.IsLocked)
             {
                 Input.Cnpj = cnpj;
                 await LoadAuxiliaryData(cnpj);
@@ -151,7 +171,6 @@ namespace Eva.Pages.Empresa
 
             await _arquivoService.DeletarDocumentoAsync(id, "EMPRESA", cnpj);
 
-            // SAFETY LOCK 3: Model Refill & Partial Return
             Input.Cnpj = cnpj;
             await LoadAuxiliaryData(cnpj);
             return Partial("_EmpresaDocs", this);

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Eva.Data;
 using Eva.Models;
+using Eva.Services;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
@@ -15,13 +16,23 @@ namespace Eva.Pages.Empresa
     public class MinhasViagensModel : PageModel
     {
         private readonly EvaDbContext _context;
+        private readonly IEntityStatusService _statusService;
+        private readonly IViagemManagementService _viagemManagementService;
 
-        public MinhasViagensModel(EvaDbContext context)
+        public MinhasViagensModel(
+            EvaDbContext context,
+            IEntityStatusService statusService,
+            IViagemManagementService viagemManagementService)
         {
             _context = context;
+            _statusService = statusService;
+            _viagemManagementService = viagemManagementService;
         }
 
         public List<Viagem> Viagens { get; set; } = new();
+        public bool PodeCriarNovaViagem { get; set; }
+        public string? BloqueioNovaViagemMensagem { get; set; }
+        public Dictionary<int, ViagemManagementAccessResult> ViagemAccess { get; set; } = new();
 
         public async Task<IActionResult> OnGetAsync()
         {
@@ -36,6 +47,15 @@ namespace Eva.Pages.Empresa
                 .Where(v => v.EmpresaCnpj == user.EmpresaCnpj)
                 .OrderByDescending(v => v.Id)
                 .ToListAsync();
+
+            ViagemAccess = Viagens.ToDictionary(v => v.Id, v => _viagemManagementService.GetAccess(v));
+
+            var empresaHealth = await _statusService.GetHealthAsync("EMPRESA", user.EmpresaCnpj);
+            PodeCriarNovaViagem = empresaHealth.IsLegal;
+            if (!PodeCriarNovaViagem)
+            {
+                BloqueioNovaViagemMensagem = "Sua empresa precisa estar com o cadastro e a documentacao regularizados para cadastrar novas viagens.";
+            }
 
             return Page();
         }

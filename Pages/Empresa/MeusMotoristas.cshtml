@@ -1,13 +1,13 @@
-﻿@page
+@page
 @model Eva.Pages.Empresa.MeusMotoristasModel
 @{
-    ViewData["Title"] = "Meus Motoristas - Eva";
+    ViewData["Title"] = "Meus Motoristas - Fretamento Eventual";
 }
 
 <div class="container mt-5">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Painel</a></li>
             <li class="breadcrumb-item active" aria-current="page">Meus Motoristas</li>
         </ol>
     </nav>
@@ -15,7 +15,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h3 mb-0">Quadro de Motoristas</h1>
-            <p class="text-muted">Gerencie os motoristas vinculados à sua empresa.</p>
+            <p class="text-muted">Gerencie os motoristas vinculados � sua empresa.</p>
         </div>
         <a href="/Empresa/NovoMotorista" class="btn btn-primary">
             <i class="bi bi-person-plus"></i> Novo Motorista
@@ -33,7 +33,7 @@
                             <th>CNH</th>
                             <th>E-mail</th>
                             <th>Status</th>
-                            <th class="text-end pe-4">Ações</th>
+                            <th class="text-end pe-4">A��es</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -66,35 +66,25 @@
                                         {
                                             <span class="badge bg-success"><i class="bi bi-check-circle"></i> Legalizado</span>
                                         }
-                                        else if (health.CurrentStatus == "AGUARDANDO_ANALISE")
+                                        else if (health.CurrentStatus == WorkflowStatus.AguardandoAnalise)
                                         {
-                                            <span class="badge bg-warning text-dark"><i class="bi bi-clock-history"></i> Aguardando Análise</span>
+                                            <span class="badge @WorkflowStatus.GetBadgeClass(health.CurrentStatus)"><i class="bi @WorkflowStatus.GetBadgeIcon(health.CurrentStatus)"></i> @WorkflowStatus.GetDisplayLabel(health.CurrentStatus)</span>
                                         }
-                                        else if (health.CurrentStatus == "EM_ANALISE")
+                                        else if (health.CurrentStatus == WorkflowStatus.EmAnalise)
                                         {
-                                            <span class="badge bg-info text-dark"><i class="bi bi-hourglass-split"></i> Em Análise</span>
+                                            <span class="badge @WorkflowStatus.GetBadgeClass(health.CurrentStatus)"><i class="bi @WorkflowStatus.GetBadgeIcon(health.CurrentStatus)"></i> @WorkflowStatus.GetDisplayLabel(health.CurrentStatus)</span>
                                         }
-                                        else if (health.AnalystStatus == "REJEITADO")
+                                        else if (health.CurrentStatus == WorkflowStatus.Rejeitado)
                                         {
-                                            <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Rejeitado</span>
+                                            <span class="badge @WorkflowStatus.GetBadgeClass(health.CurrentStatus)"><i class="bi @WorkflowStatus.GetBadgeIcon(health.CurrentStatus)"></i> @WorkflowStatus.GetDisplayLabel(health.CurrentStatus)</span>
                                         }
-                                        else if (health.AnalystStatus == "INCOMPLETO")
+                                        else if (health.CurrentStatus == WorkflowStatus.Incompleto)
                                         {
-                                            <span class="badge bg-secondary"><i class="bi bi-file-earmark"></i> Incompleto</span>
+                                            <span class="badge @WorkflowStatus.GetBadgeClass(WorkflowStatus.Incompleto)"><i class="bi @WorkflowStatus.GetBadgeIcon(WorkflowStatus.Incompleto)"></i> @WorkflowStatus.GetDisplayLabel(WorkflowStatus.Incompleto)</span>
                                         }
                                         else
                                         {
-                                            <span class="badge bg-danger"><i class="bi bi-exclamation-triangle"></i> Bloqueado</span>
-                                            <div class="small text-muted mt-1">
-                                                @if (health.MissingMandatoryDocs.Any())
-                                                {
-                                                    <span>Falta doc</span>
-                                                }
-                                                @if (health.ExpiredDocs.Any())
-                                                {
-                                                    <span>Doc Vencido</span>
-                                                }
-                                            </div>
+                                            <span class="badge bg-secondary"><i class="bi bi-question-circle"></i> @WorkflowStatus.GetDisplayLabel(health.CurrentStatus)</span>
                                         }
                                     </td>
                                     <td class="text-end pe-4">
@@ -121,12 +111,12 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title" id="deleteModalLabel"><i class="bi bi-exclamation-triangle-fill"></i> Confirmar Exclusão</h5>
+                <h5 class="modal-title" id="deleteModalLabel"><i class="bi bi-exclamation-triangle-fill"></i> Confirmar Exclus�o</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <p>Tem certeza que deseja excluir o motorista <strong id="modalMotoristaNome"></strong>?</p>
-                <p class="text-danger small mb-0">Esta ação não pode ser desfeita.</p>
+                <p class="text-danger small mb-0">Esta a��o n�o pode ser desfeita.</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>

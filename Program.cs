@@ -59,7 +59,13 @@ try
     // Core Domain Services
     builder.Services.AddScoped<PendenciaService>();
     builder.Services.AddScoped<ArquivoService>();
+    builder.Services.AddScoped<IAnalystReviewService, AnalystReviewService>();
+    builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+    builder.Services.AddScoped<IEmpresaEntityEditGuardService, EmpresaEntityEditGuardService>();
     builder.Services.AddScoped<IEntityStatusService, EntityStatusService>();
+    builder.Services.AddScoped<IViagemCreationService, ViagemCreationService>();
+    builder.Services.AddScoped<IViagemRulesService, ViagemRulesService>();
+    builder.Services.AddScoped<IViagemManagementService, ViagemManagementService>();
 
     // NEW: Dashboard Conformidade Service
     builder.Services.AddScoped<IEmpresaConformidadeService, EmpresaConformidadeService>();

@@ -2,7 +2,7 @@
 @{
     // SAFETY LOCK 1: Prevents the "Inception" bug
     Layout = null;
-    bool isLocked = Model.PendenciaStatus == "EM_ANALISE";
+    bool isLocked = Model.PendenciaStatus == WorkflowStatus.EmAnalise;
 
     async Task RenderDocSection(string title, string type, List<Eva.Models.Documento> docs, bool multiple = false)
     {

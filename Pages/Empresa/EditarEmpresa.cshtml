@@ -1,14 +1,14 @@
 ﻿@page
 @model Eva.Pages.Empresa.EditarEmpresaModel
 @{
-    ViewData["Title"] = "Dados da Empresa - Eva";
-    bool isLocked = Model.PendenciaStatus == "EM_ANALISE";
+    ViewData["Title"] = "Dados da Empresa - Fretamento Eventual";
+    bool isLocked = Model.PendenciaStatus == WorkflowStatus.EmAnalise;
 }
 
 <div class="container mt-5 mb-5">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Painel</a></li>
             <li class="breadcrumb-item active">Editar Empresa</li>
         </ol>
     </nav>
@@ -25,7 +25,7 @@
     {
         <div class="alert alert-danger mb-4 shadow-sm" role="alert">
             <i class="bi bi-exclamation-triangle-fill me-2"></i>
-            <strong>Atenção (Cadastro Rejeitado):</strong> @Model.RejeicaoMotivo
+            <strong>Atenção (Cadastro Rejeitado):</strong><span class="preserve-newlines"> @Model.RejeicaoMotivo</span>
         </div>
     }
 
@@ -36,17 +36,20 @@
                     <h5 class="mb-0">Dados Cadastrais</h5>
                     @switch (Model.PendenciaStatus)
                     {
-                        case "AGUARDANDO_ANALISE":
-                            <span class="badge bg-warning text-dark border border-light"><i class="bi bi-clock-history"></i> Aguardando Análise</span>
+                        case WorkflowStatus.Incompleto:
+                            <span class="badge @WorkflowStatus.GetBadgeClass(Model.PendenciaStatus) border border-light"><i class="bi @WorkflowStatus.GetBadgeIcon(Model.PendenciaStatus)"></i> @WorkflowStatus.GetDisplayLabel(Model.PendenciaStatus)</span>
                             break;
-                        case "EM_ANALISE":
-                            <span class="badge bg-info text-dark border border-light"><i class="bi bi-hourglass-split"></i> Em Análise</span>
+                        case WorkflowStatus.AguardandoAnalise:
+                            <span class="badge @WorkflowStatus.GetBadgeClass(Model.PendenciaStatus) border border-light"><i class="bi @WorkflowStatus.GetBadgeIcon(Model.PendenciaStatus)"></i> @WorkflowStatus.GetDisplayLabel(Model.PendenciaStatus)</span>
                             break;
-                        case "APROVADO":
-                            <span class="badge bg-success border border-light"><i class="bi bi-check-circle"></i> Aprovado</span>
+                        case WorkflowStatus.EmAnalise:
+                            <span class="badge @WorkflowStatus.GetBadgeClass(Model.PendenciaStatus) border border-light"><i class="bi @WorkflowStatus.GetBadgeIcon(Model.PendenciaStatus)"></i> @WorkflowStatus.GetDisplayLabel(Model.PendenciaStatus)</span>
                             break;
-                        case "REJEITADO":
-                            <span class="badge bg-danger border border-light"><i class="bi bi-x-circle"></i> Rejeitado</span>
+                        case WorkflowStatus.Aprovado:
+                            <span class="badge @WorkflowStatus.GetBadgeClass(Model.PendenciaStatus) border border-light"><i class="bi @WorkflowStatus.GetBadgeIcon(Model.PendenciaStatus)"></i> @WorkflowStatus.GetDisplayLabel(Model.PendenciaStatus)</span>
+                            break;
+                        case WorkflowStatus.Rejeitado:
+                            <span class="badge @WorkflowStatus.GetBadgeClass(Model.PendenciaStatus) border border-light"><i class="bi @WorkflowStatus.GetBadgeIcon(Model.PendenciaStatus)"></i> @WorkflowStatus.GetDisplayLabel(Model.PendenciaStatus)</span>
                             break;
                     }
                 </div>
@@ -147,3 +150,5 @@
         }
     </script>
 }
+
+

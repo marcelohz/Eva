@@ -1,7 +1,7 @@
-ï»¿@page
+@page
 @model Eva.Pages.CadastroEmpresaSucessoModel
 @{
-    ViewData["Title"] = "E-mail Enviado - Eva";
+    ViewData["Title"] = "E-mail Enviado - Fretamento Eventual";
 }
 
 <div class="container mt-5">
@@ -11,7 +11,7 @@
                 <i class="bi bi-envelope-check display-1 text-success mb-4"></i>
                 <h1 class="h3 mb-3">Verifique seu e-mail</h1>
                 <p class="text-muted">
-                    Enviamos um link de confirmaÃ§Ã£o para <strong>@Request.Query["email"]</strong>.
+                    Enviamos um link de confirmação para <strong>@Request.Query["email"]</strong>.
                 </p>
                 <hr class="my-4" />
                 <a asp-page="/Login" class="btn btn-outline-secondary">Voltar para o Login</a>

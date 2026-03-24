@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Eva.Data;
 using Eva.Models;
+using Eva.Workflow;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -36,7 +37,7 @@ namespace Eva.Pages.Metroplan.Admin
 
             // Find all tickets currently locked by this specific analyst's email
             TicketsEmAnalise = await _context.VPendenciasAtuais
-                .Where(p => p.Status == "EM_ANALISE" && p.Analista == Analista.Email)
+                .Where(p => p.Status == WorkflowStatus.EmAnalise && p.Analista == Analista.Email)
                 .OrderBy(p => p.CriadoEm)
                 .ToListAsync();
 
@@ -56,23 +57,23 @@ namespace Eva.Pages.Metroplan.Admin
                 .OrderByDescending(f => f.CriadoEm)
                 .FirstOrDefaultAsync();
 
-            if (lastPendencia != null && lastPendencia.Status == "EM_ANALISE")
+            if (lastPendencia != null && lastPendencia.Status == WorkflowStatus.EmAnalise)
             {
                 // Create a new history record to release the ticket back to the queue
                 var novaPendencia = new FluxoPendencia
                 {
                     EntidadeTipo = tipo,
                     EntidadeId = entidadeId,
-                    Status = "AGUARDANDO_ANALISE",
+                    Status = WorkflowStatus.AguardandoAnalise,
                     Analista = null,
-                    Motivo = "Desatribuição forçada por Administrador via painel do analista.",
+                    Motivo = "DesatribuiÃ§Ã£o forÃ§ada por Administrador via painel do analista.",
                     CriadoEm = DateTime.UtcNow
                 };
 
                 _context.FluxoPendencias.Add(novaPendencia);
                 await _context.SaveChangesAsync();
 
-                TempData["SuccessMessage"] = $"O ticket {entidadeId} foi desatribuído com sucesso.";
+                TempData["SuccessMessage"] = $"O ticket {entidadeId} foi desatribuÃ­do com sucesso.";
             }
 
             // Redirect back to the same analyst's detail page

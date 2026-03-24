@@ -1,14 +1,14 @@
-Ôªø@page
+@page
 @model Eva.Pages.Empresa.NovoUsuarioModel
 @{
-    ViewData["Title"] = "Novo Colaborador - Eva";
+    ViewData["Title"] = "Novo Colaborador - Fretamento Eventual";
 }
 
 <div class="container mt-5 mb-5">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="/Empresa/MeusUsuarios">Gerenciar Usu√°rios</a></li>
+            <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Painel</a></li>
+            <li class="breadcrumb-item"><a href="/Empresa/MeusUsuarios">Gerenciar Usu·rios</a></li>
             <li class="breadcrumb-item active" aria-current="page">Novo Colaborador</li>
         </ol>
     </nav>
@@ -25,13 +25,13 @@
 
                         <div class="mb-3">
                             <label asp-for="Input.Nome" class="form-label fw-bold">Nome Completo</label>
-                            <input asp-for="Input.Nome" class="form-control" placeholder="Ex: Jo√£o da Silva" />
+                            <input asp-for="Input.Nome" class="form-control" placeholder="Ex: Jo„o da Silva" />
                             <span asp-validation-for="Input.Nome" class="text-danger small"></span>
                         </div>
 
                         <div class="mb-3">
                             <label asp-for="Input.Cpf" class="form-label fw-bold">CPF</label>
-                            <input asp-for="Input.Cpf" class="form-control" placeholder="Apenas n√∫meros" />
+                            <input asp-for="Input.Cpf" class="form-control" placeholder="Apenas n˙meros" />
                             <span asp-validation-for="Input.Cpf" class="text-danger small"></span>
                         </div>
 
@@ -42,7 +42,7 @@
                             <label asp-for="Input.Email" class="form-label fw-bold">E-mail (Login)</label>
                             <input asp-for="Input.Email" type="email" class="form-control" placeholder="joao@empresa.com.br" />
                             <span asp-validation-for="Input.Email" class="text-danger small"></span>
-                            <div class="form-text">Um link ser√° enviado para este e-mail para que o colaborador ative a conta e defina sua pr√≥pria senha de acesso.</div>
+                            <div class="form-text">Um link ser· enviado para este e-mail para que o colaborador ative a conta e defina sua prÛpria senha de acesso.</div>
                         </div>
 
                         <div class="d-flex justify-content-end gap-2 pt-3 border-top">

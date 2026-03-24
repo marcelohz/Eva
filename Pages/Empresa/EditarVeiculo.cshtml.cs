@@ -7,7 +7,6 @@ using Eva.Models;
 using Eva.Models.ViewModels;
 using Eva.Services;
 using Eva.Workflow;
-using System.Security.Claims;
 using System.Text.Json;
 
 namespace Eva.Pages.Empresa
@@ -18,10 +17,21 @@ namespace Eva.Pages.Empresa
         private readonly EvaDbContext _context;
         private readonly PendenciaService _pendenciaService;
         private readonly ArquivoService _arquivoService;
+        private readonly ICurrentUserService _currentUserService;
+        private readonly IEmpresaEntityEditGuardService _editGuardService;
 
-        public EditarVeiculoModel(EvaDbContext context, PendenciaService pendenciaService, ArquivoService arquivoService)
+        public EditarVeiculoModel(
+            EvaDbContext context,
+            PendenciaService pendenciaService,
+            ArquivoService arquivoService,
+            ICurrentUserService currentUserService,
+            IEmpresaEntityEditGuardService editGuardService)
         {
-            _context = context; _pendenciaService = pendenciaService; _arquivoService = arquivoService;
+            _context = context;
+            _pendenciaService = pendenciaService;
+            _arquivoService = arquivoService;
+            _currentUserService = currentUserService;
+            _editGuardService = editGuardService;
         }
 
         [BindProperty] public VeiculoVM Input { get; set; } = new();
@@ -38,34 +48,36 @@ namespace Eva.Pages.Empresa
 
         public async Task<IActionResult> OnGetAsync(string id)
         {
-            var userCnpj = User.FindFirstValue("EmpresaCnpj");
-            if (string.IsNullOrEmpty(userCnpj)) return RedirectToPage("/Login");
+            if (string.IsNullOrWhiteSpace(_currentUserService.GetCurrentEmpresaCnpj())) return RedirectToPage("/Login");
 
             var normalizedId = id.ToUpper().Trim();
+            var guard = await _editGuardService.CheckVeiculoAsync(normalizedId);
+            if (!guard.HasCurrentEmpresa) return RedirectToPage("/Login");
+            if (!guard.ExistsAndBelongsToCurrentEmpresa) return NotFound();
 
             var ticket = await _context.VPendenciasAtuais.FirstOrDefaultAsync(p => p.EntidadeTipo == "VEICULO" && p.EntidadeId == normalizedId);
 
-            if (ticket != null && (ticket.Status == WorkflowValidator.AguardandoAnalise || ticket.Status == WorkflowValidator.EmAnalise || ticket.Status == WorkflowValidator.Rejeitado) && !string.IsNullOrEmpty(ticket.DadosPropostos))
+            if (ticket != null && (ticket.Status == WorkflowValidator.Incompleto || ticket.Status == WorkflowValidator.AguardandoAnalise || ticket.Status == WorkflowValidator.EmAnalise || ticket.Status == WorkflowValidator.Rejeitado) && !string.IsNullOrEmpty(ticket.DadosPropostos))
             {
                 Input = JsonSerializer.Deserialize<VeiculoVM>(ticket.DadosPropostos, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new VeiculoVM();
                 Input.Placa = normalizedId;
             }
             else
             {
-                var v = await _context.Veiculos.FirstOrDefaultAsync(v => v.Placa.ToUpper() == normalizedId && v.EmpresaCnpj == userCnpj);
-                if (v == null) return NotFound();
+                var veiculo = await _context.Veiculos.FirstOrDefaultAsync(v => v.Placa.ToUpper() == normalizedId && v.EmpresaCnpj == guard.CurrentEmpresaCnpj);
+                if (veiculo == null) return NotFound();
 
                 Input = new VeiculoVM
                 {
-                    Placa = v.Placa,
-                    Modelo = v.Modelo ?? "",
-                    ChassiNumero = v.ChassiNumero,
-                    Renavan = v.Renavan,
-                    PotenciaMotor = v.PotenciaMotor,
-                    VeiculoCombustivelNome = v.VeiculoCombustivelNome,
-                    NumeroLugares = v.NumeroLugares,
-                    AnoFabricacao = v.AnoFabricacao,
-                    ModeloAno = v.ModeloAno
+                    Placa = veiculo.Placa,
+                    Modelo = veiculo.Modelo ?? "",
+                    ChassiNumero = veiculo.ChassiNumero,
+                    Renavan = veiculo.Renavan,
+                    PotenciaMotor = veiculo.PotenciaMotor,
+                    VeiculoCombustivelNome = veiculo.VeiculoCombustivelNome,
+                    NumeroLugares = veiculo.NumeroLugares,
+                    AnoFabricacao = veiculo.AnoFabricacao,
+                    ModeloAno = veiculo.ModeloAno
                 };
             }
 
@@ -90,10 +102,12 @@ namespace Eva.Pages.Empresa
         {
             if (!ModelState.IsValid) { await LoadAuxiliaryData(Input.Placa); return Page(); }
 
-            var status = await _pendenciaService.GetStatusAsync("VEICULO", Input.Placa);
-            if (status == WorkflowValidator.EmAnalise)
+            var guard = await _editGuardService.CheckVeiculoAsync(Input.Placa);
+            if (!guard.HasCurrentEmpresa) return RedirectToPage("/Login");
+            if (!guard.ExistsAndBelongsToCurrentEmpresa) return NotFound();
+            if (guard.IsLocked)
             {
-                ModelState.AddModelError("", "Este registro está em análise e não pode ser alterado no momento.");
+                ModelState.AddModelError("", EmpresaEntityEditGuardService.LockedMessage);
                 await LoadAuxiliaryData(Input.Placa);
                 return Page();
             }
@@ -106,17 +120,22 @@ namespace Eva.Pages.Empresa
 
         public async Task<IActionResult> OnPostUploadAsync([FromRoute] string id)
         {
-            var status = await _pendenciaService.GetStatusAsync("VEICULO", id);
-            if (status == WorkflowValidator.EmAnalise) return RedirectToPage(new { id = id });
+            var guard = await _editGuardService.CheckVeiculoAsync(id);
+            if (!guard.HasCurrentEmpresa) return RedirectToPage("/Login");
+            if (!guard.ExistsAndBelongsToCurrentEmpresa) return NotFound();
+            if (guard.IsLocked) return RedirectToPage(new { id });
 
             if (UploadArquivo != null && !string.IsNullOrEmpty(TipoDocumentoUpload))
             {
-                var existingId = await _context.DocumentoVeiculos.Where(dv => dv.VeiculoPlaca == id && dv.Documento.DocumentoTipoNome == TipoDocumentoUpload).Select(dv => dv.Documento.Id).FirstOrDefaultAsync();
+                var existingId = await _context.DocumentoVeiculos
+                    .Where(dv => dv.VeiculoPlaca == id && dv.Documento.DocumentoTipoNome == TipoDocumentoUpload)
+                    .Select(dv => dv.Documento.Id)
+                    .FirstOrDefaultAsync();
+
                 if (existingId > 0) await _arquivoService.DeletarDocumentoAsync(existingId, "VEICULO", id);
                 await _arquivoService.SalvarDocumentoAsync(UploadArquivo, TipoDocumentoUpload, "VEICULO", id);
             }
 
-            // SAFETY LOCK 3: Model Refill
             Input.Placa = id;
             await LoadAuxiliaryData(id);
             return Partial("_VeiculoDocs", this);
@@ -124,12 +143,13 @@ namespace Eva.Pages.Empresa
 
         public async Task<IActionResult> OnPostDeleteDocAsync(int docId, [FromRoute] string id)
         {
-            var status = await _pendenciaService.GetStatusAsync("VEICULO", id);
-            if (status == WorkflowValidator.EmAnalise) return RedirectToPage(new { id = id });
+            var guard = await _editGuardService.CheckVeiculoAsync(id);
+            if (!guard.HasCurrentEmpresa) return RedirectToPage("/Login");
+            if (!guard.ExistsAndBelongsToCurrentEmpresa) return NotFound();
+            if (guard.IsLocked) return RedirectToPage(new { id });
 
             await _arquivoService.DeletarDocumentoAsync(docId, "VEICULO", id);
 
-            // SAFETY LOCK 3: Model Refill
             Input.Placa = id;
             await LoadAuxiliaryData(id);
             return Partial("_VeiculoDocs", this);

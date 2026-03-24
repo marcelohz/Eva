@@ -1,13 +1,13 @@
-Ôªø@page
+@page
 @model Eva.Pages.Empresa.NovaViagemModel
 @{
-    ViewData["Title"] = "Cadastrar Nova Viagem - Eva";
+    ViewData["Title"] = "Cadastrar Nova Viagem - Fretamento Eventual";
 }
 
 <div class="container mt-5 mb-5">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Painel</a></li>
             <li class="breadcrumb-item"><a href="/Empresa/MinhasViagens">Minhas Viagens</a></li>
             <li class="breadcrumb-item active" aria-current="page">Nova Viagem</li>
         </ol>
@@ -39,12 +39,12 @@
                             </div>
                             <div class="col-md-5">
                                 <label asp-for="Input.NomeContratante" class="form-label fw-bold">Nome do Contratante <span class="text-danger">*</span></label>
-                                <input asp-for="Input.NomeContratante" class="form-control shadow-sm" placeholder="Nome ou Raz√£o Social" />
+                                <input asp-for="Input.NomeContratante" class="form-control shadow-sm" placeholder="Nome ou Raz„o Social" />
                                 <span asp-validation-for="Input.NomeContratante" class="text-danger small"></span>
                             </div>
                             <div class="col-md-4">
                                 <label asp-for="Input.CpfCnpjContratante" class="form-label fw-bold">CPF/CNPJ Contratante <span class="text-danger">*</span></label>
-                                <input asp-for="Input.CpfCnpjContratante" class="form-control shadow-sm" placeholder="Apenas n√∫meros" />
+                                <input asp-for="Input.CpfCnpjContratante" class="form-control shadow-sm" placeholder="Apenas n˙meros" />
                                 <span asp-validation-for="Input.CpfCnpjContratante" class="text-danger small"></span>
                             </div>
                         </div>
@@ -55,12 +55,12 @@
             <div class="col-12">
                 <div class="card shadow-sm border-0">
                     <div class="card-header bg-dark text-white">
-                        <h5 class="mb-0"><i class="bi bi-map me-2"></i> 2. Log√≠stica e Itiner√°rio</h5>
+                        <h5 class="mb-0"><i class="bi bi-map me-2"></i> 2. LogÌstica e Itiner·rio</h5>
                     </div>
                     <div class="card-body bg-light">
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label asp-for="Input.IdaEm" class="form-label fw-bold">Data/Hora de Sa√≠da <span class="text-danger">*</span></label>
+                                <label asp-for="Input.IdaEm" class="form-label fw-bold">Data/Hora de SaÌda <span class="text-danger">*</span></label>
                                 <input asp-for="Input.IdaEm" type="datetime-local" class="form-control shadow-sm" />
                                 <span asp-validation-for="Input.IdaEm" class="text-danger small"></span>
                             </div>
@@ -70,28 +70,28 @@
                                 <span asp-validation-for="Input.VoltaEm" class="text-danger small"></span>
                             </div>
                             <div class="col-md-4">
-                                <label asp-for="Input.RegiaoCodigo" class="form-label fw-bold">Regi√£o de Opera√ß√£o <span class="text-danger">*</span></label>
+                                <label asp-for="Input.RegiaoCodigo" class="form-label fw-bold">Regi„o de OperaÁ„o <span class="text-danger">*</span></label>
                                 <select asp-for="Input.RegiaoCodigo" asp-items="Model.Regioes" class="form-select shadow-sm" id="Input_RegiaoCodigo">
-                                    <option value="">-- Selecione a Regi√£o --</option>
+                                    <option value="">-- Selecione a Regi„o --</option>
                                 </select>
                                 <span asp-validation-for="Input.RegiaoCodigo" class="text-danger small"></span>
                             </div>
                             <div class="col-md-4">
-                                <label asp-for="Input.MunicipioOrigem" class="form-label fw-bold">Munic√≠pio de Origem <span class="text-danger">*</span></label>
+                                <label asp-for="Input.MunicipioOrigem" class="form-label fw-bold">MunicÌpio de Origem <span class="text-danger">*</span></label>
                                 <select asp-for="Input.MunicipioOrigem" class="form-select shadow-sm" id="Input_MunicipioOrigem">
-                                    <option value="">-- Selecione o Munic√≠pio --</option>
+                                    <option value="">-- Selecione o MunicÌpio --</option>
                                 </select>
                                 <span asp-validation-for="Input.MunicipioOrigem" class="text-danger small"></span>
                             </div>
                             <div class="col-md-4">
-                                <label asp-for="Input.MunicipioDestino" class="form-label fw-bold">Munic√≠pio de Destino <span class="text-danger">*</span></label>
+                                <label asp-for="Input.MunicipioDestino" class="form-label fw-bold">MunicÌpio de Destino <span class="text-danger">*</span></label>
                                 <select asp-for="Input.MunicipioDestino" class="form-select shadow-sm" id="Input_MunicipioDestino">
-                                    <option value="">-- Selecione o Munic√≠pio --</option>
+                                    <option value="">-- Selecione o MunicÌpio --</option>
                                 </select>
                                 <span asp-validation-for="Input.MunicipioDestino" class="text-danger small"></span>
                             </div>
                             <div class="col-12">
-                                <label asp-for="Input.Descricao" class="form-label fw-bold">Descri√ß√£o / Observa√ß√µes</label>
+                                <label asp-for="Input.Descricao" class="form-label fw-bold">DescriÁ„o / ObservaÁıes</label>
                                 <textarea asp-for="Input.Descricao" class="form-control shadow-sm" rows="2" placeholder="Detalhes adicionais da viagem (Opcional)"></textarea>
                                 <span asp-validation-for="Input.Descricao" class="text-danger small"></span>
                             </div>
@@ -103,17 +103,20 @@
             <div class="col-12">
                 <div class="card shadow-sm border-0">
                     <div class="card-header bg-dark text-white">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0"><i class="bi bi-bus-front me-2"></i> 3. Ve√≠culo e Motoristas</h5>
-                            <a href="/Empresa/CentralConformidade" target="_blank" class="badge bg-warning text-dark text-decoration-none shadow-sm"><i class="bi bi-exclamation-triangle"></i> Central de Conformidade</a>
+                        <div class="mb-2">
+                            <span class="small text-white-50">
+                                Resolva veÌculos ou motoristas desabilitados na
+                                <a href="/Empresa/CentralConformidade" target="_blank" class="text-warning fw-semibold">Central de Conformidade</a>.
+                            </span>
                         </div>
+                        <h5 class="mb-0"><i class="bi bi-bus-front me-2"></i> 3. VeÌculo e Motoristas</h5>
                     </div>
                     <div class="card-body bg-light">
                         <div class="row g-3">
                             <div class="col-md-12">
-                                <label asp-for="Input.VeiculoPlaca" class="form-label fw-bold">Ve√≠culo <span class="text-danger">*</span></label>
+                                <label asp-for="Input.VeiculoPlaca" class="form-label fw-bold">VeÌculo <span class="text-danger">*</span></label>
                                 <select asp-for="Input.VeiculoPlaca" asp-items="Model.VeiculosValidos" class="form-select shadow-sm">
-                                    <option value="">-- Selecione o Ve√≠culo --</option>
+                                    <option value="">-- Selecione o VeÌculo --</option>
                                 </select>
                                 <span asp-validation-for="Input.VeiculoPlaca" class="text-danger small"></span>
                             </div>
@@ -138,21 +141,23 @@
 
             <div class="col-12">
                 <div class="card shadow-sm border-0 border-primary">
-                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <div class="card-header bg-primary text-white">
                         <h5 class="mb-0"><i class="bi bi-people me-2"></i> 4. Lista de Passageiros</h5>
-                        <button type="button" class="btn btn-sm btn-light text-primary fw-bold" id="btnAdicionarPassageiro">
-                            <i class="bi bi-plus-lg"></i> Adicionar Passageiro
-                        </button>
                     </div>
                     <div class="card-body p-0">
-                        <span asp-validation-for="Input.Passageiros" class="text-danger small d-block p-3"></span>
+                        <span asp-validation-for="Input.Passageiros" class="text-danger small d-block px-3 pt-2"></span>
+                        <div class="px-3 pt-1 pb-3">
+                            <button type="button" class="btn btn-sm btn-success fw-bold" id="btnAdicionarPassageiro">
+                                <i class="bi bi-person-plus-fill me-1"></i> Incluir Passageiro
+                            </button>
+                        </div>
                         <div class="table-responsive">
                             <table class="table table-hover align-middle mb-0" id="tabelaPassageiros">
                                 <thead class="table-light">
                                     <tr>
                                         <th class="ps-4" style="width: 50%;">Nome Completo</th>
                                         <th style="width: 40%;">Documento (CPF/RG)</th>
-                                        <th class="text-center" style="width: 10%;">A√ß√£o</th>
+                                        <th class="text-center" style="width: 10%;">AÁ„o</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -165,7 +170,7 @@
                                                     <input type="text" name="Input.Passageiros[@i].Nome" value="@Model.Input.Passageiros[i].Nome" class="form-control form-control-sm" required placeholder="Nome completo" />
                                                 </td>
                                                 <td>
-                                                    <input type="text" name="Input.Passageiros[@i].Documento" value="@Model.Input.Passageiros[i].Documento" class="form-control form-control-sm" required placeholder="N¬∫ do Documento" />
+                                                    <input type="text" name="Input.Passageiros[@i].Documento" value="@Model.Input.Passageiros[i].Documento" class="form-control form-control-sm" required placeholder="N∫ do Documento" />
                                                 </td>
                                                 <td class="text-center">
                                                     <button type="button" class="btn btn-sm btn-outline-danger btn-remove-passenger" title="Remover">
@@ -180,7 +185,7 @@
                         </div>
                         <div id="emptyPassengersMessage" class="p-4 text-center text-muted">
                             <i class="bi bi-person-x display-6 d-block mb-2"></i>
-                            Nenhum passageiro adicionado. Clique no bot√£o acima para come√ßar.
+                            Nenhum passageiro adicionado. Clique no bot„o acima para comeÁar.
                         </div>
                     </div>
                 </div>
@@ -194,7 +199,7 @@
                         <i class="bi bi-clock-history"></i> Salvar e Pagar Depois
                     </button>
                     <button type="submit" name="AcaoSubmit" value="Revisao" class="btn btn-success btn-lg shadow">
-                        Avan√ßar para Revis√£o <i class="bi bi-arrow-right-circle ms-1"></i>
+                        AvanÁar para Revis„o <i class="bi bi-arrow-right-circle ms-1"></i>
                     </button>
                 </div>
             </div>
@@ -221,8 +226,8 @@
                 selectDestino.innerHTML = '<option value="">-- Carregando... --</option>';
 
                 if (!regiaoCodigo) {
-                    selectOrigem.innerHTML = '<option value="">-- Selecione o Munic√≠pio --</option>';
-                    selectDestino.innerHTML = '<option value="">-- Selecione o Munic√≠pio --</option>';
+                    selectOrigem.innerHTML = '<option value="">-- Selecione o MunicÌpio --</option>';
+                    selectDestino.innerHTML = '<option value="">-- Selecione o MunicÌpio --</option>';
                     return;
                 }
 
@@ -230,8 +235,8 @@
                     const response = await fetch(`?handler=Municipios&regiaoCodigo=${regiaoCodigo}`);
                     const data = await response.json();
 
-                    selectOrigem.innerHTML = '<option value="">-- Selecione o Munic√≠pio --</option>';
-                    selectDestino.innerHTML = '<option value="">-- Selecione o Munic√≠pio --</option>';
+                    selectOrigem.innerHTML = '<option value="">-- Selecione o MunicÌpio --</option>';
+                    selectDestino.innerHTML = '<option value="">-- Selecione o MunicÌpio --</option>';
 
                     data.forEach(m => {
                         selectOrigem.add(new Option(m.text, m.value));
@@ -242,7 +247,7 @@
                     if (valDestino) selectDestino.value = valDestino;
 
                 } catch (error) {
-                    console.error('Erro ao carregar munic√≠pios:', error);
+                    console.error('Erro ao carregar municÌpios:', error);
                     selectOrigem.innerHTML = '<option value="">-- Erro ao carregar --</option>';
                     selectDestino.innerHTML = '<option value="">-- Erro ao carregar --</option>';
                 }
@@ -280,7 +285,7 @@
                         <input type="text" name="Input.Passageiros[${passengerIndex}].Nome" class="form-control form-control-sm" required placeholder="Nome completo" />
                     </td>
                     <td>
-                        <input type="text" name="Input.Passageiros[${passengerIndex}].Documento" class="form-control form-control-sm" required placeholder="N¬∫ do Documento" />
+                        <input type="text" name="Input.Passageiros[${passengerIndex}].Documento" class="form-control form-control-sm" required placeholder="N∫ do Documento" />
                     </td>
                     <td class="text-center">
                         <button type="button" class="btn btn-sm btn-outline-danger btn-remove-passenger" title="Remover">

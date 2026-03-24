@@ -1,6 +1,7 @@
-﻿using Eva.Data;
+using Eva.Data;
 using Eva.Models;
 using Eva.Models.ViewModels;
+using Eva.Workflow;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
@@ -91,7 +92,7 @@ namespace Eva.Services
             {
                 Id = id,
                 Nome = string.IsNullOrWhiteSpace(nome) ? "N/A" : nome,
-                StatusGeral = health.CurrentStatus ?? "INCOMPLETO",
+                StatusGeral = health.CurrentStatus ?? WorkflowStatus.Incompleto,
                 MotivoRejeicao = pendencia?.Motivo,
                 DocumentosFaltantes = health.MissingMandatoryDocs?.ToList() ?? new List<string>(),
                 DocumentosVencidos = health.ExpiredDocs?.ToList() ?? new List<string>(),

@@ -1,14 +1,14 @@
-Ôªø@page
+@page
 @model Eva.Pages.Empresa.MeusUsuariosModel
 @{
-    ViewData["Title"] = "Gerenciar Usu√°rios - Eva";
+    ViewData["Title"] = "Gerenciar Usu·rios - Fretamento Eventual";
 }
 
 <div class="container mt-5">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Dashboard</a></li>
-            <li class="breadcrumb-item active" aria-current="page">Gerenciar Usu√°rios</li>
+            <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Painel</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Gerenciar Usu·rios</li>
         </ol>
     </nav>
 
@@ -24,7 +24,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h3 mb-0">Quadro de Acessos</h1>
-            <p class="text-muted">Adicione ou remova permiss√µes de sistema para os colaboradores da sua empresa.</p>
+            <p class="text-muted">Adicione ou remova permissıes de sistema para os colaboradores da sua empresa.</p>
         </div>
         <a href="/Empresa/NovoUsuario" class="btn btn-primary shadow-sm">
             <i class="bi bi-person-plus"></i> Novo Colaborador
@@ -40,8 +40,8 @@
                             <th class="ps-4">Nome</th>
                             <th>E-mail</th>
                             <th>CPF</th>
-                            <th>N√≠vel de Acesso</th>
-                            <th class="text-end pe-4">A√ß√µes</th>
+                            <th>NÌvel de Acesso</th>
+                            <th class="text-end pe-4">AÁıes</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -50,7 +50,7 @@
                             <tr>
                                 <td colspan="5" class="text-center py-5 text-muted">
                                     <i class="bi bi-people display-4 d-block mb-2"></i>
-                                    Nenhum usu√°rio adicional encontrado.
+                                    Nenhum usu·rio adicional encontrado.
                                 </td>
                             </tr>
                         }
@@ -90,7 +90,7 @@
                                         {
                                             if (isInactive)
                                             {
-                                                <button disabled class="btn btn-sm btn-outline-secondary border-0" title="Acesso j√° revogado">
+                                                <button disabled class="btn btn-sm btn-outline-secondary border-0" title="Acesso j· revogado">
                                                     <i class="bi bi-dash-circle"></i>
                                                 </button>
                                             }

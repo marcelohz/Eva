@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Eva.Data;
 using Eva.Models;
+using Eva.Workflow;
 using System.Security.Claims;
 
 namespace Eva.Pages.Metroplan.Analista
@@ -26,7 +27,7 @@ namespace Eva.Pages.Metroplan.Analista
             AnalistaAtual = User.FindFirstValue(ClaimTypes.Email) ?? "";
 
             Fila = await _context.VPendenciasAtuais
-                .Where(p => p.Status == "AGUARDANDO_ANALISE" || p.Status == "EM_ANALISE")
+                .Where(p => p.Status == WorkflowStatus.AguardandoAnalise || p.Status == WorkflowStatus.EmAnalise)
                 // PRIMARY SORT: "Is this assigned to me?" (True comes first)
                 .OrderByDescending(p => p.Analista == AnalistaAtual)
                 // SECONDARY SORT: Oldest tickets first
@@ -46,15 +47,15 @@ namespace Eva.Pages.Metroplan.Analista
                 .OrderByDescending(f => f.CriadoEm)
                 .FirstOrDefaultAsync();
 
-            if (lastPendencia != null && lastPendencia.Status == "EM_ANALISE")
+            if (lastPendencia != null && lastPendencia.Status == WorkflowStatus.EmAnalise)
             {
                 var novaPendencia = new FluxoPendencia
                 {
                     EntidadeTipo = tipo,
                     EntidadeId = id,
-                    Status = "AGUARDANDO_ANALISE",
+                    Status = WorkflowStatus.AguardandoAnalise,
                     Analista = null,
-                    Motivo = "Desatribuição forçada por Administrador.",
+                    Motivo = "DesatribuiÃ§Ã£o forÃ§ada por Administrador.",
                     CriadoEm = DateTime.UtcNow
                 };
 

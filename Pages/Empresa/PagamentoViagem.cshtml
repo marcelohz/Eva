@@ -1,13 +1,13 @@
-Ôªø@page "{id:int}"
+@page "{id:int}"
 @model Eva.Pages.Empresa.PagamentoViagemModel
 @{
-    ViewData["Title"] = "Revis√£o e Pagamento - Eva";
+    ViewData["Title"] = "Revis„o e Pagamento - Fretamento Eventual";
 }
 
 <div class="container mt-5 mb-5">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Painel</a></li>
             <li class="breadcrumb-item"><a href="/Empresa/MinhasViagens">Minhas Viagens</a></li>
             <li class="breadcrumb-item active" aria-current="page">Pagamento</li>
         </ol>
@@ -15,8 +15,8 @@
 
     <div class="mb-4 d-flex justify-content-between align-items-end">
         <div>
-            <h1 class="h3 mb-0">Revis√£o e Pagamento</h1>
-            <p class="text-muted">Confirme os dados da viagem e efetue o pagamento para liberar a licen√ßa. (Passo 2 de 2)</p>
+            <h1 class="h3 mb-0">Revis„o e Pagamento</h1>
+            <p class="text-muted">Confirme os dados da viagem e efetue o pagamento para liberar a licenÁa. (Passo 2 de 2)</p>
         </div>
         <div>
             <span class="badge bg-warning text-dark fs-6 px-3 py-2 border border-warning">
@@ -29,14 +29,14 @@
         <div class="col-lg-8">
             <div class="card shadow-sm border-0 mb-4">
                 <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0"><i class="bi bi-file-text me-2"></i> Resumo da Solicita√ß√£o (#@Model.ViagemAtual.Id.ToString("D5"))</h5>
+                    <h5 class="mb-0"><i class="bi bi-file-text me-2"></i> Resumo da SolicitaÁ„o (#@Model.ViagemAtual.Id.ToString("D5"))</h5>
                 </div>
                 <div class="card-body bg-light">
 
                     <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">Contratante</h6>
                     <div class="row mb-4">
                         <div class="col-md-8">
-                            <span class="text-muted small d-block">Nome / Raz√£o Social</span>
+                            <span class="text-muted small d-block">Nome / Raz„o Social</span>
                             <span class="fw-bold fs-5">@Model.ViagemAtual.NomeContratante</span>
                         </div>
                         <div class="col-md-4">
@@ -45,13 +45,13 @@
                         </div>
                     </div>
 
-                    <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">Itiner√°rio e Log√≠stica</h6>
+                    <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">Itiner·rio e LogÌstica</h6>
                     <div class="row mb-4 g-3">
                         <div class="col-md-6">
                             <div class="p-3 bg-white border rounded shadow-sm h-100">
                                 <span class="badge bg-secondary mb-2">ORIGEM</span>
                                 <h5 class="fw-bold mb-1">@Model.ViagemAtual.MunicipioOrigem</h5>
-                                <p class="text-muted mb-0"><i class="bi bi-calendar-event me-1"></i> Sa√≠da: @Model.ViagemAtual.IdaEm.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
+                                <p class="text-muted mb-0"><i class="bi bi-calendar-event me-1"></i> SaÌda: @Model.ViagemAtual.IdaEm.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -66,7 +66,7 @@
                     <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">Recurso Alocado</h6>
                     <div class="row">
                         <div class="col-12">
-                            <span class="text-muted small d-block">Ve√≠culo Principal</span>
+                            <span class="text-muted small d-block">VeÌculo Principal</span>
                             <span class="fw-bold fs-5 text-uppercase">
                                 <i class="bi bi-bus-front me-2 text-secondary"></i>
                                 @Model.ViagemAtual.VeiculoPlaca
@@ -97,7 +97,7 @@
                     @if (Model.ViagemAtual.Valor > 150.00m)
                     {
                         <div class="d-flex justify-content-between mb-2">
-                            <span class="text-muted">Acr√©scimo Intermunicipal</span>
+                            <span class="text-muted">AcrÈscimo Intermunicipal</span>
                             <span class="fw-bold">R$ @((Model.ViagemAtual.Valor - 150.00m).ToString("N2"))</span>
                         </div>
                     }
@@ -110,7 +110,7 @@
                     </div>
 
                     <div class="alert alert-info py-2 small mb-4">
-                        <i class="bi bi-info-circle me-1"></i> O m√≥dulo de integra√ß√£o banc√°ria encontra-se em desenvolvimento. Ao clicar abaixo, o pagamento ser√° processado em ambiente de simula√ß√£o.
+                        <i class="bi bi-info-circle me-1"></i> O mÛdulo de integraÁ„o banc·ria encontra-se em desenvolvimento. Ao clicar abaixo, o pagamento ser· processado em ambiente de simulaÁ„o.
                     </div>
 
                     <form method="post">
@@ -119,7 +119,7 @@
                                 <i class="bi bi-check-circle-fill me-2"></i> Confirmar e Pagar
                             </button>
                             <a href="/Empresa/MinhasViagens" class="btn btn-outline-secondary">
-                                Pagar Depois (Voltar √† Lista)
+                                Pagar Depois (Voltar ‡ Lista)
                             </a>
                         </div>
                     </form>

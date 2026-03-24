@@ -1,7 +1,7 @@
-﻿@page
+@page
 @model Eva.Pages.Metroplan.Analista.RevisaoModel
 @{
-    ViewData["Title"] = "Revisão de Ticket - Eva";
+    ViewData["Title"] = "Revisão de Ticket - Fretamento Eventual";
     var fieldsToRender = new List<(string Label, object? LiveVal, object? DraftVal)>();
     bool hasDraftData = false;
     string headerLabel = "";
@@ -66,7 +66,7 @@
                 <i class="bi bi-person-fill-lock"></i> <strong>Bloqueado:</strong> Em análise por @Model.Ticket?.Analista
             </div>
         }
-        else if (Model.Ticket?.Status == "AGUARDANDO_ANALISE")
+        else if (Model.Ticket?.Status == WorkflowStatus.AguardandoAnalise)
         {
             <form method="post" asp-page-handler="Iniciar">
                 <input type="hidden" asp-for="Tipo" />
@@ -282,17 +282,17 @@
                                     <small class="text-muted fw-bold">@h.CriadoEm.ToString("dd/MM/yyyy HH:mm")</small>
                                     @switch (h.Status)
                                     {
-                                        case "AGUARDANDO_ANALISE":
-                                            <span class="badge bg-warning text-dark border">Atualizado</span>
+                                        case WorkflowStatus.AguardandoAnalise:
+                                            <span class="badge @WorkflowStatus.GetBadgeClass(h.Status) border">@WorkflowStatus.GetDisplayLabel(h.Status)</span>
                                             break;
-                                        case "EM_ANALISE":
-                                            <span class="badge bg-info text-dark">Em Análise</span>
+                                        case WorkflowStatus.EmAnalise:
+                                            <span class="badge @WorkflowStatus.GetBadgeClass(h.Status)">@WorkflowStatus.GetDisplayLabel(h.Status)</span>
                                             break;
-                                        case "APROVADO":
-                                            <span class="badge bg-success shadow-sm">Aprovado</span>
+                                        case WorkflowStatus.Aprovado:
+                                            <span class="badge @WorkflowStatus.GetBadgeClass(h.Status) shadow-sm">@WorkflowStatus.GetDisplayLabel(h.Status)</span>
                                             break;
-                                        case "REJEITADO":
-                                            <span class="badge bg-danger shadow-sm">Rejeitado</span>
+                                        case WorkflowStatus.Rejeitado:
+                                            <span class="badge @WorkflowStatus.GetBadgeClass(h.Status) shadow-sm">@WorkflowStatus.GetDisplayLabel(h.Status)</span>
                                             break;
                                     }
                                 </div>
@@ -305,7 +305,7 @@
                                 @if (!string.IsNullOrEmpty(h.Motivo))
                                 {
                                     <div class="mt-2 p-2 bg-danger-subtle text-danger border border-danger border-opacity-25 rounded small shadow-sm">
-                                        <strong>Motivo:</strong> @h.Motivo
+                                        <strong>Motivo:</strong> <span class="preserve-newlines">@h.Motivo</span>
                                     </div>
                                 }
                             </li>
@@ -343,3 +343,4 @@
         </div>
     </div>
 </div>
+
