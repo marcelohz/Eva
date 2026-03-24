@@ -46,7 +46,6 @@ namespace Eva.Services
                 .ToListAsync();
 
             // 2. Fetch Latest Decisive Statuses (Optimized with Postgres DISTINCT ON)
-            // Replaces the dangerous EF Core GroupBy/First LINQ pattern with blazing fast native Postgres SQL
             var decisiveStatusesList = await _context.FluxoPendencias
                 .FromSqlInterpolated($@"
                     SELECT DISTINCT ON (entidade_id) * FROM eventual.fluxo_pendencia

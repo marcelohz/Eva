@@ -50,8 +50,9 @@
                         {
                             @foreach (var v in Model.Veiculos)
                             {
-                                var health = Model.HealthReports.ContainsKey(v.Placa) ? Model.HealthReports[v.Placa] : new Eva.Models.EntityHealthReport();
-                                var isLocked = health.HasPendingChanges;
+                                var health = Model.HealthReports.ContainsKey(v.Placa) ?
+                                    Model.HealthReports[v.Placa] : new Eva.Models.EntityHealthReport();
+                                var isLocked = health.IsLocked;
 
                                 <tr>
                                     <td class="ps-4">
@@ -75,17 +76,21 @@
                                         {
                                             <span class="badge bg-success"><i class="bi bi-check-circle"></i> Legalizado</span>
                                         }
-                                        else if (health.HasPendingChanges)
+                                        else if (health.CurrentStatus == "AGUARDANDO_ANALISE")
                                         {
-                                            <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split"></i> Em Análise</span>
+                                            <span class="badge bg-warning text-dark"><i class="bi bi-clock-history"></i> Aguardando Análise</span>
                                         }
-                                        else if (health.AnalystStatus == "INCOMPLETO")
+                                        else if (health.CurrentStatus == "EM_ANALISE")
                                         {
-                                            <span class="badge bg-secondary"><i class="bi bi-file-earmark"></i> Incompleto</span>
+                                            <span class="badge bg-info text-dark"><i class="bi bi-hourglass-split"></i> Em Análise</span>
                                         }
                                         else if (health.AnalystStatus == "REJEITADO")
                                         {
                                             <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Rejeitado</span>
+                                        }
+                                        else if (health.AnalystStatus == "INCOMPLETO")
+                                        {
+                                            <span class="badge bg-secondary"><i class="bi bi-file-earmark"></i> Incompleto</span>
                                         }
                                         else
                                         {

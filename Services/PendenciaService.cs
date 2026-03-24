@@ -38,8 +38,6 @@ namespace Eva.Services
                 if (ticket != null)
                 {
                     ticket.DadosPropostos = dadosPropostos;
-                    // A data de criação (CriadoEm) NÃO deve ser alterada aqui para não quebrar 
-                    // a ordem temporal e a View v_pendencia_atual do banco de dados.
                     await _context.SaveChangesAsync();
                     return;
                 }
@@ -93,9 +91,10 @@ namespace Eva.Services
 
                 await _context.SaveChangesAsync();
 
-                if (novoStatus == WorkflowValidator.Aprovado)
+                // Links documents to the new workflow record (Awaiting, Approved, or Rejected)
+                if (novoStatus == WorkflowValidator.Aprovado || novoStatus == WorkflowValidator.Rejeitado || novoStatus == WorkflowValidator.AguardandoAnalise)
                 {
-                    await LinkApprovedDocumentsAsync(entidadeTipo, entidadeId, novaPendencia.Id);
+                    await VincularDocumentosAoFluxoAsync(entidadeTipo, entidadeId, novaPendencia.Id, novoStatus == WorkflowValidator.Aprovado);
                 }
 
                 await transaction.CommitAsync();
@@ -157,7 +156,6 @@ namespace Eva.Services
             }
             catch (Exception ex)
             {
-                // Silently trap the error so the workflow transition does not crash the UI
                 Console.WriteLine($"Erro ao tentar enfileirar notificação de e-mail: {ex.Message}");
             }
         }
@@ -215,7 +213,7 @@ namespace Eva.Services
             }
         }
 
-        private async Task LinkApprovedDocumentsAsync(string tipo, string id, int fluxoId)
+        private async Task VincularDocumentosAoFluxoAsync(string tipo, string id, int fluxoId, bool marcarComoAprovado)
         {
             IQueryable<Documento> query = _context.Documentos.Where(d => d.FluxoPendenciaId == null);
 
@@ -230,15 +228,18 @@ namespace Eva.Services
 
             var allUnlinkedDocs = await query.ToListAsync();
 
-            var docsToApprove = allUnlinkedDocs
+            var docsToProcess = allUnlinkedDocs
                 .GroupBy(d => d.DocumentoTipoNome)
                 .Select(g => g.OrderByDescending(d => d.DataUpload).ThenByDescending(d => d.Id).First())
                 .ToList();
 
-            foreach (var doc in docsToApprove)
+            foreach (var doc in docsToProcess)
             {
                 doc.FluxoPendenciaId = fluxoId;
-                doc.AprovadoEm = DateTime.UtcNow;
+                if (marcarComoAprovado)
+                {
+                    doc.AprovadoEm = DateTime.UtcNow;
+                }
             }
 
             await _context.SaveChangesAsync();
