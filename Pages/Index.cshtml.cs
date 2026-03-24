@@ -5,9 +5,9 @@ namespace Eva.Pages
 {
     public class IndexModel : PageModel
     {
-        public void OnGet()
+        public IActionResult OnGet()
         {
-
+            return RedirectToPage("/Login");
         }
     }
 }

@@ -53,7 +53,13 @@ namespace Eva.Pages
                     return RedirectToPage("/Metroplan/Analista/Index");
                 }
 
-                return RedirectToPage("/Empresa/MinhaEmpresa");
+                if (User.IsInRole("EMPRESA") || User.IsInRole("USUARIO_EMPRESA"))
+                {
+                    return RedirectToPage("/Empresa/MinhaEmpresa");
+                }
+
+                // Fallback for any unknown roles
+                return RedirectToPage("/Index");
             }
 
             ReturnUrl = returnUrl;
@@ -97,8 +103,12 @@ namespace Eva.Pages
                 await _context.SaveChangesAsync();
             }
 
-            bool isAdmin = user.PapelNome?.ToUpper() == "ADMIN";
-            bool isAnalista = user.PapelNome?.ToUpper() == "ANALISTA";
+            string? userRole = user.PapelNome?.ToUpper();
+            bool isAdmin = userRole == "ADMIN";
+            bool isAnalista = userRole == "ANALISTA";
+            bool isEmpresa = userRole == "EMPRESA";
+            bool isUsuarioEmpresa = userRole == "USUARIO_EMPRESA";
+
             bool isInternalStaff = isAdmin || isAnalista;
 
             if (!user.EmailValidado && !isInternalStaff)
@@ -125,9 +135,9 @@ namespace Eva.Pages
                 claims.Add(new Claim("EmpresaCnpj", user.EmpresaCnpj));
             }
 
-            if (!string.IsNullOrEmpty(user.PapelNome))
+            if (!string.IsNullOrEmpty(userRole))
             {
-                claims.Add(new Claim(ClaimTypes.Role, user.PapelNome.ToUpper()));
+                claims.Add(new Claim(ClaimTypes.Role, userRole));
             }
 
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -142,13 +152,33 @@ namespace Eva.Pages
                     ExpiresUtc = DateTimeOffset.UtcNow.AddHours(12)
                 });
 
-            _logger.LogInformation("Usuário {Email} autenticado com sucesso.", user.Email);
+            _logger.LogInformation("Usuário {Email} autenticado com sucesso. Papel: {Role}", user.Email, userRole);
 
+            // --- REDIRECT LOGIC ---
+
+            // 1. Process ReturnUrl safely
             if (!string.IsNullOrEmpty(ReturnUrl) && Url.IsLocalUrl(ReturnUrl))
             {
-                return LocalRedirect(ReturnUrl);
+                bool isReturnUrlEmpresa = ReturnUrl.Contains("/Empresa/", StringComparison.OrdinalIgnoreCase);
+                bool isReturnUrlMetroplan = ReturnUrl.Contains("/Metroplan/", StringComparison.OrdinalIgnoreCase);
+
+                // Prevent internal staff from being redirected to Empresa pages
+                if (isInternalStaff && isReturnUrlEmpresa)
+                {
+                    // Fallthrough to their specific dashboards below
+                }
+                // Prevent company users from being trapped in Metroplan return URLs
+                else if ((isEmpresa || isUsuarioEmpresa) && isReturnUrlMetroplan)
+                {
+                    // Fallthrough to their specific dashboards below
+                }
+                else
+                {
+                    return LocalRedirect(ReturnUrl);
+                }
             }
 
+            // 2. Default Dashboards explicitly mapped by role
             if (isAdmin)
             {
                 return RedirectToPage("/Metroplan/Admin/Index");
@@ -159,7 +189,13 @@ namespace Eva.Pages
                 return RedirectToPage("/Metroplan/Analista/Index");
             }
 
-            return RedirectToPage("/Empresa/MinhaEmpresa");
+            if (isEmpresa || isUsuarioEmpresa)
+            {
+                return RedirectToPage("/Empresa/MinhaEmpresa");
+            }
+
+            // 3. Fallback for any unknown or future roles to prevent unauthorized access errors
+            return RedirectToPage("/Index");
         }
     }
 }
