@@ -1,0 +1,68 @@
+﻿@model (Eva.Models.ViewModels.ConformidadeEntidadeVM Entidade, string EditUrl)
+
+<tr>
+    <td class="fw-bold text-dark">@Model.Entidade.Nome</td>
+    
+    <td>
+        @if (Model.Entidade.StatusGeral == "APROVADO")
+        {
+            <span class="badge bg-success rounded-pill">Aprovado</span>
+        }
+        else if (Model.Entidade.StatusGeral == "REJEITADO")
+        {
+            <span class="badge bg-danger rounded-pill">Rejeitado</span>
+        }
+        else if (Model.Entidade.StatusGeral == "EM_ANALISE" || Model.Entidade.StatusGeral == "AGUARDANDO_ANALISE")
+        {
+            <span class="badge bg-info text-dark rounded-pill">Em Análise</span>
+        }
+        else
+        {
+            <span class="badge bg-warning text-dark rounded-pill">Incompleto</span>
+        }
+    </td>
+
+    <td>
+        @if (Model.Entidade.StatusGeral == "APROVADO")
+        {
+            <span class="text-muted small"><i class="bi bi-check2"></i> Operação Regular</span>
+        }
+        else if (Model.Entidade.StatusGeral == "EM_ANALISE" || Model.Entidade.StatusGeral == "AGUARDANDO_ANALISE")
+        {
+            <span class="text-muted small"><i class="bi bi-hourglass-split"></i> Aguardando revisão da Metroplan</span>
+        }
+        else
+        {
+            <div class="d-flex flex-column gap-1">
+                @if (!string.IsNullOrEmpty(Model.Entidade.MotivoRejeicao))
+                {
+                    <div class="text-danger small">
+                        <strong>Motivo:</strong> @Model.Entidade.MotivoRejeicao
+                    </div>
+                }
+                
+                <div class="d-flex flex-wrap gap-1">
+                    @foreach (var doc in Model.Entidade.DocumentosFaltantes)
+                    {
+                        <span class="badge bg-warning text-dark border"><i class="bi bi-file-earmark-x"></i> Falta: @doc</span>
+                    }
+                    @foreach (var doc in Model.Entidade.DocumentosVencidos)
+                    {
+                        <span class="badge bg-danger border"><i class="bi bi-calendar-x"></i> Vencido: @doc</span>
+                    }
+                </div>
+            </div>
+        }
+    </td>
+
+    <td class="text-end">
+        @if (Model.Entidade.IsBlocked)
+        {
+            <a href="@Model.EditUrl" class="btn btn-sm btn-danger">Resolver</a>
+        }
+        else
+        {
+            <a href="@Model.EditUrl" class="btn btn-sm btn-outline-primary">Acessar</a>
+        }
+    </td>
+</tr>

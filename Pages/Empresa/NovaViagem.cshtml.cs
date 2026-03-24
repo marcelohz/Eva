@@ -33,9 +33,11 @@ namespace Eva.Pages.Empresa
         public string AcaoSubmit { get; set; } = string.Empty; // Mapeia o botão clicado
 
         public SelectList ViagemTipos { get; set; } = default!;
-        public SelectList VeiculosValidos { get; set; } = default!;
-        public SelectList MotoristasValidos { get; set; } = default!;
         public SelectList Regioes { get; set; } = default!;
+
+        // Alterado de SelectList para IEnumerable<SelectListItem> para permitir a propriedade Disabled
+        public IEnumerable<SelectListItem> VeiculosValidos { get; set; } = new List<SelectListItem>();
+        public IEnumerable<SelectListItem> MotoristasValidos { get; set; } = new List<SelectListItem>();
 
         public async Task<IActionResult> OnGetAsync()
         {
@@ -207,27 +209,43 @@ namespace Eva.Pages.Empresa
             var regioes = await _context.Regioes.OrderBy(r => r.Ordem).ThenBy(r => r.Nome).ToListAsync();
             Regioes = new SelectList(regioes, "Codigo", "Nome");
 
+            // Fetch and map Vehicles
             var veiculos = await _context.Veiculos.Where(v => v.EmpresaCnpj == cnpj).ToListAsync();
             var veiculoIds = veiculos.Select(v => v.Placa).ToList();
             var veiculosHealth = await _statusService.GetBulkHealthAsync("VEICULO", veiculoIds);
 
-            var veiculosLegais = veiculos
-                .Where(v => veiculosHealth.ContainsKey(v.Placa) && veiculosHealth[v.Placa].IsLegal)
-                .Select(v => new { v.Placa, Descricao = $"{v.Placa} - {v.Modelo} ({v.NumeroLugares} lugares)" })
-                .ToList();
+            VeiculosValidos = veiculos.Select(v =>
+            {
+                var isLegal = veiculosHealth.ContainsKey(v.Placa) && veiculosHealth[v.Placa].IsLegal;
+                return new SelectListItem
+                {
+                    Value = v.Placa,
+                    Text = isLegal ? $"{v.Placa} - {v.Modelo} ({v.NumeroLugares} lugares)" : $"{v.Placa} - {v.Modelo} (Bloqueado - Ver Pendências)",
+                    Disabled = !isLegal
+                };
+            })
+            .OrderBy(v => v.Disabled) // Valid ones on top
+            .ThenBy(v => v.Text)
+            .ToList();
 
-            VeiculosValidos = new SelectList(veiculosLegais, "Placa", "Descricao");
-
+            // Fetch and map Drivers
             var motoristas = await _context.Motoristas.Where(m => m.EmpresaCnpj == cnpj).ToListAsync();
             var motoristaIds = motoristas.Select(m => m.Id.ToString()).ToList();
             var motoristasHealth = await _statusService.GetBulkHealthAsync("MOTORISTA", motoristaIds);
 
-            var motoristasLegais = motoristas
-                .Where(m => motoristasHealth.ContainsKey(m.Id.ToString()) && motoristasHealth[m.Id.ToString()].IsLegal)
-                .Select(m => new { m.Id, m.Nome })
-                .ToList();
-
-            MotoristasValidos = new SelectList(motoristasLegais, "Id", "Nome");
+            MotoristasValidos = motoristas.Select(m =>
+            {
+                var isLegal = motoristasHealth.ContainsKey(m.Id.ToString()) && motoristasHealth[m.Id.ToString()].IsLegal;
+                return new SelectListItem
+                {
+                    Value = m.Id.ToString(),
+                    Text = isLegal ? m.Nome : $"{m.Nome} (Bloqueado - Ver Pendências)",
+                    Disabled = !isLegal
+                };
+            })
+            .OrderBy(m => m.Disabled) // Valid ones on top
+            .ThenBy(m => m.Text)
+            .ToList();
         }
     }
 }

@@ -13,6 +13,19 @@
         <a href="/Logout" class="btn btn-outline-danger">Sair do Sistema</a>
     </div>
 
+    @if (Model.ResumoConformidade?.TemPendenciasCriticas == true)
+    {
+        <div class="alert alert-danger shadow-sm mb-4 d-flex justify-content-between align-items-center" role="alert">
+            <div>
+                <h5 class="alert-heading mb-1"><i class="bi bi-exclamation-triangle-fill me-2"></i> Atenção: Ação Necessária</h5>
+                <p class="mb-0">Você possui <strong>@Model.ResumoConformidade.TotalPendenciasCriticas</strong> pendências críticas de documentação ou cadastro. Algumas operações podem estar bloqueadas.</p>
+            </div>
+            <div>
+                <a href="/Empresa/CentralConformidade" class="btn btn-danger">Resolver Pendências</a>
+            </div>
+        </div>
+    }
+
     <div class="row g-4">
         <div class="col-md-6 col-lg-3">
             <div class="card h-100 shadow-sm border-primary">

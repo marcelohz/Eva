@@ -61,6 +61,9 @@ try
     builder.Services.AddScoped<ArquivoService>();
     builder.Services.AddScoped<IEntityStatusService, EntityStatusService>();
 
+    // NEW: Dashboard Conformidade Service
+    builder.Services.AddScoped<IEmpresaConformidadeService, EmpresaConformidadeService>();
+
     // External Integrations (Email & Turnstile)
     builder.Services.AddHttpClient<ITurnstileService, TurnstileService>();
     builder.Services.AddTransient<IEmailService, EmailService>();

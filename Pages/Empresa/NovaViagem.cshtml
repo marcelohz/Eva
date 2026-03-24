@@ -105,7 +105,7 @@
                     <div class="card-header bg-dark text-white">
                         <div class="d-flex justify-content-between align-items-center">
                             <h5 class="mb-0"><i class="bi bi-bus-front me-2"></i> 3. Veículo e Motoristas</h5>
-                            <span class="badge bg-success"><i class="bi bi-check-circle"></i> Apenas recursos legalizados</span>
+                            <a href="/Empresa/CentralConformidade" target="_blank" class="badge bg-warning text-dark text-decoration-none shadow-sm"><i class="bi bi-exclamation-triangle"></i> Central de Conformidade</a>
                         </div>
                     </div>
                     <div class="card-body bg-light">
@@ -275,7 +275,6 @@
 
             function addPassengerRow() {
                 const tr = document.createElement('tr');
-
                 tr.innerHTML = `
                     <td class="ps-4">
                         <input type="text" name="Input.Passageiros[${passengerIndex}].Nome" class="form-control form-control-sm" required placeholder="Nome completo" />
@@ -289,7 +288,6 @@
                         </button>
                     </td>
                 `;
-
                 tableBody.appendChild(tr);
                 passengerIndex++;
                 toggleEmptyMessage();

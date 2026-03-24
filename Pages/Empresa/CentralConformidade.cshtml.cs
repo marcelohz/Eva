@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Eva.Data;
@@ -10,37 +10,26 @@ using Eva.Models.ViewModels;
 namespace Eva.Pages.Empresa
 {
     [Authorize(Policy = "AcessoEmpresa")]
-    public class MinhaEmpresaModel : PageModel
+    public class CentralConformidadeModel : PageModel
     {
         private readonly EvaDbContext _context;
         private readonly IEmpresaConformidadeService _conformidadeService;
 
-        public MinhaEmpresaModel(EvaDbContext context, IEmpresaConformidadeService conformidadeService)
+        public CentralConformidadeModel(EvaDbContext context, IEmpresaConformidadeService conformidadeService)
         {
             _context = context;
             _conformidadeService = conformidadeService;
         }
-
-        public int TotalVeiculos { get; set; }
-        public int TotalMotoristas { get; set; }
 
         public ConformidadeDashboardVM ResumoConformidade { get; set; } = new ConformidadeDashboardVM();
 
         public async Task OnGetAsync()
         {
             var userEmail = User.FindFirstValue(ClaimTypes.Email);
-            var user = await _context.Usuarios
-                .FirstOrDefaultAsync(u => u.Email == userEmail);
+            var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == userEmail);
 
             if (user != null && !string.IsNullOrEmpty(user.EmpresaCnpj))
             {
-                TotalVeiculos = await _context.Veiculos
-                    .CountAsync(v => v.EmpresaCnpj == user.EmpresaCnpj);
-
-                TotalMotoristas = await _context.Motoristas
-                    .CountAsync(m => m.EmpresaCnpj == user.EmpresaCnpj);
-
-                // Fetch the compliance summary for the dashboard alert
                 ResumoConformidade = await _conformidadeService.GetResumoConformidadeAsync(user.EmpresaCnpj);
             }
         }
