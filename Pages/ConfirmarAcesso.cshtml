@@ -1,48 +1,95 @@
 @page
+
 @model Eva.Pages.ConfirmarAcessoModel
+
 @{
+
     ViewData["Title"] = "Definir Senha - Fretamento Eventual";
+
 }
 
+
+
 <div class="container mt-5 mb-5">
+
     <div class="row justify-content-center">
+
         <div class="col-md-5">
+
             <div class="card shadow border-0">
+
                 <div class="card-header bg-primary text-white text-center py-3">
+
                     <h1 class="h4 mb-0">Ative sua Conta</h1>
+
                 </div>
+
                 <div class="card-body p-4">
+
                     <p class="text-muted text-center mb-4">
-                        Quase l·! Para finalizar seu acesso, escolha uma senha segura para sua conta.
+
+                        Quase l√°! Para finalizar seu acesso, escolha uma senha segura para sua conta.
+
                     </p>
 
+
+
                     <form method="post" novalidate>
+
                         <input type="hidden" asp-for="Token" />
+
+
 
                         <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
 
+
+
                         <div class="mb-3">
+
                             <label asp-for="Input.Senha" class="form-label fw-bold">Nova Senha</label>
-                            <input asp-for="Input.Senha" class="form-control" placeholder="MÌnimo 6 caracteres" />
+
+                            <input asp-for="Input.Senha" class="form-control" placeholder="M√≠nimo 6 caracteres" />
+
                             <span asp-validation-for="Input.Senha" class="text-danger small"></span>
+
                         </div>
+
+
 
                         <div class="mb-4">
+
                             <label asp-for="Input.ConfirmarSenha" class="form-label fw-bold">Confirme a Senha</label>
+
                             <input asp-for="Input.ConfirmarSenha" class="form-control" placeholder="Repita a senha" />
+
                             <span asp-validation-for="Input.ConfirmarSenha" class="text-danger small"></span>
+
                         </div>
+
+
 
                         <div class="d-grid">
+
                             <button type="submit" class="btn btn-success btn-lg">Ativar Minha Conta</button>
+
                         </div>
+
                     </form>
+
                 </div>
+
             </div>
+
         </div>
+
     </div>
+
 </div>
 
+
+
 @section Scripts {
+
     <partial name="_ValidationScriptsPartial" />
+
 }

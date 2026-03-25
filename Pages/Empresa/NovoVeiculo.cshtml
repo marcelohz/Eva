@@ -1,113 +1,225 @@
 @page
+
 @model Eva.Pages.Empresa.NovoVeiculoModel
+
 @{
-    ViewData["Title"] = "Novo VeÌculo - Fretamento Eventual";
+
+    ViewData["Title"] = "Novo Ve√≠culo - Fretamento Eventual";
+
 }
 
+
+
 <div class="container mt-5 mb-5">
+
     <nav aria-label="breadcrumb">
+
         <ol class="breadcrumb">
+
             <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Painel</a></li>
-            <li class="breadcrumb-item"><a href="/Empresa/MeusVeiculos">Meus VeÌculos</a></li>
+
+            <li class="breadcrumb-item"><a href="/Empresa/MeusVeiculos">Meus Ve√≠culos</a></li>
+
             <li class="breadcrumb-item active">Novo</li>
+
         </ol>
+
     </nav>
 
+
+
     <div class="row justify-content-center">
+
         <div class="col-lg-10">
+
             <div class="card shadow border-0">
+
                 <div class="card-header bg-dark text-white">
-                    <h1 class="h4 mb-0">Cadastrar Novo VeÌculo</h1>
+
+                    <h1 class="h4 mb-0">Cadastrar Novo Ve√≠culo</h1>
+
                 </div>
+
                 <div class="card-body">
+
                     <form method="post" enctype="multipart/form-data" novalidate>
+
                         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-                        <h5 class="text-secondary mb-3 border-bottom pb-2">Dados do VeÌculo</h5>
+
+
+                        <h5 class="text-secondary mb-3 border-bottom pb-2">Dados do Ve√≠culo</h5>
+
                         <div class="row">
+
                             <div class="col-md-4 mb-3">
+
                                 <label asp-for="Input.Placa" class="form-label fw-bold">Placa</label>
+
                                 <input asp-for="Input.Placa" class="form-control" placeholder="ABC1234" style="text-transform: uppercase" />
+
                                 <span asp-validation-for="Input.Placa" class="text-danger small"></span>
+
                             </div>
+
                             <div class="col-md-8 mb-3">
+
                                 <label asp-for="Input.Modelo" class="form-label fw-bold">Modelo / Carroceria</label>
+
                                 <input asp-for="Input.Modelo" class="form-control" />
+
                                 <span asp-validation-for="Input.Modelo" class="text-danger small"></span>
+
                             </div>
 
+
+
                             <div class="col-md-6 mb-3">
+
                                 <label asp-for="Input.ChassiNumero" class="form-label fw-bold">Chassi</label>
+
                                 <input asp-for="Input.ChassiNumero" class="form-control" />
+
                                 <span asp-validation-for="Input.ChassiNumero" class="text-danger small"></span>
+
                             </div>
+
                             <div class="col-md-6 mb-3">
+
                                 <label asp-for="Input.Renavan" class="form-label fw-bold">Renavam</label>
+
                                 <input asp-for="Input.Renavan" class="form-control" />
+
                                 <span asp-validation-for="Input.Renavan" class="text-danger small"></span>
+
                             </div>
 
+
+
                             <div class="col-md-3 mb-3">
+
                                 <label asp-for="Input.AnoFabricacao" class="form-label fw-bold">Ano Fab.</label>
+
                                 <input asp-for="Input.AnoFabricacao" type="number" class="form-control" />
+
                             </div>
+
                             <div class="col-md-3 mb-3">
+
                                 <label asp-for="Input.ModeloAno" class="form-label fw-bold">Ano Mod.</label>
+
                                 <input asp-for="Input.ModeloAno" type="number" class="form-control" />
+
                             </div>
+
                             <div class="col-md-6 mb-3">
-                                <label asp-for="Input.VeiculoCombustivelNome" class="form-label fw-bold">CombustÌvel</label>
+
+                                <label asp-for="Input.VeiculoCombustivelNome" class="form-label fw-bold">Combust√≠vel</label>
+
                                 <select asp-for="Input.VeiculoCombustivelNome" class="form-select">
+
                                     <option value="DIESEL">Diesel</option>
+
                                     <option value="GASOLINA">Gasolina</option>
+
                                     <option value="FLEX">Flex</option>
-                                    <option value="ALCOOL">¡lcool</option>
+
+                                    <option value="ALCOOL">√Ålcool</option>
+
                                     <option value="GNV">GNV</option>
+
                                 </select>
+
                             </div>
 
+
+
                             <div class="col-md-6 mb-3">
+
                                 <label asp-for="Input.NumeroLugares" class="form-label fw-bold">Capacidade (Lugares)</label>
+
                                 <input asp-for="Input.NumeroLugares" type="number" class="form-control" />
+
                             </div>
+
                             <div class="col-md-6 mb-3">
-                                <label asp-for="Input.PotenciaMotor" class="form-label fw-bold">PotÍncia (CV)</label>
+
+                                <label asp-for="Input.PotenciaMotor" class="form-label fw-bold">Pot√™ncia (CV)</label>
+
                                 <input asp-for="Input.PotenciaMotor" class="form-control" />
+
                             </div>
+
                         </div>
 
-                        <h5 class="text-secondary mb-3 mt-4 border-bottom pb-2">DocumentaÁ„o ObrigatÛria</h5>
+
+
+                        <h5 class="text-secondary mb-3 mt-4 border-bottom pb-2">Documenta√ß√£o Obrigat√≥ria</h5>
+
                         <div class="row">
+
                             <div class="col-md-6 mb-3">
+
                                 <label asp-for="UploadCrlv" class="form-label fw-bold">CRLV (Documento)</label>
+
                                 <input asp-for="UploadCrlv" class="form-control" type="file" accept=".pdf" />
-                                <div class="form-text">Anexe o PDF do documento do veÌculo.</div>
+
+                                <div class="form-text">Anexe o PDF do documento do ve√≠culo.</div>
+
                             </div>
+
                             <div class="col-md-6 mb-3">
-                                <label asp-for="UploadLaudo" class="form-label fw-bold">Laudo de InspeÁ„o</label>
+
+                                <label asp-for="UploadLaudo" class="form-label fw-bold">Laudo de Inspe√ß√£o</label>
+
                                 <input asp-for="UploadLaudo" class="form-control" type="file" accept=".pdf" />
+
                             </div>
+
                             <div class="col-md-6 mb-3">
-                                <label asp-for="UploadApolice" class="form-label fw-bold">ApÛlice de Seguro</label>
+
+                                <label asp-for="UploadApolice" class="form-label fw-bold">Ap√≥lice de Seguro</label>
+
                                 <input asp-for="UploadApolice" class="form-control" type="file" accept=".pdf" />
+
                             </div>
+
                             <div class="col-md-6 mb-3">
+
                                 <label asp-for="UploadComprovante" class="form-label fw-bold">Comprovante de Pagamento</label>
+
                                 <input asp-for="UploadComprovante" class="form-control" type="file" accept=".pdf" />
+
                             </div>
+
                         </div>
+
+
 
                         <div class="d-flex justify-content-end gap-2 border-top pt-3 mt-4">
+
                             <a href="/Empresa/MeusVeiculos" class="btn btn-outline-secondary">Cancelar</a>
-                            <button type="submit" class="btn btn-primary px-4">Salvar VeÌculo e Documentos</button>
+
+                            <button type="submit" class="btn btn-primary px-4">Salvar Ve√≠culo e Documentos</button>
+
                         </div>
+
                     </form>
+
                 </div>
+
             </div>
+
         </div>
+
     </div>
+
 </div>
 
+
+
 @section Scripts {
+
     <partial name="_ValidationScriptsPartial" />
+
 }

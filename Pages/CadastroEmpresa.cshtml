@@ -1,58 +1,115 @@
 @page
+
 @inject Microsoft.Extensions.Options.IOptions<Eva.Configuration.TurnstileSettings> TurnstileConfig
+
 @model Eva.Pages.CadastroEmpresaModel
+
 @{
+
     ViewData["Title"] = "Iniciar Cadastro - Fretamento Eventual";
+
 }
 
+
+
 <div class="container mt-5 mb-5">
+
     <div class="row justify-content-center">
+
         <div class="col-md-6">
+
             <div class="card shadow-sm border-0">
+
                 <div class="card-header bg-dark text-white text-center py-3">
+
                     <h1 class="h4 mb-0">Cadastro de Empresa</h1>
+
                 </div>
+
                 <div class="card-body p-4">
+
                     <p class="text-muted text-center mb-4">
+
                         Digite o CNPJ e o E-mail para iniciar seu cadastro.
-                        Enviaremos um link de confirmação para o seu e-mail.
+
+                        Enviaremos um link de confirmaÃ§Ã£o para o seu e-mail.
+
                     </p>
 
+
+
                     <form method="post" novalidate>
+
                         <div asp-validation-summary="ModelOnly" class="alert alert-danger shadow-sm py-2"></div>
 
+
+
                         <div class="mb-3">
+
                             <label asp-for="Input.Cnpj" class="form-label fw-bold">CNPJ</label>
+
                             <input asp-for="Input.Cnpj" class="form-control form-control-lg" placeholder="00.000.000/0001-00" />
+
                             <span asp-validation-for="Input.Cnpj" class="text-danger small"></span>
+
                         </div>
+
+
 
                         <div class="mb-4">
+
                             <label asp-for="Input.Email" class="form-label fw-bold">E-mail Corporativo</label>
+
                             <input asp-for="Input.Email" class="form-control form-control-lg" type="email" placeholder="exemplo@empresa.com.br" />
+
                             <span asp-validation-for="Input.Email" class="text-danger small"></span>
+
                         </div>
+
+
 
                         <div class="mb-4 d-flex justify-content-center">
+
                             @* <div class="cf-turnstile" data-sitekey="0x4AAAAAACoDXZxJk5MOTM0t"></div> *@
+
                             <div class="cf-turnstile" data-sitekey="@TurnstileConfig.Value.SiteKey"></div>                            
+
                         </div>
+
+
 
                         <div class="d-grid gap-2">
+
                             <button type="submit" class="btn btn-primary btn-lg shadow-sm">Iniciar Cadastro</button>
+
                             <hr class="my-3" />
+
                             <a asp-page="/Login" class="btn btn-link text-muted text-decoration-none text-center">
-                                <i class="bi bi-arrow-left"></i> Já tenho conta? Ir para Login
+
+                                <i class="bi bi-arrow-left"></i> JÃ¡ tenho conta? Ir para Login
+
                             </a>
+
                         </div>
+
                     </form>
+
                 </div>
+
             </div>
+
         </div>
+
     </div>
+
 </div>
 
+
+
 @section Scripts {
+
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+
     <partial name="_ValidationScriptsPartial" />
+
 }

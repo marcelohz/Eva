@@ -1,84 +1,167 @@
 @page
+
 @model Eva.Pages.Metroplan.Admin.AnalistasModel
+
 @{
+
     ViewData["Title"] = "Gerenciar Analistas - Fretamento Eventual";
+
 }
 
+
+
 <div class="container mt-5">
+
     <nav aria-label="breadcrumb" class="mb-4">
+
         <ol class="breadcrumb">
+
             <li class="breadcrumb-item"><a href="/Metroplan/Admin/Index" class="text-decoration-none">Painel Admin</a></li>
+
             <li class="breadcrumb-item active" aria-current="page">Analistas</li>
+
         </ol>
+
     </nav>
 
+
+
     <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+
         <div>
+
             <h1 class="h2"><i class="bi bi-people-fill text-primary me-2"></i>Gerenciar Analistas</h1>
+
             <p class="text-muted">Lista de analistas cadastrados no sistema.</p>
+
         </div>
+
         <a href="/Metroplan/Admin/NovoAnalista" class="btn btn-primary">
+
             <i class="bi bi-person-plus-fill"></i> Novo Analista
+
         </a>
+
     </div>
 
+
+
     <div class="card shadow-sm border-0">
+
         <div class="card-header bg-dark text-white">
+
             <h5 class="mb-0">Analistas Cadastrados</h5>
+
         </div>
+
         <div class="card-body p-0">
+
             <div class="table-responsive">
+
                 <table class="table table-hover align-middle mb-0">
+
                     <thead class="table-light">
+
                         <tr>
+
                             <th class="ps-4">Nome</th>
+
                             <th>E-mail</th>
+
                             <th>Status</th>
+
                             <th>Data de Cadastro</th>
-                            <th class="text-end pe-4">Ações</th>
+
+                            <th class="text-end pe-4">AÃ§Ãµes</th>
+
                         </tr>
+
                     </thead>
+
                     <tbody>
+
                         @if (!Model.Analistas.Any())
+
                         {
+
                             <tr>
+
                                 <td colspan="5" class="text-center py-5 text-muted">
+
                                     <i class="bi bi-people display-4 d-block mb-2"></i>
+
                                     Nenhum analista cadastrado no sistema ainda.
+
                                 </td>
+
                             </tr>
+
                         }
+
                         else
+
                         {
+
                             foreach (var analista in Model.Analistas)
+
                             {
+
                                 <tr>
+
                                     <td class="ps-4 fw-bold">
+
                                         <a href="/Metroplan/Admin/DetalhesAnalista/@analista.Id" class="text-decoration-none text-primary">@analista.Nome</a>
+
                                     </td>
+
                                     <td>@analista.Email</td>
+
                                     <td>
+
                                         @if (analista.EmailValidado)
+
                                         {
+
                                             <span class="badge bg-success">Ativo</span>
+
                                         }
+
                                         else
+
                                         {
+
                                             <span class="badge bg-warning text-dark">Pendente</span>
+
                                         }
+
                                     </td>
+
                                     <td>@analista.CriadoEm.ToString("dd/MM/yyyy HH:mm")</td>
+
                                     <td class="text-end pe-4">
+
                                         <a href="/Metroplan/Admin/DetalhesAnalista/@analista.Id" class="btn btn-sm btn-outline-primary">
+
                                             <i class="bi bi-gear-fill"></i> Gerenciar
+
                                         </a>
+
                                     </td>
+
                                 </tr>
+
                             }
+
                         }
+
                     </tbody>
+
                 </table>
+
             </div>
+
         </div>
+
     </div>
+
 </div>

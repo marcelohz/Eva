@@ -1,112 +1,223 @@
 @page "{id:int}"
+
 @model Eva.Pages.Metroplan.Admin.DetalhesAnalistaModel
+
 @{
+
     ViewData["Title"] = "Detalhes do Analista - Fretamento Eventual";
+
 }
 
+
+
 <div class="container mt-5 mb-5">
+
     <nav aria-label="breadcrumb" class="mb-4">
+
         <ol class="breadcrumb">
+
             <li class="breadcrumb-item"><a href="/Metroplan/Admin/Index" class="text-decoration-none">Painel Admin</a></li>
+
             <li class="breadcrumb-item"><a href="/Metroplan/Admin/Analistas" class="text-decoration-none">Analistas</a></li>
+
             <li class="breadcrumb-item active" aria-current="page">Detalhes</li>
+
         </ol>
+
     </nav>
 
+
+
     @if (TempData["SuccessMessage"] != null)
+
     {
+
         <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+
             <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+
         </div>
+
     }
 
+
+
     <div class="row g-4">
+
         <div class="col-lg-4">
+
             <div class="card shadow-sm border-0 sticky-top" style="top: 20px;">
+
                 <div class="card-header bg-dark text-white rounded-top">
+
                     <h5 class="mb-0"><i class="bi bi-person-badge-fill me-2"></i> Perfil do Analista</h5>
+
                 </div>
+
                 <div class="card-body bg-light">
+
                     <div class="mb-3">
+
                         <small class="text-muted fw-bold text-uppercase d-block mb-1" style="font-size: 0.75rem;">Nome Completo</small>
+
                         <div class="fs-6 text-dark fw-bold">@Model.Analista!.Nome</div>
+
                     </div>
+
                     <div class="mb-3">
+
                         <small class="text-muted fw-bold text-uppercase d-block mb-1" style="font-size: 0.75rem;">E-mail</small>
+
                         <div class="fs-6 text-dark">@Model.Analista.Email</div>
+
                     </div>
+
                     <div class="mb-3">
+
                         <small class="text-muted fw-bold text-uppercase d-block mb-1" style="font-size: 0.75rem;">Status do Cadastro</small>
+
                         @if (Model.Analista.EmailValidado)
+
                         {
+
                             <span class="badge bg-success">Ativo</span>
+
                         }
+
                         else
+
                         {
+
                             <span class="badge bg-warning text-dark">Pendente</span>
+
                         }
+
                     </div>
+
                     <div class="mb-0">
+
                         <small class="text-muted fw-bold text-uppercase d-block mb-1" style="font-size: 0.75rem;">Membro Desde</small>
+
                         <div class="fs-6 text-dark">@Model.Analista.CriadoEm.ToString("dd/MM/yyyy")</div>
+
                     </div>
+
                 </div>
+
             </div>
+
         </div>
 
+
+
         <div class="col-lg-8">
+
             <div class="card shadow-sm border-0">
+
                 <div class="card-header bg-primary text-white rounded-top d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="bi bi-lock-fill me-2"></i> Tickets Retidos (Em An·lise)</h5>
+
+                    <h5 class="mb-0"><i class="bi bi-lock-fill me-2"></i> Tickets Retidos (Em An√°lise)</h5>
+
                     <span class="badge bg-light text-primary rounded-pill">@Model.TicketsEmAnalise.Count</span>
+
                 </div>
+
                 <div class="card-body p-0">
+
                     <div class="table-responsive">
+
                         <table class="table table-hover align-middle mb-0">
+
                             <thead class="table-light">
+
                                 <tr>
+
                                     <th class="ps-4">Data Captura</th>
+
                                     <th>Tipo</th>
+
                                     <th>Identificador</th>
-                                    <th class="text-end pe-4">AÁ„o</th>
+
+                                    <th class="text-end pe-4">A√ß√£o</th>
+
                                 </tr>
+
                             </thead>
+
                             <tbody>
+
                                 @if (!Model.TicketsEmAnalise.Any())
+
                                 {
+
                                     <tr>
+
                                         <td colspan="4" class="text-center py-5 text-muted">
+
                                             <i class="bi bi-inbox display-4 d-block mb-2 text-secondary"></i>
-                                            Este analista n„o possui nenhum ticket retido no momento.
+
+                                            Este analista n√£o possui nenhum ticket retido no momento.
+
                                         </td>
+
                                     </tr>
+
                                 }
+
                                 else
+
                                 {
+
                                     foreach (var ticket in Model.TicketsEmAnalise)
+
                                     {
+
                                         <tr>
+
                                             <td class="ps-4">@ticket.CriadoEm.ToString("dd/MM/yyyy HH:mm")</td>
+
                                             <td><span class="badge bg-secondary text-uppercase">@ticket.EntidadeTipo</span></td>
+
                                             <td class="fw-bold">@ticket.EntidadeId</td>
+
                                             <td class="text-end pe-4">
+
                                                 <form method="post" asp-page-handler="Desatribuir" class="d-inline">
+
                                                     <input type="hidden" name="tipo" value="@ticket.EntidadeTipo" />
+
                                                     <input type="hidden" name="entidadeId" value="@ticket.EntidadeId" />
-                                                    <button type="submit" class="btn btn-sm btn-danger shadow-sm" title="Retornar para a fila geral" onclick="return confirm('Tem certeza que deseja forÁar a desatribuiÁ„o deste ticket? Ele retornar· para a fila geral.');">
-                                                        <i class="bi bi-unlock-fill"></i> ForÁar DesatribuiÁ„o
+
+                                                    <button type="submit" class="btn btn-sm btn-danger shadow-sm" title="Retornar para a fila geral" onclick="return confirm('Tem certeza que deseja for√ßar a desatribui√ß√£o deste ticket? Ele retornar√° para a fila geral.');">
+
+                                                        <i class="bi bi-unlock-fill"></i> For√ßar Desatribui√ß√£o
+
                                                     </button>
+
                                                 </form>
+
                                             </td>
+
                                         </tr>
+
                                     }
+
                                 }
+
                             </tbody>
+
                         </table>
+
                     </div>
+
                 </div>
+
             </div>
+
         </div>
+
     </div>
+
 </div>

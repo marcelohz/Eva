@@ -1,15 +1,15 @@
 @page
 @model Eva.Pages.Metroplan.Analista.IndexModel
 @{
-    ViewData["Title"] = "Fila de An�lise - Fretamento Eventual";
+    ViewData["Title"] = "Fila de Análise - Fretamento Eventual";
     bool isAdmin = User.IsInRole("ADMIN");
 }
 
 <div class="container mt-5">
     <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
         <div>
-            <h1 class="h2"><i class="bi bi-inboxes-fill text-primary me-2"></i>Fila de An�lise</h1>
-            <p class="text-muted">Tickets aguardando verifica��o de documentos e dados.</p>
+            <h1 class="h2"><i class="bi bi-inboxes-fill text-primary me-2"></i>Fila de Análise</h1>
+            <p class="text-muted">Tickets aguardando verificação de documentos e dados.</p>
         </div>
     </div>
 
@@ -19,12 +19,12 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th class="ps-4">Data da Solicita��o</th>
+                            <th class="ps-4">Data da Solicitação</th>
                             <th>Tipo</th>
                             <th>Identificador</th>
                             <th>Status</th>
-                            <th>Atribu�do A</th>
-                            <th class="text-end pe-4">A��o</th>
+                            <th>Atribuído A</th>
+                            <th class="text-end pe-4">Ação</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -33,7 +33,7 @@
                             <tr>
                                 <td colspan="6" class="text-center py-5 text-muted">
                                     <i class="bi bi-check2-circle display-4 d-block mb-2 text-success"></i>
-                                    A fila est� vazia! Excelente trabalho.
+                                    A fila está vazia! Excelente trabalho.
                                 </td>
                             </tr>
                         }
@@ -67,7 +67,7 @@
                                         }
                                         else if (isMyLock)
                                         {
-                                            <span class="text-primary small fw-bold">Voc�</span>
+                                            <span class="text-primary small fw-bold">Você</span>
                                         }
                                         else
                                         {
@@ -80,7 +80,7 @@
                                             <form method="post" asp-page-handler="Desatribuir" class="d-inline">
                                                 <input type="hidden" name="tipo" value="@item.EntidadeTipo" />
                                                 <input type="hidden" name="id" value="@item.EntidadeId" />
-                                                <button type="submit" class="btn btn-sm btn-danger me-2" title="For�ar desatribui��o" onclick="return confirm('Tem certeza que deseja desatribuir este ticket?');">
+                                                <button type="submit" class="btn btn-sm btn-danger me-2" title="Forçar desatribuição" onclick="return confirm('Tem certeza que deseja desatribuir este ticket?');">
                                                     <i class="bi bi-unlock-fill"></i> Desatribuir
                                                 </button>
                                             </form>

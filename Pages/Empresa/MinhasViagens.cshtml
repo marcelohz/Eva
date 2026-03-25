@@ -1,37 +1,68 @@
 @page
+
 @model Eva.Pages.Empresa.MinhasViagensModel
+
 @{
+
     ViewData["Title"] = "Minhas Viagens - Fretamento Eventual";
+
 }
+
+
 
 <div class="container mt-5 mb-5">
 
+
+
     @if (TempData["MensagemSucesso"] != null)
+
     {
+
         <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+
             <i class="bi bi-check-circle-fill me-2"></i> @TempData["MensagemSucesso"]
+
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+
         </div>
+
     }
+
+
 
     @if (TempData["MensagemAviso"] != null)
+
     {
+
         <div class="alert alert-warning alert-dismissible fade show shadow-sm" role="alert">
+
             <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["MensagemAviso"]
+
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+
         </div>
+
     }
 
+
+
     <nav aria-label="breadcrumb">
+
         <ol class="breadcrumb">
+
             <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Painel</a></li>
+
             <li class="breadcrumb-item active" aria-current="page">Minhas Viagens</li>
+
         </ol>
+
     </nav>
+
+
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1 class="h3 mb-0">Gestão de Viagens</h1>
+            <h1 class="h3 mb-0">GestÃ£o de Viagens</h1>
             <p class="text-muted">Consulte e gerencie as viagens eventuais cadastradas pela sua empresa.</p>
         </div>
         @if (Model.PodeCriarNovaViagem)
@@ -47,76 +78,142 @@
                     <i class="bi bi-lock me-1"></i> Nova Viagem Bloqueada
                 </button>
                 <div class="small text-muted mt-2">@Model.BloqueioNovaViagemMensagem</div>
-                <a href="/Empresa/CentralConformidade" class="small">Resolver pendências na Central de Conformidade</a>
+                <a href="/Empresa/CentralConformidade" class="small">Resolver pendÃªncias na Central de Conformidade</a>
             </div>
         }
     </div>
 
+
     <div class="card shadow-sm border-0">
+
         <div class="card-body p-0">
+
             <div class="table-responsive">
+
                 <table class="table table-hover align-middle mb-0">
+
                     <thead class="table-light">
+
                         <tr>
+
                             <th class="ps-4">Protocolo</th>
-                            <th>Situação</th>
+
+                            <th>SituaÃ§Ã£o</th>
+
                             <th>Contratante</th>
+
                             <th>Placa</th>
+
                             <th>Origem</th>
+
                             <th>Destino</th>
-                            <th>Data / Hora Saída</th>
+
+                            <th>Data / Hora SaÃ­da</th>
+
                             <th>Data / Hora Retorno</th>
-                            <th class="text-end pe-4">Ações</th>
+
+                            <th class="text-end pe-4">AÃ§Ãµes</th>
+
                         </tr>
+
                     </thead>
+
                     <tbody>
+
                         @if (Model.Viagens == null || !Model.Viagens.Any())
+
                         {
+
                             <tr>
+
                                 <td colspan="9" class="text-center py-5 text-muted">
+
                                     <i class="bi bi-geo-alt display-4 d-block mb-2 text-secondary opacity-50"></i>
+
                                     Nenhuma viagem encontrada.
+
                                 </td>
+
                             </tr>
+
                         }
+
                         else
+
                         {
+
                             @foreach (var v in Model.Viagens)
+
                             {
+
                                 <tr>
+
                                     <td class="ps-4 fw-bold text-secondary">
+
                                         #@v.Id.ToString("D5")
+
                                     </td>
+
                                     <td>
+
                                         @if (v.Pago)
+
                                         {
+
                                             <span class="badge bg-success"><i class="bi bi-check-circle"></i> Paga e Liberada</span>
+
                                         }
+
                                         else
+
                                         {
+
                                             <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split"></i> Aguardando Pagamento</span>
+
                                         }
+
                                     </td>
+
                                     <td>
+
                                         <span class="d-inline-block text-truncate" style="max-width: 150px;" title="@v.NomeContratante">
+
                                             @v.NomeContratante
+
                                         </span>
+
                                     </td>
+
                                     <td>
+
                                         <span class="badge bg-dark text-uppercase p-2" style="letter-spacing: 1px;">
+
                                             @v.VeiculoPlaca
+
                                         </span>
+
                                     </td>
+
                                     <td>@v.MunicipioOrigem</td>
+
                                     <td>@v.MunicipioDestino</td>
+
                                     <td>
+
                                         <i class="bi bi-calendar-event text-muted me-1"></i> @v.IdaEm.ToLocalTime().ToString("dd/MM/yyyy")<br />
+
                                         <small class="text-muted"><i class="bi bi-clock me-1"></i> @v.IdaEm.ToLocalTime().ToString("HH:mm")</small>
+
                                     </td>
+
                                     <td>
+
                                         <i class="bi bi-calendar-event text-muted me-1"></i> @v.VoltaEm.ToLocalTime().ToString("dd/MM/yyyy")<br />
+
                                         <small class="text-muted"><i class="bi bi-clock me-1"></i> @v.VoltaEm.ToLocalTime().ToString("HH:mm")</small>
+
                                     </td>
+
                                     <td class="text-end pe-4">
                                         <div class="btn-group">
                                             @if (!v.Pago)
@@ -136,9 +233,15 @@
                                 </tr>
                             }
                         }
+
                     </tbody>
+
                 </table>
+
             </div>
+
         </div>
+
     </div>
+
 </div>

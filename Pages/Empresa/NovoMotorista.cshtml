@@ -1,78 +1,155 @@
 @page
+
 @model Eva.Pages.Empresa.NovoMotoristaModel
+
 @{
+
     ViewData["Title"] = "Novo Motorista - Fretamento Eventual";
+
 }
 
+
+
 <div class="container mt-5 mb-5">
+
     <nav aria-label="breadcrumb">
+
         <ol class="breadcrumb">
+
             <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Painel</a></li>
+
             <li class="breadcrumb-item"><a href="/Empresa/MeusMotoristas">Meus Motoristas</a></li>
+
             <li class="breadcrumb-item active" aria-current="page">Novo Motorista</li>
+
         </ol>
+
     </nav>
 
+
+
     <div class="row justify-content-center">
+
         <div class="col-lg-8">
+
             <div class="card shadow border-0">
+
                 <div class="card-header bg-dark text-white">
+
                     <h5 class="mb-0"><i class="bi bi-person-plus me-2"></i>Cadastrar Novo Motorista</h5>
+
                 </div>
+
                 <div class="card-body bg-light">
+
                     <form method="post" enctype="multipart/form-data" novalidate>
+
                         <div asp-validation-summary="ModelOnly" class="alert alert-danger shadow-sm"></div>
 
+
+
                         <div class="row">
+
                             <div class="col-md-12 mb-3">
+
                                 <label asp-for="Input.Nome" class="form-label fw-bold">Nome Completo</label>
-                                <input asp-for="Input.Nome" class="form-control" placeholder="Ex: João da Silva" />
+
+                                <input asp-for="Input.Nome" class="form-control" placeholder="Ex: JoÃ£o da Silva" />
+
                                 <span asp-validation-for="Input.Nome" class="text-danger small"></span>
+
                             </div>
 
+
+
                             <div class="col-md-6 mb-3">
+
                                 <label asp-for="Input.Cpf" class="form-label fw-bold">CPF</label>
+
                                 <input asp-for="Input.Cpf" class="form-control" placeholder="000.000.000-00" />
+
                                 <span asp-validation-for="Input.Cpf" class="text-danger small"></span>
+
                             </div>
 
+
+
                             <div class="col-md-6 mb-3">
+
                                 <label asp-for="Input.Cnh" class="form-label fw-bold">CNH</label>
-                                <input asp-for="Input.Cnh" class="form-control" placeholder="Número do registro" />
+
+                                <input asp-for="Input.Cnh" class="form-control" placeholder="NÃºmero do registro" />
+
                                 <span asp-validation-for="Input.Cnh" class="text-danger small"></span>
+
                             </div>
+
+
 
                             <div class="col-md-12 mb-4">
+
                                 <label asp-for="Input.Email" class="form-label fw-bold">E-mail</label>
+
                                 <input asp-for="Input.Email" type="email" class="form-control" placeholder="motorista@exemplo.com" />
+
                                 <span asp-validation-for="Input.Email" class="text-danger small"></span>
+
                             </div>
+
                         </div>
+
+
 
                         <div class="card border border-primary-subtle shadow-sm mb-4">
+
                             <div class="card-header bg-primary-subtle text-primary fw-bold">
-                                <i class="bi bi-file-earmark-arrow-up me-2"></i>Documentação Inicial (Opcional)
+
+                                <i class="bi bi-file-earmark-arrow-up me-2"></i>DocumentaÃ§Ã£o Inicial (Opcional)
+
                             </div>
+
                             <div class="card-body">
+
                                 <div class="mb-3">
+
                                     <label asp-for="UploadCnh" class="form-label fw-bold">CNH (Arquivo PDF)</label>
+
                                     <input type="file" asp-for="UploadCnh" class="form-control" accept=".pdf" />
-                                    <div class="form-text">Você também poderá enviar ou alterar este documento posteriormente.</div>
+
+                                    <div class="form-text">VocÃª tambÃ©m poderÃ¡ enviar ou alterar este documento posteriormente.</div>
+
                                 </div>
+
                             </div>
+
                         </div>
+
+
 
                         <div class="d-flex justify-content-end gap-2 mt-2 border-top pt-3">
+
                             <a href="/Empresa/MeusMotoristas" class="btn btn-outline-secondary">Cancelar</a>
-                            <button type="submit" class="btn btn-success px-4"><i class="bi bi-check-lg me-2"></i>Salvar e Enviar para Análise</button>
+
+                            <button type="submit" class="btn btn-success px-4"><i class="bi bi-check-lg me-2"></i>Salvar e Enviar para AnÃ¡lise</button>
+
                         </div>
+
                     </form>
+
                 </div>
+
             </div>
+
         </div>
+
     </div>
+
 </div>
 
+
+
 @section Scripts {
+
     <partial name="_ValidationScriptsPartial" />
+
 }

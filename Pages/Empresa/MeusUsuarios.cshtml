@@ -1,116 +1,231 @@
 @page
+
 @model Eva.Pages.Empresa.MeusUsuariosModel
+
 @{
-    ViewData["Title"] = "Gerenciar Usu·rios - Fretamento Eventual";
+
+    ViewData["Title"] = "Gerenciar Usu√°rios - Fretamento Eventual";
+
 }
 
+
+
 <div class="container mt-5">
+
     <nav aria-label="breadcrumb">
+
         <ol class="breadcrumb">
+
             <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Painel</a></li>
-            <li class="breadcrumb-item active" aria-current="page">Gerenciar Usu·rios</li>
+
+            <li class="breadcrumb-item active" aria-current="page">Gerenciar Usu√°rios</li>
+
         </ol>
+
     </nav>
 
+
+
     @if (TempData["ErrorMessage"] != null)
+
     {
+
         <div class="alert alert-danger shadow-sm"><i class="bi bi-shield-slash-fill me-2"></i> @TempData["ErrorMessage"]</div>
+
     }
+
     @if (TempData["SuccessMessage"] != null)
+
     {
+
         <div class="alert alert-success shadow-sm"><i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]</div>
+
     }
+
+
 
     <div class="d-flex justify-content-between align-items-center mb-4">
+
         <div>
+
             <h1 class="h3 mb-0">Quadro de Acessos</h1>
-            <p class="text-muted">Adicione ou remova permissıes de sistema para os colaboradores da sua empresa.</p>
+
+            <p class="text-muted">Adicione ou remova permiss√µes de sistema para os colaboradores da sua empresa.</p>
+
         </div>
+
         <a href="/Empresa/NovoUsuario" class="btn btn-primary shadow-sm">
+
             <i class="bi bi-person-plus"></i> Novo Colaborador
+
         </a>
+
     </div>
+
+
 
     <div class="card shadow-sm border-0">
+
         <div class="card-body p-0">
+
             <div class="table-responsive">
+
                 <table class="table table-hover align-middle mb-0">
+
                     <thead class="table-light">
+
                         <tr>
+
                             <th class="ps-4">Nome</th>
+
                             <th>E-mail</th>
+
                             <th>CPF</th>
-                            <th>NÌvel de Acesso</th>
-                            <th class="text-end pe-4">AÁıes</th>
+
+                            <th>N√≠vel de Acesso</th>
+
+                            <th class="text-end pe-4">A√ß√µes</th>
+
                         </tr>
+
                     </thead>
+
                     <tbody>
+
                         @if (Model.Usuarios == null || !Model.Usuarios.Any())
+
                         {
+
                             <tr>
+
                                 <td colspan="5" class="text-center py-5 text-muted">
+
                                     <i class="bi bi-people display-4 d-block mb-2"></i>
-                                    Nenhum usu·rio adicional encontrado.
+
+                                    Nenhum usu√°rio adicional encontrado.
+
                                 </td>
+
                             </tr>
+
                         }
+
                         else
+
                         {
+
                             @foreach (var u in Model.Usuarios)
+
                             {
+
                                 bool isMaster = u.PapelNome == "EMPRESA";
+
                                 bool isInactive = !u.Ativo;
 
+
+
                                 <tr class="@(isInactive ? "opacity-50 bg-light" : "")">
+
                                     <td class="ps-4 fw-bold @(isInactive ? "text-muted" : "text-secondary")">
+
                                         @u.Nome
+
                                         @if (isMaster)
+
                                         {
+
                                             <span class="badge bg-primary ms-2" style="font-size: 0.65em">CONTA PRINCIPAL</span>
+
                                         }
+
                                         @if (isInactive)
+
                                         {
+
                                             <span class="badge bg-danger ms-2" style="font-size: 0.65em">ACESSO REVOGADO</span>
+
                                         }
+
                                     </td>
+
                                     <td class="@(isInactive ? "text-muted" : "")">@u.Email</td>
+
                                     <td class="@(isInactive ? "text-muted" : "")">@(u.Cpf ?? "-")</td>
+
                                     <td>
+
                                         @if (isMaster)
+
                                         {
+
                                             <span class="text-dark fw-semibold"><i class="bi bi-shield-lock text-primary me-1"></i> Administrador</span>
+
                                         }
+
                                         else
+
                                         {
+
                                             <span class="text-muted"><i class="bi bi-person-gear me-1"></i> Operador</span>
+
                                         }
+
                                     </td>
+
                                     <td class="text-end pe-4">
+
                                         @if (!isMaster)
+
                                         {
+
                                             if (isInactive)
+
                                             {
-                                                <button disabled class="btn btn-sm btn-outline-secondary border-0" title="Acesso j· revogado">
+
+                                                <button disabled class="btn btn-sm btn-outline-secondary border-0" title="Acesso j√° revogado">
+
                                                     <i class="bi bi-dash-circle"></i>
+
                                                 </button>
+
                                             }
+
                                             else
+
                                             {
+
                                                 <form method="post" asp-page-handler="Delete" class="d-inline" onsubmit="return confirm('Tem certeza que deseja revogar o acesso de @u.Nome?');">
+
                                                     <input type="hidden" name="id" value="@u.Id" />
+
                                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Revogar Acesso">
+
                                                         <i class="bi bi-trash"></i>
+
                                                     </button>
+
                                                 </form>
+
                                             }
+
                                         }
+
                                     </td>
+
                                 </tr>
+
                             }
+
                         }
+
                     </tbody>
+
                 </table>
+
             </div>
+
         </div>
+
     </div>
+
 </div>

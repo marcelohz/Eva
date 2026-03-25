@@ -1,82 +1,163 @@
 @page
+
 @model Eva.Pages.Empresa.MinhaEmpresaModel
+
 @{
+
     ViewData["Title"] = "Painel - Fretamento Eventual";
+
 }
 
+
+
 <div class="container mt-5">
+
     <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+
         <div>
+
             <h1 class="h2">Painel da Empresa</h1>
+
             <p class="text-muted">Bem-vindo, @User.Identity?.Name</p>
+
         </div>
+
         <a href="/Logout" class="btn btn-outline-danger">Sair do Sistema</a>
+
     </div>
+
+
 
     @if (Model.ResumoConformidade?.TemPendenciasCriticas == true)
+
     {
+
         <div class="alert alert-danger shadow-sm mb-4 d-flex justify-content-between align-items-center" role="alert">
+
             <div>
-                <h5 class="alert-heading mb-1"><i class="bi bi-exclamation-triangle-fill me-2"></i> Atenção: Ação Necessária</h5>
-                <p class="mb-0">Você possui <strong>@Model.ResumoConformidade.TotalPendenciasCriticas</strong> pendências críticas de documentação ou cadastro. Algumas operações podem estar bloqueadas.</p>
+
+                <h5 class="alert-heading mb-1"><i class="bi bi-exclamation-triangle-fill me-2"></i> AtenÃ§Ã£o: AÃ§Ã£o NecessÃ¡ria</h5>
+
+                <p class="mb-0">VocÃª possui <strong>@Model.ResumoConformidade.TotalPendenciasCriticas</strong> pendÃªncias crÃ­ticas de documentaÃ§Ã£o ou cadastro. Algumas operaÃ§Ãµes podem estar bloqueadas.</p>
+
             </div>
+
             <div>
-                <a href="/Empresa/CentralConformidade" class="btn btn-danger">Resolver Pendências</a>
+
+                <a href="/Empresa/CentralConformidade" class="btn btn-danger">Resolver PendÃªncias</a>
+
             </div>
+
         </div>
+
     }
 
+
+
     <div class="row g-4">
+
         <div class="col-md-6 col-lg-3">
+
             <div class="card h-100 shadow-sm border-primary">
+
                 <div class="card-body">
+
                     <div class="d-flex justify-content-between align-items-center">
+
                         <h5 class="card-title text-primary mb-0">Empresa</h5>
+
                         <i class="bi bi-building fs-4 text-primary"></i>
+
                     </div>
+
                     <p class="card-text mt-3 text-muted">Edite o cadastro da empresa.</p>
+
                     <a href="/Empresa/EditarEmpresa" class="btn btn-primary w-100">Editar Empresa</a>
+
                 </div>
+
             </div>
+
         </div>
 
+
+
         <div class="col-md-6 col-lg-3">
+
             <div class="card h-100 shadow-sm border-primary">
+
                 <div class="card-body">
+
                     <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="card-title text-primary mb-0">Veículos</h5>
+
+                        <h5 class="card-title text-primary mb-0">VeÃ­culos</h5>
+
                         <span class="badge bg-primary rounded-pill">@Model.TotalVeiculos</span>
+
                     </div>
+
                     <p class="card-text mt-3 text-muted">Gerencie a frota cadastrada no sistema.</p>
+
                     <a href="/Empresa/MeusVeiculos" class="btn btn-primary w-100">Acessar Frota</a>
+
                 </div>
+
             </div>
+
         </div>
 
+
+
         <div class="col-md-6 col-lg-3">
+
             <div class="card h-100 shadow-sm border-primary">
+
                 <div class="card-body">
+
                     <div class="d-flex justify-content-between align-items-center">
+
                         <h5 class="card-title text-primary mb-0">Motoristas</h5>
+
                         <span class="badge bg-primary rounded-pill">@Model.TotalMotoristas</span>
+
                     </div>
+
                     <p class="card-text mt-3 text-muted">Controle o cadastro e documentos de condutores.</p>
+
                     <a href="/Empresa/MeusMotoristas" class="btn btn-primary w-100">Acessar Cadastros</a>
+
                 </div>
+
             </div>
+
         </div>
 
+
+
         <div class="col-md-6 col-lg-3">
+
             <div class="card h-100 shadow-sm border-primary">
+
                 <div class="card-body">
+
                     <div class="d-flex justify-content-between align-items-center">
+
                         <h5 class="card-title text-primary mb-0">Viagens</h5>
+
                         <i class="bi bi-geo-alt fs-4 text-primary"></i>
+
                     </div>
-                    <p class="card-text mt-3 text-muted">Faça sua solicitação de viagem.</p>
+
+                    <p class="card-text mt-3 text-muted">FaÃ§a sua solicitaÃ§Ã£o de viagem.</p>
+
                     <a href="/Empresa/MinhasViagens" class="btn btn-primary w-100">Acessar Viagens</a>
+
                 </div>
+
             </div>
+
         </div>
+
     </div>
+
 </div>

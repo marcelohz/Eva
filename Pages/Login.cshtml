@@ -1,66 +1,131 @@
 @page
+
 @model Eva.Pages.LoginModel
+
 @{
+
     ViewData["Title"] = "Entrar - Fretamento Eventual";
+
 }
 
+
+
 <div class="container mt-5 mb-5">
+
     <div class="row justify-content-center">
+
         <div class="col-md-5">
+
             <div class="card shadow-sm border-0">
+
                 <div class="card-header bg-dark text-white text-center py-3">
+
                     <h1 class="h4 mb-0"><i class="bi bi-box-arrow-in-right me-2"></i>Acesso ao Sistema</h1>
+
                 </div>
+
                 <div class="card-body p-4">
 
+
+
                     @* Handle Success/Error Messages passed from other pages (like ConfirmarAcesso) *@
+
                     @if (TempData["SuccessMessage"] != null)
+
                     {
+
                         <div class="alert alert-success shadow-sm py-2">
+
                             <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+
                         </div>
+
                     }
+
                     @if (TempData["ErrorMessage"] != null)
+
                     {
+
                         <div class="alert alert-danger shadow-sm py-2">
+
                             <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+
                         </div>
+
                     }
+
+
 
                     <form method="post" novalidate>
+
                         <input type="hidden" asp-for="ReturnUrl" />
 
+
+
                         @* Main validation summary block *@
+
                         <div asp-validation-summary="ModelOnly" class="alert alert-danger shadow-sm py-2"></div>
 
+
+
                         <div class="mb-3">
+
                             <label asp-for="Input.Email" class="form-label fw-bold">E-mail Corporativo</label>
+
                             <input asp-for="Input.Email" class="form-control form-control-lg" placeholder="exemplo@empresa.com.br" />
+
                             <span asp-validation-for="Input.Email" class="text-danger small"></span>
+
                         </div>
+
+
 
                         <div class="mb-4">
+
                             <label asp-for="Input.Senha" class="form-label fw-bold">Senha</label>
+
                             <input asp-for="Input.Senha" class="form-control form-control-lg" type="password" placeholder="Sua senha" />
+
                             <span asp-validation-for="Input.Senha" class="text-danger small"></span>
+
                         </div>
+
+
 
                         <div class="d-grid gap-2">
+
                             <button type="submit" class="btn btn-primary btn-lg shadow-sm">Entrar</button>
+
                             <hr class="my-3" />
+
                             <div class="text-center">
+
                                 <a asp-page="/CadastroEmpresa" class="text-decoration-none text-muted">
-                                    Não possui cadastro? <strong>Registre sua Empresa</strong>
+
+                                    NÃ£o possui cadastro? <strong>Registre sua Empresa</strong>
+
                                 </a>
+
                             </div>
+
                         </div>
+
                     </form>
+
                 </div>
+
             </div>
+
         </div>
+
     </div>
+
 </div>
 
+
+
 @section Scripts {
+
     <partial name="_ValidationScriptsPartial" />
+
 }
