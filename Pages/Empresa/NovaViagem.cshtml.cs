@@ -56,7 +56,7 @@ namespace Eva.Pages.Empresa
             var empresaHealth = await _statusService.GetHealthAsync("EMPRESA", user.EmpresaCnpj);
             if (!empresaHealth.IsLegal)
             {
-                TempData["MensagemAviso"] = "Sua empresa precisa estar com o cadastro e a documentacao regularizados para cadastrar novas viagens.";
+                TempData["MensagemAviso"] = "Sua empresa precisa estar com o cadastro e a documentação regularizados para cadastrar novas viagens.";
                 return RedirectToPage("/Empresa/MinhasViagens");
             }
 

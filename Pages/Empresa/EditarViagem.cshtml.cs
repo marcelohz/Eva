@@ -95,7 +95,7 @@ namespace Eva.Pages.Empresa
 
             if (access.IsReadOnly)
             {
-                TempData["MensagemAviso"] = access.Message ?? "Esta viagem nao pode mais ser alterada.";
+                TempData["MensagemAviso"] = access.Message ?? "Esta viagem não pode mais ser alterada.";
                 return RedirectToPage("/Empresa/MinhasViagens");
             }
 
@@ -109,14 +109,14 @@ namespace Eva.Pages.Empresa
 
             if (!Input.Passageiros.Any())
             {
-                ModelState.AddModelError("Input.Passageiros", "A lista de passageiros nao pode estar vazia.");
+                ModelState.AddModelError("Input.Passageiros", "A lista de passageiros não pode estar vazia.");
             }
 
             if (access.CanEditFull)
             {
                 if (Input.VoltaEm <= Input.IdaEm)
                 {
-                    ModelState.AddModelError("Input.VoltaEm", "A Data/Hora de Retorno deve ser posterior a Saida.");
+                    ModelState.AddModelError("Input.VoltaEm", "A Data/Hora de Retorno deve ser posterior à Saída.");
                 }
 
                 if (Input.MotoristaId != 0 &&
@@ -124,24 +124,24 @@ namespace Eva.Pages.Empresa
                     Input.MotoristaAuxId.Value != 0 &&
                     Input.MotoristaId == Input.MotoristaAuxId.Value)
                 {
-                    ModelState.AddModelError("Input.MotoristaAuxId", "O motorista auxiliar nao pode ser o mesmo que o principal.");
+                    ModelState.AddModelError("Input.MotoristaAuxId", "O motorista auxiliar não pode ser o mesmo que o principal.");
                 }
 
                 if (!await _context.Veiculos.AnyAsync(v => v.Placa == Input.VeiculoPlaca && v.EmpresaCnpj == user.EmpresaCnpj))
                 {
-                    ModelState.AddModelError("Input.VeiculoPlaca", "O veiculo informado e invalido ou nao pertence a sua empresa.");
+                    ModelState.AddModelError("Input.VeiculoPlaca", "O veículo informado é inválido ou não pertence à sua empresa.");
                 }
 
                 if (!await _context.Motoristas.AnyAsync(m => m.Id == Input.MotoristaId && m.EmpresaCnpj == user.EmpresaCnpj))
                 {
-                    ModelState.AddModelError("Input.MotoristaId", "O motorista informado e invalido ou nao pertence a sua empresa.");
+                    ModelState.AddModelError("Input.MotoristaId", "O motorista informado é inválido ou não pertence à sua empresa.");
                 }
 
                 if (Input.MotoristaAuxId.HasValue &&
                     Input.MotoristaAuxId.Value > 0 &&
                     !await _context.Motoristas.AnyAsync(m => m.Id == Input.MotoristaAuxId.Value && m.EmpresaCnpj == user.EmpresaCnpj))
                 {
-                    ModelState.AddModelError("Input.MotoristaAuxId", "O motorista auxiliar informado e invalido ou nao pertence a sua empresa.");
+                    ModelState.AddModelError("Input.MotoristaAuxId", "O motorista auxiliar informado é inválido ou não pertence à sua empresa.");
                 }
             }
 

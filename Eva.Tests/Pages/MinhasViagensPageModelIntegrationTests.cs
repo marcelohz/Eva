@@ -56,7 +56,7 @@ public class MinhasViagensPageModelIntegrationTests : IAsyncLifetime
         Assert.IsType<PageResult>(result);
         Assert.False(page.PodeCriarNovaViagem);
         Assert.Equal(
-            "Sua empresa precisa estar com o cadastro e a documentacao regularizados para cadastrar novas viagens.",
+            "Sua empresa precisa estar com o cadastro e a documentação regularizados para cadastrar novas viagens.",
             page.BloqueioNovaViagemMensagem);
     }
 

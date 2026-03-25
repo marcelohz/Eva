@@ -55,7 +55,7 @@ namespace Eva.Services
                     ExistsAndBelongsToEmpresa = false,
                     EditMode = ViagemEditMode.ReadOnly,
                     ActionLabel = "Detalhes",
-                    Message = "Viagem nao encontrada ou acesso negado."
+                    Message = "Viagem não encontrada ou acesso negado."
                 };
             }
 
@@ -83,7 +83,7 @@ namespace Eva.Services
                     ExistsAndBelongsToEmpresa = true,
                     EditMode = ViagemEditMode.PassengersOnly,
                     ActionLabel = "Editar Passageiros",
-                    Message = $"Apenas a lista de passageiros pode ser alterada ate {PassengerEditWindowHours} horas antes da viagem."
+                    Message = $"Apenas a lista de passageiros pode ser alterada até {PassengerEditWindowHours} horas antes da viagem."
                 };
             }
 
@@ -92,7 +92,7 @@ namespace Eva.Services
                 ExistsAndBelongsToEmpresa = true,
                 EditMode = ViagemEditMode.ReadOnly,
                 ActionLabel = "Detalhes",
-                Message = $"Esta viagem esta bloqueada para edicoes porque faltam menos de {PassengerEditWindowHours} horas para a partida."
+                Message = $"Esta viagem está bloqueada para edições porque faltam menos de {PassengerEditWindowHours} horas para a partida."
             };
         }
     }

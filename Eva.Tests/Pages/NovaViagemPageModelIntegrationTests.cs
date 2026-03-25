@@ -117,7 +117,7 @@ public class NovaViagemPageModelIntegrationTests : IAsyncLifetime
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Empresa/MinhasViagens", redirect.PageName);
         Assert.Equal(
-            "Sua empresa precisa estar com o cadastro e a documentacao regularizados para cadastrar novas viagens.",
+            "Sua empresa precisa estar com o cadastro e a documentação regularizados para cadastrar novas viagens.",
             page.TempData["MensagemAviso"]);
     }
 

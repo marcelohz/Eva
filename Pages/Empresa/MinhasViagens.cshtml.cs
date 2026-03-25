@@ -54,7 +54,7 @@ namespace Eva.Pages.Empresa
             PodeCriarNovaViagem = empresaHealth.IsLegal;
             if (!PodeCriarNovaViagem)
             {
-                BloqueioNovaViagemMensagem = "Sua empresa precisa estar com o cadastro e a documentacao regularizados para cadastrar novas viagens.";
+            BloqueioNovaViagemMensagem = "Sua empresa precisa estar com o cadastro e a documentação regularizados para cadastrar novas viagens.";
             }
 
             return Page();

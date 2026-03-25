@@ -43,18 +43,18 @@ namespace Eva.Pages.Empresa
                 .FirstOrDefaultAsync(v => v.Id == Id && v.EmpresaCnpj == user.EmpresaCnpj);
 
             if (viagem == null)
-                return NotFound("Viagem nao encontrada ou acesso negado.");
+                return NotFound("Viagem não encontrada ou acesso negado.");
 
             if (viagem.Pago)
             {
-                TempData["MensagemAviso"] = "Esta viagem ja encontra-se paga e ativa.";
+                TempData["MensagemAviso"] = "Esta viagem já se encontra paga e ativa.";
                 return RedirectToPage("/Empresa/MinhasViagens");
             }
 
             var eligibility = await BuildEligibilityAsync(viagem);
             if (!eligibility.IsAllowed)
             {
-                TempData["MensagemAviso"] = "Esta viagem possui pendencias e nao pode ser paga enquanto a empresa, o veiculo ou os motoristas nao estiverem regulares.";
+                TempData["MensagemAviso"] = "Esta viagem possui pendências e não pode ser paga enquanto a empresa, o veículo ou os motoristas não estiverem regulares.";
                 return RedirectToPage("/Empresa/EditarViagem", new { id = viagem.Id });
             }
 
@@ -81,14 +81,14 @@ namespace Eva.Pages.Empresa
             var eligibility = await BuildEligibilityAsync(viagem);
             if (!eligibility.IsAllowed)
             {
-                TempData["MensagemAviso"] = "Esta viagem possui pendencias e nao pode ser paga enquanto a empresa, o veiculo ou os motoristas nao estiverem regulares.";
+                TempData["MensagemAviso"] = "Esta viagem possui pendências e não pode ser paga enquanto a empresa, o veículo ou os motoristas não estiverem regulares.";
                 return RedirectToPage("/Empresa/EditarViagem", new { id = viagem.Id });
             }
 
             viagem.Pago = true;
             await _context.SaveChangesAsync();
 
-            TempData["MensagemSucesso"] = $"Pagamento da viagem #{viagem.Id:D5} confirmado com sucesso! A viagem agora esta ativa.";
+            TempData["MensagemSucesso"] = $"Pagamento da viagem #{viagem.Id:D5} confirmado com sucesso! A viagem agora está ativa.";
 
             return RedirectToPage("/Empresa/MinhasViagens");
         }
