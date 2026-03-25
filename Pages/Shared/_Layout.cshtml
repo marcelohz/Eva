@@ -1,4 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
+@using System.Reflection
+@{
+    var appVersion = Assembly.GetEntryAssembly()?
+        .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+        .InformationalVersion ?? "0.1.0";
+}
 <html lang="pt-br">
 <head>
     <meta charset="utf-8" />
@@ -103,8 +109,10 @@
     </div>
 
     <footer class="border-top footer text-muted">
-        <div class="container text-center">
-            &copy; 2026 - Fretamento Eventual
+        <div class="container text-center app-footer-copy">
+            <div>&copy; 2026 - METROPLAN</div>
+            <div>Fretamento Eventual</div>
+            <div class="app-version">v@(appVersion)</div>
         </div>
     </footer>
 
