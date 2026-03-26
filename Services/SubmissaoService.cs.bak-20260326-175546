@@ -1,0 +1,574 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
+using Eva.Data;
+using Eva.Models;
+using Eva.Models.ViewModels;
+using Eva.Workflow;
+using Microsoft.EntityFrameworkCore;
+
+namespace Eva.Services
+{
+    public sealed class SubmissaoValidationResult
+    {
+        public bool Success => Errors.Count == 0;
+        public List<string> Errors { get; } = new();
+    }
+
+    public sealed class SubmissaoDraftBundle
+    {
+        public Submissao Submissao { get; init; } = null!;
+        public SubmissaoDados Dados { get; init; } = null!;
+        public List<SubmissaoDocumento> Documentos { get; init; } = new();
+    }
+
+    public sealed class SubmissaoStatusSnapshot
+    {
+        public int? SubmissaoId { get; init; }
+        public string? Status { get; init; }
+        public string? ObservacaoGeralRejeicao { get; init; }
+        public string? MotivoRejeicaoDados { get; init; }
+    }
+
+    public interface ISubmissaoService
+    {
+        Task<SubmissaoDraftBundle> GetOrCreateDraftAsync(string entidadeTipo, string entidadeId, string? criadoPor);
+        Task<SubmissaoDraftBundle?> GetDraftAsync(string entidadeTipo, string entidadeId);
+        Task<Submissao?> GetLatestAsync(string entidadeTipo, string entidadeId);
+        Task<SubmissaoStatusSnapshot> GetStatusSnapshotAsync(string entidadeTipo, string entidadeId);
+        Task<List<Documento>> GetDocumentosDoDraftAsync(string entidadeTipo, string entidadeId);
+        Task<List<DocumentoEdicaoItemVm>> GetDocumentosParaEdicaoAsync(string entidadeTipo, string entidadeId);
+        Task SalvarDadosPropostosAsync(string entidadeTipo, string entidadeId, string dadosPropostos, string? usuarioEmail);
+        Task VincularDocumentoAoDraftAsync(string entidadeTipo, string entidadeId, int documentoId, string tipoDocumento, string? usuarioEmail);
+        Task RemoverDocumentoDoDraftAsync(string entidadeTipo, string entidadeId, int documentoId, string? usuarioEmail);
+        Task<SubmissaoValidationResult> ValidarDraftAsync(string entidadeTipo, string entidadeId);
+        Task<SubmissaoValidationResult> EnviarParaAnaliseAsync(string entidadeTipo, string entidadeId, string? usuarioEmail);
+        Task<List<SubmissaoEvento>> GetHistoricoAsync(int submissaoId);
+    }
+
+    public class SubmissaoService : ISubmissaoService
+    {
+        private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
+
+        private readonly EvaDbContext _context;
+
+        public SubmissaoService(EvaDbContext context)
+        {
+            _context = context;
+        }
+
+        public async Task<SubmissaoDraftBundle> GetOrCreateDraftAsync(string entidadeTipo, string entidadeId, string? criadoPor)
+        {
+            entidadeTipo = NormalizeTipo(entidadeTipo);
+            entidadeId = NormalizeId(entidadeId);
+
+            var existente = await GetDraftAsync(entidadeTipo, entidadeId);
+            if (existente != null)
+            {
+                return existente;
+            }
+
+            var origem = await _context.Submissoes
+                .Where(s => s.EntidadeTipo == entidadeTipo && s.EntidadeId == entidadeId && s.Status == SubmissaoWorkflow.Rejeitada)
+                .OrderByDescending(s => s.Id)
+                .FirstOrDefaultAsync();
+
+            var submissao = new Submissao
+            {
+                EntidadeTipo = entidadeTipo,
+                EntidadeId = entidadeId,
+                Status = SubmissaoWorkflow.EmEdicao,
+                SubmissaoOrigemId = origem?.Id,
+                CriadoEm = DateTime.UtcNow,
+                AtualizadoEm = DateTime.UtcNow,
+                CriadoPor = usuarioNormalizado(criadoPor)
+            };
+
+            _context.Submissoes.Add(submissao);
+            await _context.SaveChangesAsync();
+
+            var dadosPrefill = origem != null
+                ? await BuscarJsonDadosDaSubmissaoAsync(origem.Id) ?? await GerarSnapshotLiveAsync(entidadeTipo, entidadeId)
+                : await GerarSnapshotLiveAsync(entidadeTipo, entidadeId);
+
+            var dadosIguaisAoLive = await DadosEquivalemAoLiveAsync(entidadeTipo, entidadeId, dadosPrefill);
+
+            var dados = new SubmissaoDados
+            {
+                SubmissaoId = submissao.Id,
+                DadosPropostos = dadosPrefill,
+                HashDados = ComputeSha256(dadosPrefill),
+                CarregadoDoLive = dadosIguaisAoLive,
+                StatusRevisao = dadosIguaisAoLive ? SubmissaoWorkflow.RevisaoAprovada : SubmissaoWorkflow.RevisaoPendente,
+                CriadoEm = DateTime.UtcNow,
+                AtualizadoEm = DateTime.UtcNow
+            };
+
+            _context.SubmissaoDados.Add(dados);
+            await _context.SaveChangesAsync();
+
+            await CarregarDocumentosAtuaisParaDraftAsync(submissao);
+            await RegistrarEventoAsync(submissao.Id, "DRAFT_CRIADO", "Draft criado.", criadoPor);
+
+            return await GetDraftAsync(entidadeTipo, entidadeId)
+                ?? throw new InvalidOperationException("Falha ao criar draft de submissÃƒÆ’Ã‚Â£o.");
+        }
+
+        public async Task<SubmissaoDraftBundle?> GetDraftAsync(string entidadeTipo, string entidadeId)
+        {
+            entidadeTipo = NormalizeTipo(entidadeTipo);
+            entidadeId = NormalizeId(entidadeId);
+
+            var submissao = await _context.Submissoes
+                .Where(s => s.EntidadeTipo == entidadeTipo && s.EntidadeId == entidadeId && s.Status == SubmissaoWorkflow.EmEdicao)
+                .OrderByDescending(s => s.Id)
+                .FirstOrDefaultAsync();
+
+            if (submissao == null)
+            {
+                return null;
+            }
+
+            var dados = await _context.SubmissaoDados.FirstAsync(sd => sd.SubmissaoId == submissao.Id);
+            var documentos = await _context.SubmissaoDocumentos
+                .Where(sd => sd.SubmissaoId == submissao.Id)
+                .OrderByDescending(sd => sd.CriadoEm)
+                .ThenByDescending(sd => sd.Id)
+                .ToListAsync();
+
+            return new SubmissaoDraftBundle
+            {
+                Submissao = submissao,
+                Dados = dados,
+                Documentos = documentos
+            };
+        }
+
+        public async Task<Submissao?> GetLatestAsync(string entidadeTipo, string entidadeId)
+        {
+            entidadeTipo = NormalizeTipo(entidadeTipo);
+            entidadeId = NormalizeId(entidadeId);
+
+            return await _context.Submissoes
+                .Where(s => s.EntidadeTipo == entidadeTipo && s.EntidadeId == entidadeId)
+                .OrderByDescending(s => s.Id)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<SubmissaoStatusSnapshot> GetStatusSnapshotAsync(string entidadeTipo, string entidadeId)
+        {
+            var latest = await GetLatestAsync(entidadeTipo, entidadeId);
+            if (latest == null)
+            {
+                return new SubmissaoStatusSnapshot();
+            }
+
+            string? observacaoGeral = null;
+            string? motivoDados = null;
+            if (latest.Status == SubmissaoWorkflow.Rejeitada)
+            {
+                observacaoGeral = latest.ObservacaoAnalista;
+
+                motivoDados = await _context.SubmissaoDados
+                    .Where(sd => sd.SubmissaoId == latest.Id && sd.StatusRevisao == SubmissaoWorkflow.RevisaoRejeitada)
+                    .Select(sd => sd.MotivoRejeicao)
+                    .FirstOrDefaultAsync();
+            }
+
+            return new SubmissaoStatusSnapshot
+            {
+                SubmissaoId = latest.Id,
+                Status = latest.Status,
+                ObservacaoGeralRejeicao = observacaoGeral,
+                MotivoRejeicaoDados = motivoDados
+            };
+        }
+
+        public async Task<List<Documento>> GetDocumentosDoDraftAsync(string entidadeTipo, string entidadeId)
+        {
+            var draft = await GetDraftAsync(entidadeTipo, entidadeId);
+            if (draft == null)
+            {
+                return new List<Documento>();
+            }
+
+            var docIds = draft.Documentos
+                .Where(sd => sd.AtivoNaSubmissao)
+                .Select(sd => sd.DocumentoId)
+                .Distinct()
+                .ToList();
+
+            return await _context.Documentos
+                .Where(d => docIds.Contains(d.Id))
+                .OrderByDescending(d => d.DataUpload)
+                .ThenByDescending(d => d.Id)
+                .ToListAsync();
+        }
+
+        public async Task<List<DocumentoEdicaoItemVm>> GetDocumentosParaEdicaoAsync(string entidadeTipo, string entidadeId)
+        {
+            entidadeTipo = NormalizeTipo(entidadeTipo);
+            entidadeId = NormalizeId(entidadeId);
+
+            var draft = await GetDraftAsync(entidadeTipo, entidadeId);
+            var submissao = draft?.Submissao ?? await GetLatestAsync(entidadeTipo, entidadeId);
+            if (submissao != null)
+            {
+                var docsSubmissao = await _context.SubmissaoDocumentos
+                    .Where(sd => sd.SubmissaoId == submissao.Id && sd.AtivoNaSubmissao)
+                    .OrderByDescending(sd => sd.CriadoEm)
+                    .ThenByDescending(sd => sd.Id)
+                    .ToListAsync();
+
+                if (docsSubmissao.Any())
+                {
+                    var docIds = docsSubmissao.Select(sd => sd.DocumentoId).Distinct().ToList();
+                    var documentos = await _context.Documentos
+                        .Where(d => docIds.Contains(d.Id))
+                        .ToDictionaryAsync(d => d.Id, d => d);
+
+                    return docsSubmissao
+                        .Where(sd => documentos.ContainsKey(sd.DocumentoId))
+                        .Select(sd => new DocumentoEdicaoItemVm
+                        {
+                            Documento = documentos[sd.DocumentoId],
+                            StatusRevisao = sd.StatusRevisao,
+                            MotivoRejeicao = sd.MotivoRejeicao,
+                            CarregadoDeDocumentoAtual = sd.CarregadoDeDocumentoAtual
+                        })
+                        .ToList();
+                }
+
+                return new List<DocumentoEdicaoItemVm>();
+            }
+
+            return new List<DocumentoEdicaoItemVm>();
+        }
+
+        public async Task SalvarDadosPropostosAsync(string entidadeTipo, string entidadeId, string dadosPropostos, string? usuarioEmail)
+        {
+            var draft = await GetOrCreateDraftAsync(entidadeTipo, entidadeId, usuarioEmail);
+
+            if (draft.Submissao.Status != SubmissaoWorkflow.EmEdicao)
+            {
+                throw new InvalidOperationException("A submissÃƒÆ’Ã‚Â£o nÃƒÆ’Ã‚Â£o estÃƒÆ’Ã‚Â¡ em ediÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o.");
+            }
+
+            var dadosIguaisAoLive = await DadosEquivalemAoLiveAsync(entidadeTipo, entidadeId, dadosPropostos);
+            draft.Dados.DadosPropostos = dadosPropostos;
+            draft.Dados.HashDados = ComputeSha256(dadosPropostos);
+            draft.Dados.CarregadoDoLive = dadosIguaisAoLive;
+            draft.Dados.StatusRevisao = dadosIguaisAoLive ? SubmissaoWorkflow.RevisaoAprovada : SubmissaoWorkflow.RevisaoPendente;
+            draft.Dados.MotivoRejeicao = null;
+            draft.Dados.RevisadoPor = null;
+            draft.Dados.RevisadoEm = null;
+            draft.Dados.AtualizadoEm = DateTime.UtcNow;
+
+            draft.Submissao.AtualizadoEm = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            await RegistrarEventoAsync(draft.Submissao.Id, "DADOS_ATUALIZADOS", "Dados do draft atualizados.", usuarioEmail);
+        }
+
+        public async Task VincularDocumentoAoDraftAsync(string entidadeTipo, string entidadeId, int documentoId, string tipoDocumento, string? usuarioEmail)
+        {
+            var draft = await GetOrCreateDraftAsync(entidadeTipo, entidadeId, usuarioEmail);
+            if (draft.Submissao.Status != SubmissaoWorkflow.EmEdicao)
+            {
+                throw new InvalidOperationException("A submissÃƒÆ’Ã‚Â£o nÃƒÆ’Ã‚Â£o estÃƒÆ’Ã‚Â¡ em ediÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o.");
+            }
+
+            var tipo = await _context.DocumentoTipos.FirstAsync(dt => dt.Nome == tipoDocumento);
+            var existenteMesmoDocumento = draft.Documentos
+                .FirstOrDefault(d => d.DocumentoId == documentoId && d.DocumentoTipoNome == tipoDocumento && d.AtivoNaSubmissao);
+
+            if (existenteMesmoDocumento != null)
+            {
+                existenteMesmoDocumento.ObrigatorioSnapshot = tipo.Obrigatorio;
+                existenteMesmoDocumento.StatusRevisao = SubmissaoWorkflow.RevisaoPendente;
+                existenteMesmoDocumento.CarregadoDeDocumentoAtual = false;
+                existenteMesmoDocumento.MotivoRejeicao = null;
+                existenteMesmoDocumento.RevisadoPor = null;
+                existenteMesmoDocumento.RevisadoEm = null;
+                draft.Submissao.AtualizadoEm = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+                await RegistrarEventoAsync(draft.Submissao.Id, "DOCUMENTO_ADICIONADO", $"Documento {tipoDocumento} adicionado ao draft.", usuarioEmail);
+                return;
+            }
+
+            if (!tipo.PermiteMultiplos)
+            {
+                var ativos = draft.Documentos
+                    .Where(d => d.DocumentoTipoNome == tipoDocumento && d.AtivoNaSubmissao)
+                    .ToList();
+
+                foreach (var atual in ativos)
+                {
+                    atual.AtivoNaSubmissao = false;
+                }
+            }
+
+            var novo = new SubmissaoDocumento
+            {
+                SubmissaoId = draft.Submissao.Id,
+                DocumentoId = documentoId,
+                DocumentoTipoNome = tipoDocumento,
+                ObrigatorioSnapshot = tipo.Obrigatorio,
+                StatusRevisao = SubmissaoWorkflow.RevisaoPendente,
+                AtivoNaSubmissao = true,
+                CarregadoDeDocumentoAtual = false,
+                CriadoEm = DateTime.UtcNow
+            };
+
+            _context.SubmissaoDocumentos.Add(novo);
+            draft.Submissao.AtualizadoEm = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            await RegistrarEventoAsync(draft.Submissao.Id, "DOCUMENTO_ADICIONADO", $"Documento {tipoDocumento} adicionado ao draft.", usuarioEmail);
+        }
+
+        public async Task RemoverDocumentoDoDraftAsync(string entidadeTipo, string entidadeId, int documentoId, string? usuarioEmail)
+        {
+            var draft = await GetOrCreateDraftAsync(entidadeTipo, entidadeId, usuarioEmail);
+
+            var vinculos = await _context.SubmissaoDocumentos
+                .Where(sd => sd.SubmissaoId == draft.Submissao.Id && sd.DocumentoId == documentoId && sd.AtivoNaSubmissao)
+                .ToListAsync();
+
+            foreach (var vinculo in vinculos)
+            {
+                vinculo.AtivoNaSubmissao = false;
+            }
+
+            draft.Submissao.AtualizadoEm = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            await RegistrarEventoAsync(draft.Submissao.Id, "DOCUMENTO_REMOVIDO", $"Documento {documentoId} removido do draft.", usuarioEmail);
+        }
+
+        public async Task<SubmissaoValidationResult> ValidarDraftAsync(string entidadeTipo, string entidadeId)
+        {
+            var result = new SubmissaoValidationResult();
+            var draft = await GetDraftAsync(entidadeTipo, entidadeId);
+
+            if (draft == null)
+            {
+                result.Errors.Add("Salve os dados do cadastro antes de enviar para anÃƒÆ’Ã‚Â¡lise.");
+                return result;
+            }
+
+            if (draft.Submissao.Status != SubmissaoWorkflow.EmEdicao)
+            {
+                result.Errors.Add("A submissÃƒÆ’Ã‚Â£o nÃƒÆ’Ã‚Â£o estÃƒÆ’Ã‚Â¡ em ediÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o.");
+                return result;
+            }
+
+            var regras = await _context.DocumentoTipoVinculos
+                .Include(v => v.DocumentoTipo)
+                .Where(v => v.EntidadeTipo == draft.Submissao.EntidadeTipo && v.DocumentoTipo != null && v.DocumentoTipo.Obrigatorio)
+                .ToListAsync();
+
+            var docsAtivos = draft.Documentos.Where(d => d.AtivoNaSubmissao).ToList();
+            var hoje = DateOnly.FromDateTime(DateTime.UtcNow);
+
+            foreach (var regra in regras)
+            {
+                var docsDoTipo = docsAtivos.Where(d => d.DocumentoTipoNome == regra.TipoNome).ToList();
+                if (!docsDoTipo.Any())
+                {
+                    result.Errors.Add($"Falta o documento obrigatÃƒÆ’Ã‚Â³rio: {regra.TipoNome}.");
+                    continue;
+                }
+
+                foreach (var docSubmissao in docsDoTipo)
+                {
+                    var documento = await _context.Documentos.FirstAsync(d => d.Id == docSubmissao.DocumentoId);
+                    var validade = docSubmissao.ValidadeInformada ?? documento.Validade;
+                    if (validade.HasValue && validade.Value < hoje)
+                    {
+                        result.Errors.Add($"O documento {regra.TipoNome} estÃƒÆ’Ã‚Â¡ vencido.");
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        public async Task<SubmissaoValidationResult> EnviarParaAnaliseAsync(string entidadeTipo, string entidadeId, string? usuarioEmail)
+        {
+            var validation = await ValidarDraftAsync(entidadeTipo, entidadeId);
+            if (!validation.Success)
+            {
+                return validation;
+            }
+
+            var draft = await GetDraftAsync(entidadeTipo, entidadeId)
+                ?? throw new InvalidOperationException("Salve os dados do cadastro antes de enviar para anÃƒÆ’Ã‚Â¡lise.");
+
+            draft.Submissao.Status = SubmissaoWorkflow.AguardandoAnalise;
+            draft.Submissao.SubmetidoEm = DateTime.UtcNow;
+            draft.Submissao.AtualizadoEm = DateTime.UtcNow;
+
+            if (!draft.Dados.CarregadoDoLive && draft.Dados.StatusRevisao == SubmissaoWorkflow.RevisaoAprovada)
+            {
+                draft.Dados.StatusRevisao = SubmissaoWorkflow.RevisaoPendente;
+            }
+
+            await _context.SaveChangesAsync();
+            await RegistrarEventoAsync(draft.Submissao.Id, "ENVIADA_PARA_ANALISE", "SubmissÃƒÆ’Ã‚Â£o enviada para anÃƒÆ’Ã‚Â¡lise.", usuarioEmail);
+            return validation;
+        }
+
+        public async Task<List<SubmissaoEvento>> GetHistoricoAsync(int submissaoId) =>
+            await _context.SubmissaoEventos
+                .Where(se => se.SubmissaoId == submissaoId)
+                .OrderByDescending(se => se.CriadoEm)
+                .ThenByDescending(se => se.Id)
+                .ToListAsync();
+
+        private async Task CarregarDocumentosAtuaisParaDraftAsync(Submissao submissao)
+        {
+            var atuais = await _context.EntidadeDocumentosAtuais
+                .Where(eda => eda.EntidadeTipo == submissao.EntidadeTipo && eda.EntidadeId == submissao.EntidadeId)
+                .ToListAsync();
+
+            if (!atuais.Any())
+            {
+                return;
+            }
+
+            foreach (var atual in atuais)
+            {
+                var tipo = await _context.DocumentoTipos.FirstAsync(dt => dt.Nome == atual.DocumentoTipoNome);
+                _context.SubmissaoDocumentos.Add(new SubmissaoDocumento
+                {
+                    SubmissaoId = submissao.Id,
+                    DocumentoId = atual.DocumentoId,
+                    DocumentoTipoNome = atual.DocumentoTipoNome,
+                    ObrigatorioSnapshot = tipo.Obrigatorio,
+                    StatusRevisao = SubmissaoWorkflow.RevisaoAprovada,
+                    AtivoNaSubmissao = true,
+                    CarregadoDeDocumentoAtual = true,
+                    CriadoEm = DateTime.UtcNow
+                });
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
+        private async Task RegistrarEventoAsync(int submissaoId, string tipoEvento, string? descricao, string? usuarioEmail)
+        {
+            var emailNormalizado = usuarioNormalizado(usuarioEmail);
+            if (!string.IsNullOrWhiteSpace(emailNormalizado))
+            {
+                var exists = await _context.Usuarios.IgnoreQueryFilters().AnyAsync(u => u.Email == emailNormalizado);
+                if (!exists)
+                {
+                    emailNormalizado = null;
+                }
+            }
+
+            _context.SubmissaoEventos.Add(new SubmissaoEvento
+            {
+                SubmissaoId = submissaoId,
+                TipoEvento = tipoEvento,
+                Descricao = descricao,
+                UsuarioEmail = emailNormalizado,
+                CriadoEm = DateTime.UtcNow
+            });
+
+            await _context.SaveChangesAsync();
+        }
+
+        private async Task<string?> BuscarJsonDadosDaSubmissaoAsync(int submissaoId)
+        {
+            return await _context.SubmissaoDados
+                .Where(sd => sd.SubmissaoId == submissaoId)
+                .Select(sd => sd.DadosPropostos)
+                .FirstOrDefaultAsync();
+        }
+
+        private async Task<bool> DadosEquivalemAoLiveAsync(string entidadeTipo, string entidadeId, string dadosPropostos)
+        {
+            var liveJson = await GerarSnapshotLiveAsync(entidadeTipo, entidadeId);
+            return string.Equals(ComputeSha256(liveJson), ComputeSha256(dadosPropostos), StringComparison.Ordinal);
+        }
+
+        private async Task<string> GerarSnapshotLiveAsync(string entidadeTipo, string entidadeId)
+        {
+            entidadeTipo = NormalizeTipo(entidadeTipo);
+            entidadeId = NormalizeId(entidadeId);
+
+            if (entidadeTipo == "EMPRESA")
+            {
+                var empresa = await _context.Empresas.IgnoreQueryFilters().FirstOrDefaultAsync(e => e.Cnpj == entidadeId)
+                    ?? throw new InvalidOperationException("Empresa nÃƒÆ’Ã‚Â£o encontrada para gerar snapshot live.");
+
+                return JsonSerializer.Serialize(new EmpresaVM
+                {
+                    Cnpj = empresa.Cnpj,
+                    Nome = empresa.Nome,
+                    NomeFantasia = empresa.NomeFantasia,
+                    Endereco = empresa.Endereco,
+                    EnderecoNumero = empresa.EnderecoNumero,
+                    EnderecoComplemento = empresa.EnderecoComplemento,
+                    Bairro = empresa.Bairro,
+                    Cidade = empresa.Cidade,
+                    Estado = empresa.Estado,
+                    Cep = empresa.Cep,
+                    Email = empresa.Email,
+                    Telefone = empresa.Telefone
+                });
+            }
+
+            if (entidadeTipo == "VEICULO")
+            {
+                var veiculo = await _context.Veiculos.IgnoreQueryFilters().FirstOrDefaultAsync(v => v.Placa == entidadeId)
+                    ?? throw new InvalidOperationException("VeÃƒÆ’Ã‚Â­culo nÃƒÆ’Ã‚Â£o encontrado para gerar snapshot live.");
+
+                return JsonSerializer.Serialize(new VeiculoVM
+                {
+                    Placa = veiculo.Placa,
+                    Modelo = veiculo.Modelo ?? string.Empty,
+                    ChassiNumero = veiculo.ChassiNumero,
+                    Renavan = veiculo.Renavan,
+                    PotenciaMotor = veiculo.PotenciaMotor,
+                    VeiculoCombustivelNome = veiculo.VeiculoCombustivelNome,
+                    NumeroLugares = veiculo.NumeroLugares,
+                    AnoFabricacao = veiculo.AnoFabricacao,
+                    ModeloAno = veiculo.ModeloAno
+                });
+            }
+
+            if (entidadeTipo == "MOTORISTA" && int.TryParse(entidadeId, out var motoristaId))
+            {
+                var motorista = await _context.Motoristas.IgnoreQueryFilters().FirstOrDefaultAsync(m => m.Id == motoristaId)
+                    ?? throw new InvalidOperationException("Motorista nÃƒÆ’Ã‚Â£o encontrado para gerar snapshot live.");
+
+                return JsonSerializer.Serialize(new MotoristaVM
+                {
+                    Id = motorista.Id,
+                    Nome = motorista.Nome,
+                    Cpf = motorista.Cpf,
+                    Cnh = motorista.Cnh,
+                    Email = motorista.Email
+                });
+            }
+
+            throw new InvalidOperationException($"Tipo de entidade nÃƒÆ’Ã‚Â£o suportado: {entidadeTipo}.");
+        }
+
+        private static string ComputeSha256(string value)
+        {
+            var bytes = Encoding.UTF8.GetBytes(value ?? string.Empty);
+            var hash = SHA256.HashData(bytes);
+            return Convert.ToHexString(hash).ToLowerInvariant();
+        }
+
+        private static string NormalizeTipo(string entidadeTipo) => entidadeTipo.Trim().ToUpperInvariant();
+        private static string NormalizeId(string entidadeId) => entidadeId.Trim();
+        private static string? usuarioNormalizado(string? email) => string.IsNullOrWhiteSpace(email) ? null : email.Trim().ToLowerInvariant();
+    }
+}

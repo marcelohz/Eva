@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -39,9 +39,6 @@ namespace Eva.Models
 
         [Column("validade")]
         public DateOnly? Validade { get; set; }
-
-        [Column("fluxo_pendencia_id")]
-        public int? FluxoPendenciaId { get; set; }
 
         [Column("aprovado_em")]
         public DateTime? AprovadoEm { get; set; }

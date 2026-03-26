@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -13,7 +13,7 @@ namespace Eva.Services
     public class ArquivoService
     {
         private readonly EvaDbContext _context;
-        private readonly PendenciaService _pendenciaService;
+        private readonly ISubmissaoService _submissaoService;
 
         // 5 MB limit
         private const int MaxFileSize = 5 * 1024 * 1024;
@@ -26,10 +26,10 @@ namespace Eva.Services
             new byte[] { 0x89, 0x50, 0x4E, 0x47 }  // PNG
         };
 
-        public ArquivoService(EvaDbContext context, PendenciaService pendenciaService)
+        public ArquivoService(EvaDbContext context, ISubmissaoService submissaoService)
         {
             _context = context;
-            _pendenciaService = pendenciaService;
+            _submissaoService = submissaoService;
         }
 
         public async Task<Documento> SalvarDocumentoAsync(IFormFile file, string tipoDoc, string entTipo, string entId)
@@ -66,22 +66,14 @@ namespace Eva.Services
 
             _context.Documentos.Add(doc);
 
-            // Link the document to the correct entity table
-            if (entTipo == "EMPRESA")
-                _context.DocumentoEmpresas.Add(new DocumentoEmpresa { Documento = doc, EmpresaCnpj = entId });
-            else if (entTipo == "VEICULO")
-                _context.DocumentoVeiculos.Add(new DocumentoVeiculo { Documento = doc, VeiculoPlaca = entId });
-            else if (entTipo == "MOTORISTA" && int.TryParse(entId, out int mId))
-                _context.DocumentoMotoristas.Add(new DocumentoMotorista { Documento = doc, MotoristaId = mId });
-            else if (entTipo == "VIAGEM" && int.TryParse(entId, out int vId))
+            if (entTipo == "VIAGEM" && int.TryParse(entId, out int vId))
                 _context.DocumentoViagens.Add(new DocumentoViagem { Documento = doc, ViagemId = vId });
 
             await _context.SaveChangesAsync();
 
-            // Only trigger the approval workflow if the entity actually requires approval
             if (entTipo != "VIAGEM")
             {
-                await _pendenciaService.AvancarEntidadeAsync(entTipo, entId);
+                await _submissaoService.VincularDocumentoAoDraftAsync(entTipo, entId, doc.Id, tipoDoc, null);
             }
 
             return doc;
@@ -95,10 +87,9 @@ namespace Eva.Services
                 _context.Documentos.Remove(doc);
                 await _context.SaveChangesAsync();
 
-                // Only trigger the approval workflow if the entity actually requires approval
                 if (entTipo != "VIAGEM")
                 {
-                    await _pendenciaService.AvancarEntidadeAsync(entTipo, entId);
+                    await _submissaoService.RemoverDocumentoDoDraftAsync(entTipo, entId, docId, null);
                 }
             }
         }

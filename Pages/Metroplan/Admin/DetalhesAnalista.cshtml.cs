@@ -1,14 +1,14 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
-using Eva.Data;
-using Eva.Models;
-using Eva.Workflow;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Eva.Data;
+using Eva.Models;
+using Eva.Workflow;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 
 namespace Eva.Pages.Metroplan.Admin
 {
@@ -23,7 +23,7 @@ namespace Eva.Pages.Metroplan.Admin
         }
 
         public Usuario? Analista { get; set; }
-        public List<VPendenciaAtual> TicketsEmAnalise { get; set; } = new();
+        public List<Submissao> SubmissoesEmAnalise { get; set; } = new();
 
         public async Task<IActionResult> OnGetAsync(int id)
         {
@@ -35,49 +35,34 @@ namespace Eva.Pages.Metroplan.Admin
                 return NotFound();
             }
 
-            // Find all tickets currently locked by this specific analyst's email
-            TicketsEmAnalise = await _context.VPendenciasAtuais
-                .Where(p => p.Status == WorkflowStatus.EmAnalise && p.Analista == Analista.Email)
-                .OrderBy(p => p.CriadoEm)
+            SubmissoesEmAnalise = await _context.Submissoes
+                .Where(s => s.Status == SubmissaoWorkflow.EmAnalise && s.AnalistaAtual == Analista.Email)
+                .OrderBy(s => s.AtualizadoEm)
+                .ThenBy(s => s.Id)
                 .ToListAsync();
 
             return Page();
         }
 
-        public async Task<IActionResult> OnPostDesatribuirAsync(int id, string tipo, string entidadeId)
+        public async Task<IActionResult> OnPostDesatribuirAsync(int id, int submissaoId)
         {
             if (!User.IsInRole("ADMIN"))
             {
                 return Forbid();
             }
 
-            // Verify the last state of the ticket to ensure it is still EM_ANALISE
-            var lastPendencia = await _context.FluxoPendencias
-                .Where(f => f.EntidadeTipo == tipo && f.EntidadeId == entidadeId)
-                .OrderByDescending(f => f.CriadoEm)
-                .FirstOrDefaultAsync();
-
-            if (lastPendencia != null && lastPendencia.Status == WorkflowStatus.EmAnalise)
+            var submissao = await _context.Submissoes.FirstOrDefaultAsync(s => s.Id == submissaoId);
+            if (submissao != null && submissao.Status == SubmissaoWorkflow.EmAnalise)
             {
-                // Create a new history record to release the ticket back to the queue
-                var novaPendencia = new FluxoPendencia
-                {
-                    EntidadeTipo = tipo,
-                    EntidadeId = entidadeId,
-                    Status = WorkflowStatus.AguardandoAnalise,
-                    Analista = null,
-                    Motivo = "DesatribuiÃ§Ã£o forÃ§ada por Administrador via painel do analista.",
-                    CriadoEm = DateTime.UtcNow
-                };
-
-                _context.FluxoPendencias.Add(novaPendencia);
+                submissao.Status = SubmissaoWorkflow.AguardandoAnalise;
+                submissao.AnalistaAtual = null;
+                submissao.AtualizadoEm = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
 
-                TempData["SuccessMessage"] = $"O ticket {entidadeId} foi desatribuÃ­do com sucesso.";
+                TempData["SuccessMessage"] = $"A submissão #{submissao.Id} foi desatribuída com sucesso.";
             }
 
-            // Redirect back to the same analyst's detail page
-            return RedirectToPage(new { id = id });
+            return RedirectToPage(new { id });
         }
     }
 }

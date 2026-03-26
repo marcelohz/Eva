@@ -1,4 +1,5 @@
 @page
+@using Eva.Workflow
 @model Eva.Pages.Metroplan.Analista.IndexModel
 @{
     ViewData["Title"] = "Fila de Análise - Fretamento Eventual";
@@ -9,7 +10,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
         <div>
             <h1 class="h2"><i class="bi bi-inboxes-fill text-primary me-2"></i>Fila de Análise</h1>
-            <p class="text-muted">Tickets aguardando verificação de documentos e dados.</p>
+            <p class="text-muted">Submissões aguardando verificação de documentos e dados.</p>
         </div>
     </div>
 
@@ -33,7 +34,7 @@
                             <tr>
                                 <td colspan="6" class="text-center py-5 text-muted">
                                     <i class="bi bi-check2-circle display-4 d-block mb-2 text-success"></i>
-                                    A fila está vazia! Excelente trabalho.
+                                    A fila está vazia. Excelente trabalho.
                                 </td>
                             </tr>
                         }
@@ -41,29 +42,25 @@
                         {
                             foreach (var item in Model.Fila)
                             {
-                                bool isMyLock = item.Status == WorkflowStatus.EmAnalise && item.Analista == Model.AnalistaAtual;
-                                bool isLockedByOther = item.Status == WorkflowStatus.EmAnalise && item.Analista != Model.AnalistaAtual;
+                                bool isMyLock = item.Status == SubmissaoWorkflow.EmAnalise && item.AnalistaDaSubmissao == Model.AnalistaAtual;
+                                bool isLockedByOther = item.Status == SubmissaoWorkflow.EmAnalise && item.AnalistaDaSubmissao != Model.AnalistaAtual;
 
                                 <tr class="@(isMyLock ? "table-info" : "")">
-                                    <td class="ps-4">@item.CriadoEm.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td class="ps-4">@((item.SubmetidoEm ?? item.CriadoEm).ToString("dd/MM/yyyy HH:mm"))</td>
                                     <td>
                                         <span class="badge bg-secondary text-uppercase">@item.EntidadeTipo</span>
                                     </td>
                                     <td class="fw-bold">@item.EntidadeId</td>
                                     <td>
-                                        @if (item.Status == WorkflowStatus.AguardandoAnalise)
-                                        {
-                                            <span class="badge @WorkflowStatus.GetBadgeClass(item.Status)"><i class="bi @WorkflowStatus.GetBadgeIcon(item.Status)"></i> @WorkflowStatus.GetDisplayLabel(item.Status)</span>
-                                        }
-                                        else if (item.Status == WorkflowStatus.EmAnalise)
-                                        {
-                                            <span class="badge @WorkflowStatus.GetBadgeClass(item.Status)"><i class="bi @WorkflowStatus.GetBadgeIcon(item.Status)"></i> @WorkflowStatus.GetDisplayLabel(item.Status)</span>
-                                        }
+                                        <span class="badge @SubmissaoWorkflow.GetBadgeClass(item.Status)">
+                                            <i class="bi @SubmissaoWorkflow.GetBadgeIcon(item.Status)"></i>
+                                            @SubmissaoWorkflow.GetDisplayLabel(item.Status)
+                                        </span>
                                     </td>
                                     <td>
                                         @if (isLockedByOther)
                                         {
-                                            <span class="text-danger small"><i class="bi bi-person-fill-lock"></i> @item.Analista</span>
+                                            <span class="text-danger small"><i class="bi bi-person-fill-lock"></i> @item.AnalistaDaSubmissao</span>
                                         }
                                         else if (isMyLock)
                                         {
@@ -78,15 +75,13 @@
                                         @if (isLockedByOther && isAdmin)
                                         {
                                             <form method="post" asp-page-handler="Desatribuir" class="d-inline">
-                                                <input type="hidden" name="tipo" value="@item.EntidadeTipo" />
-                                                <input type="hidden" name="id" value="@item.EntidadeId" />
-                                                <button type="submit" class="btn btn-sm btn-danger me-2" title="Forçar desatribuição" onclick="return confirm('Tem certeza que deseja desatribuir este ticket?');">
+                                                <input type="hidden" name="submissaoId" value="@item.SubmissaoId" />
+                                                <button type="submit" class="btn btn-sm btn-danger me-2" onclick="return confirm('Tem certeza que deseja desatribuir esta submissão?');">
                                                     <i class="bi bi-unlock-fill"></i> Desatribuir
                                                 </button>
                                             </form>
                                         }
-                                        <a href="/Metroplan/Analista/Revisao?tipo=@item.EntidadeTipo&id=@item.EntidadeId"
-                                               class="btn btn-sm btn-primary">
+                                        <a href="/Metroplan/Analista/Revisao?submissaoId=@item.SubmissaoId" class="btn btn-sm btn-primary">
                                             <i class="bi bi-eye"></i> Visualizar
                                         </a>
                                     </td>

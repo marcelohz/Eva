@@ -43,6 +43,20 @@ namespace Eva.Pages
         {
             if (User.Identity?.IsAuthenticated == true)
             {
+                var cookieEmail = User.FindFirstValue(ClaimTypes.Email) ?? User.Identity?.Name;
+                var cookieUser = string.IsNullOrWhiteSpace(cookieEmail)
+                    ? null
+                    : await _context.Usuarios
+                        .IgnoreQueryFilters()
+                        .FirstOrDefaultAsync(u => u.Email == cookieEmail);
+
+                if (cookieUser == null || !cookieUser.Ativo)
+                {
+                    await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                    ReturnUrl = returnUrl;
+                    return Page();
+                }
+
                 if (User.IsInRole("ADMIN"))
                 {
                     return RedirectToPage("/Metroplan/Admin/Index");

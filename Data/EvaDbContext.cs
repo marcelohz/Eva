@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using System.Security.Claims;
@@ -29,12 +29,15 @@ namespace Eva.Data
             Empresas = Set<Empresa>();
             Veiculos = Set<Veiculo>();
             Motoristas = Set<Motorista>();
-            FluxoPendencias = Set<FluxoPendencia>();
-            VPendenciasAtuais = Set<VPendenciaAtual>();
             Documentos = Set<Documento>();
             DocumentoEmpresas = Set<DocumentoEmpresa>();
             DocumentoVeiculos = Set<DocumentoVeiculo>();
             DocumentoMotoristas = Set<DocumentoMotorista>();
+            Submissoes = Set<Submissao>();
+            SubmissaoDados = Set<SubmissaoDados>();
+            SubmissaoDocumentos = Set<SubmissaoDocumento>();
+            EntidadeDocumentosAtuais = Set<EntidadeDocumentoAtual>();
+            SubmissaoEventos = Set<SubmissaoEvento>();
             TokensValidacaoEmail = Set<TokenValidacaoEmail>();
             DocumentoTipos = Set<DocumentoTipo>();
             DocumentoTipoVinculos = Set<DocumentoTipoVinculo>();
@@ -52,12 +55,15 @@ namespace Eva.Data
         public DbSet<Empresa> Empresas { get; set; }
         public DbSet<Veiculo> Veiculos { get; set; }
         public DbSet<Motorista> Motoristas { get; set; }
-        public DbSet<FluxoPendencia> FluxoPendencias { get; set; }
-        public DbSet<VPendenciaAtual> VPendenciasAtuais { get; set; }
         public DbSet<Documento> Documentos { get; set; }
         public DbSet<DocumentoEmpresa> DocumentoEmpresas { get; set; }
         public DbSet<DocumentoVeiculo> DocumentoVeiculos { get; set; }
         public DbSet<DocumentoMotorista> DocumentoMotoristas { get; set; }
+        public DbSet<Submissao> Submissoes { get; set; }
+        public DbSet<SubmissaoDados> SubmissaoDados { get; set; }
+        public DbSet<SubmissaoDocumento> SubmissaoDocumentos { get; set; }
+        public DbSet<EntidadeDocumentoAtual> EntidadeDocumentosAtuais { get; set; }
+        public DbSet<SubmissaoEvento> SubmissaoEventos { get; set; }
         public DbSet<TokenValidacaoEmail> TokensValidacaoEmail { get; set; }
         public DbSet<DocumentoTipo> DocumentoTipos { get; set; }
         public DbSet<DocumentoTipoVinculo> DocumentoTipoVinculos { get; set; }
@@ -89,8 +95,12 @@ namespace Eva.Data
             modelBuilder.Entity<Motorista>().ToTable("motorista", "eventual");
             modelBuilder.Entity<Regiao>().ToTable("regiao", "geral");
             modelBuilder.Entity<Municipio>().ToTable("municipio", "geral");
-            modelBuilder.Entity<VPendenciaAtual>().ToView("v_pendencia_atual", "eventual").HasKey(v => v.Id);
             modelBuilder.Entity<TokenValidacaoEmail>().ToTable("token_validacao_email", "web");
+            modelBuilder.Entity<Submissao>().ToTable("submissao", "eventual");
+            modelBuilder.Entity<SubmissaoDados>().ToTable("submissao_dados", "eventual");
+            modelBuilder.Entity<SubmissaoDocumento>().ToTable("submissao_documento", "eventual");
+            modelBuilder.Entity<EntidadeDocumentoAtual>().ToTable("entidade_documento_atual", "eventual");
+            modelBuilder.Entity<SubmissaoEvento>().ToTable("submissao_evento", "eventual");
 
             // --- PROTEÇÃO DE SCHEMA E REGRAS ---
             modelBuilder.Entity<DocumentoTipo>().ToTable("documento_tipo", "eventual");
@@ -98,6 +108,16 @@ namespace Eva.Data
 
             modelBuilder.Entity<DocumentoTipoVinculo>()
                 .HasKey(dtv => new { dtv.TipoNome, dtv.EntidadeTipo });
+
+            modelBuilder.Entity<Submissao>()
+                .HasIndex(s => new { s.EntidadeTipo, s.EntidadeId, s.Status });
+
+            modelBuilder.Entity<SubmissaoDados>()
+                .HasIndex(sd => sd.SubmissaoId)
+                .IsUnique();
+
+            modelBuilder.Entity<EntidadeDocumentoAtual>()
+                .HasIndex(eda => new { eda.EntidadeTipo, eda.EntidadeId, eda.DocumentoTipoNome });
 
             modelBuilder.Entity<TokenValidacaoEmail>(entity =>
             {

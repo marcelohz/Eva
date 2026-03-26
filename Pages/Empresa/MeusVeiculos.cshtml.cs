@@ -8,6 +8,7 @@ using Eva.Services;
 using Eva.Workflow;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace Eva.Pages.Empresa
@@ -16,13 +17,11 @@ namespace Eva.Pages.Empresa
     public class MeusVeiculosModel : PageModel
     {
         private readonly EvaDbContext _context;
-        private readonly PendenciaService _pendenciaService;
         private readonly IEntityStatusService _statusService;
 
-        public MeusVeiculosModel(EvaDbContext context, PendenciaService pendenciaService, IEntityStatusService statusService)
+        public MeusVeiculosModel(EvaDbContext context, IEntityStatusService statusService)
         {
             _context = context;
-            _pendenciaService = pendenciaService;
             _statusService = statusService;
         }
 
@@ -31,7 +30,15 @@ namespace Eva.Pages.Empresa
 
         public async Task<IActionResult> OnGetAsync()
         {
+            var userEmail = User.FindFirstValue(ClaimTypes.Email);
+            var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == userEmail);
+            if (user == null || string.IsNullOrEmpty(user.EmpresaCnpj))
+            {
+                return RedirectToPage("/Login");
+            }
+
             Veiculos = await _context.Veiculos
+                .Where(v => v.EmpresaCnpj == user.EmpresaCnpj)
                 .OrderBy(v => v.Placa)
                 .ToListAsync();
 
@@ -45,10 +52,18 @@ namespace Eva.Pages.Empresa
         {
             if (string.IsNullOrEmpty(placa)) return RedirectToPage();
 
-            var status = await _pendenciaService.GetStatusAsync("VEICULO", placa);
-            if (status == WorkflowStatus.EmAnalise) return RedirectToPage();
+            var userEmail = User.FindFirstValue(ClaimTypes.Email);
+            var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == userEmail);
+            if (user == null || string.IsNullOrEmpty(user.EmpresaCnpj))
+            {
+                return RedirectToPage("/Login");
+            }
 
-            var veiculoInDb = await _context.Veiculos.FirstOrDefaultAsync(v => v.Placa == placa);
+            var health = await _statusService.GetHealthAsync("VEICULO", placa);
+            if (health.IsLocked) return RedirectToPage();
+
+            var veiculoInDb = await _context.Veiculos
+                .FirstOrDefaultAsync(v => v.Placa == placa && v.EmpresaCnpj == user.EmpresaCnpj);
 
             if (veiculoInDb != null)
             {

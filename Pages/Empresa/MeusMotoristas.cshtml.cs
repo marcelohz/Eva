@@ -8,6 +8,7 @@ using Eva.Services;
 using Eva.Workflow;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace Eva.Pages.Empresa
@@ -16,13 +17,11 @@ namespace Eva.Pages.Empresa
     public class MeusMotoristasModel : PageModel
     {
         private readonly EvaDbContext _context;
-        private readonly PendenciaService _pendenciaService;
         private readonly IEntityStatusService _statusService;
 
-        public MeusMotoristasModel(EvaDbContext context, PendenciaService pendenciaService, IEntityStatusService statusService)
+        public MeusMotoristasModel(EvaDbContext context, IEntityStatusService statusService)
         {
             _context = context;
-            _pendenciaService = pendenciaService;
             _statusService = statusService;
         }
 
@@ -31,7 +30,15 @@ namespace Eva.Pages.Empresa
 
         public async Task<IActionResult> OnGetAsync()
         {
+            var userEmail = User.FindFirstValue(ClaimTypes.Email);
+            var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == userEmail);
+            if (user == null || string.IsNullOrEmpty(user.EmpresaCnpj))
+            {
+                return RedirectToPage("/Login");
+            }
+
             Motoristas = await _context.Motoristas
+                .Where(m => m.EmpresaCnpj == user.EmpresaCnpj)
                 .OrderBy(m => m.Nome)
                 .ToListAsync();
 
@@ -45,10 +52,18 @@ namespace Eva.Pages.Empresa
         {
             if (id <= 0) return RedirectToPage();
 
-            var status = await _pendenciaService.GetStatusAsync("MOTORISTA", id.ToString());
-            if (status == WorkflowStatus.EmAnalise) return RedirectToPage();
+            var userEmail = User.FindFirstValue(ClaimTypes.Email);
+            var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == userEmail);
+            if (user == null || string.IsNullOrEmpty(user.EmpresaCnpj))
+            {
+                return RedirectToPage("/Login");
+            }
 
-            var motoristaInDb = await _context.Motoristas.FirstOrDefaultAsync(m => m.Id == id);
+            var health = await _statusService.GetHealthAsync("MOTORISTA", id.ToString());
+            if (health.IsLocked) return RedirectToPage();
+
+            var motoristaInDb = await _context.Motoristas
+                .FirstOrDefaultAsync(m => m.Id == id && m.EmpresaCnpj == user.EmpresaCnpj);
 
             if (motoristaInDb != null)
             {

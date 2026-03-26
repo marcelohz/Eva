@@ -7,10 +7,14 @@
         <span class="badge @WorkflowStatus.GetBadgeClass(Model.Entidade.StatusGeral) rounded-pill">
             @WorkflowStatus.GetDisplayLabel(Model.Entidade.StatusGeral)
         </span>
+        @if (Model.Entidade.PossuiTentativaRejeitada)
+        {
+            <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill ms-1">Última tentativa rejeitada</span>
+        }
     </td>
 
     <td>
-        @if (Model.Entidade.StatusGeral == WorkflowStatus.Aprovado)
+        @if (Model.Entidade.StatusGeral == WorkflowStatus.Aprovado && !Model.Entidade.PossuiTentativaRejeitada)
         {
             <span class="text-muted small"><i class="bi bi-check2"></i> @WorkflowStatus.GetConformidadeHint(Model.Entidade.StatusGeral)</span>
         }
@@ -24,11 +28,15 @@
                 @if (!string.IsNullOrEmpty(Model.Entidade.MotivoRejeicao))
                 {
                     <div class="text-danger small preserve-newlines">
-                        <strong>Motivo:</strong> @Model.Entidade.MotivoRejeicao
+                        <strong>Motivo da última rejeição:</strong> @Model.Entidade.MotivoRejeicao
                     </div>
                 }
                 
                 <div class="d-flex flex-wrap gap-1">
+                    @foreach (var doc in Model.Entidade.DocumentosEmAnalise)
+                    {
+                        <span class="badge bg-info text-dark border"><i class="bi bi-hourglass-split"></i> Em análise: @doc</span>
+                    }
                     @foreach (var doc in Model.Entidade.DocumentosFaltantes)
                     {
                         <span class="badge bg-warning text-dark border"><i class="bi bi-file-earmark-x"></i> Falta: @doc</span>

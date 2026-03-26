@@ -24,14 +24,14 @@ namespace Eva.Models.ViewModels
 
         // Populated if an analyst explicitly rejected the entity
         public string? MotivoRejeicao { get; set; }
+        public bool PossuiTentativaRejeitada => !string.IsNullOrWhiteSpace(MotivoRejeicao);
 
         public List<string> DocumentosFaltantes { get; set; } = new List<string>();
         public List<string> DocumentosVencidos { get; set; } = new List<string>();
         public List<string> DocumentosEmAnalise { get; set; } = new List<string>();
 
         // Determines if this entity is prevented from participating in new trips
-        public bool IsBlocked => StatusGeral == WorkflowStatus.Rejeitado ||
-                                 StatusGeral == WorkflowStatus.Incompleto ||
+        public bool IsBlocked => StatusGeral == WorkflowStatus.Incompleto ||
                                  DocumentosFaltantes.Any() ||
                                  DocumentosVencidos.Any();
     }

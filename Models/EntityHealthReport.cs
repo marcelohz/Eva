@@ -8,11 +8,14 @@ namespace Eva.Models
     {
         public bool IsLegal { get; set; }
 
-        // The latest decisive status (APROVADO or REJEITADO) - used to validate trips
+        // Official operational status derived from the currently accepted state.
         public string AnalystStatus { get; set; } = WorkflowStatus.Incompleto;
 
-        // The absolute latest status from the workflow
+        // UI-facing status combining the official state with the latest submission state.
         public string CurrentStatus { get; set; } = WorkflowStatus.Incompleto;
+
+        public string? LatestSubmissionStatus { get; set; }
+        public string? LastRejectionReason { get; set; }
 
         public List<string> MissingMandatoryDocs { get; set; } = new List<string>();
         public List<string> ExpiredDocs { get; set; } = new List<string>();
@@ -22,6 +25,6 @@ namespace Eva.Models
         public bool HasPendingChanges => WorkflowStatus.IsPending(CurrentStatus);
 
         // Matches the locking logic used in the Empresa edit screens
-        public bool IsLocked => CurrentStatus == WorkflowStatus.EmAnalise;
+        public bool IsLocked => WorkflowStatus.IsPending(CurrentStatus);
     }
 }

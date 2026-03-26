@@ -39,6 +39,11 @@ internal sealed class PostgresTestDatabase
     {
         const string resetSql = """
             TRUNCATE TABLE
+                eventual.submissao_evento,
+                eventual.entidade_documento_atual,
+                eventual.submissao_documento,
+                eventual.submissao_dados,
+                eventual.submissao,
                 eventual.documento_viagem,
                 eventual.passageiro,
                 eventual.viagem,
@@ -78,15 +83,15 @@ internal sealed class PostgresTestDatabase
             INSERT INTO web.usuario (papel_nome, email, nome, senha, ativo, email_validado)
             VALUES ('ANALISTA', 'analista@metroplan.rs.gov.br', 'Analista Teste', 'hash', true, true);
 
-            INSERT INTO eventual.documento_tipo (nome, descricao, obrigatorio) VALUES
-                ('CARTAO_CNPJ', 'Cartão CNPJ', true),
-                ('CONTRATO_SOCIAL', 'Contrato Social da Empresa', false),
-                ('IDENTIDADE_SOCIO', 'Documento de Identidade do Sócio', false),
-                ('ALVARA', 'Alvará', false),
-                ('CRLV', 'Certificado de Registro e Licenciamento de Veículo', true),
-                ('LAUDO_INSPECAO', 'Laudo Inspeção', false),
-                ('APOLICE_SEGURO', 'Apólice Seguro', false),
-                ('CNH', 'Carteira Nacional de Habilitação', true);
+            INSERT INTO eventual.documento_tipo (nome, descricao, obrigatorio, permite_multiplos) VALUES
+                ('CARTAO_CNPJ', 'Cartão CNPJ', true, false),
+                ('CONTRATO_SOCIAL', 'Contrato Social da Empresa', false, false),
+                ('IDENTIDADE_SOCIO', 'Documento de Identidade do Sócio', false, true),
+                ('ALVARA', 'Alvará', false, false),
+                ('CRLV', 'Certificado de Registro e Licenciamento de Veículo', true, false),
+                ('LAUDO_INSPECAO', 'Laudo Inspeção', false, false),
+                ('APOLICE_SEGURO', 'Apólice Seguro', false, false),
+                ('CNH', 'Carteira Nacional de Habilitação', true, false);
 
             INSERT INTO eventual.documento_tipo_vinculo (tipo_nome, entidade_tipo) VALUES
                 ('CARTAO_CNPJ', 'EMPRESA'),

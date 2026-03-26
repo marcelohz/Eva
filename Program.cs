@@ -57,7 +57,7 @@ try
     builder.Services.AddHttpContextAccessor();
 
     // Core Domain Services
-    builder.Services.AddScoped<PendenciaService>();
+    builder.Services.AddScoped<ISubmissaoService, SubmissaoService>();
     builder.Services.AddScoped<ArquivoService>();
     builder.Services.AddScoped<IAnalystReviewService, AnalystReviewService>();
     builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();

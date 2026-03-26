@@ -6,8 +6,8 @@ using Eva.Data;
 using Eva.Models;
 using Eva.Models.ViewModels;
 using Eva.Services;
-using Eva.Workflow;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace Eva.Pages.Empresa
 {
@@ -15,13 +15,13 @@ namespace Eva.Pages.Empresa
     public class NovoMotoristaModel : PageModel
     {
         private readonly EvaDbContext _context;
-        private readonly PendenciaService _pendenciaService;
+        private readonly ISubmissaoService _submissaoService;
         private readonly ArquivoService _arquivoService;
 
-        public NovoMotoristaModel(EvaDbContext context, PendenciaService pendenciaService, ArquivoService arquivoService)
+        public NovoMotoristaModel(EvaDbContext context, ISubmissaoService submissaoService, ArquivoService arquivoService)
         {
             _context = context;
-            _pendenciaService = pendenciaService;
+            _submissaoService = submissaoService;
             _arquivoService = arquivoService;
         }
 
@@ -50,21 +50,27 @@ namespace Eva.Pages.Empresa
                 Cpf = Input.Cpf,
                 Cnh = Input.Cnh,
                 Email = Input.Email
-                // EventualStatus removed! The status is managed via FluxoPendencias
             };
 
             _context.Motoristas.Add(motorista);
             await _context.SaveChangesAsync();
+
+            var dadosPropostos = JsonSerializer.Serialize(new MotoristaVM
+            {
+                Id = motorista.Id,
+                Nome = motorista.Nome,
+                Cpf = motorista.Cpf,
+                Cnh = motorista.Cnh,
+                Email = motorista.Email
+            });
+            await _submissaoService.SalvarDadosPropostosAsync("MOTORISTA", motorista.Id.ToString(), dadosPropostos, userEmail);
 
             if (UploadCnh != null)
             {
                 await _arquivoService.SalvarDocumentoAsync(UploadCnh, "CNH", "MOTORISTA", motorista.Id.ToString());
             }
 
-            // This triggers the workflow and makes it appear in the Analyst's queue!
-            await _pendenciaService.AvancarEntidadeAsync("MOTORISTA", motorista.Id.ToString());
-
-            return RedirectToPage("./MeusMotoristas");
+            return RedirectToPage("./EditarMotorista", new { id = motorista.Id });
         }
     }
 }

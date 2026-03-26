@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Eva.Data;
@@ -55,10 +56,6 @@ namespace Eva.Pages.Metroplan.Analista
         public bool IsLockedByMe { get; set; }
         public bool IsLockedByOther { get; set; }
         public bool HasRejectedItems { get; set; }
-        public bool CanApproveSubmission { get; set; }
-        public bool CanRejectSubmission { get; set; }
-        public List<string> ApprovalBlockingReasons { get; set; } = new();
-        public List<string> RejectionBlockingReasons { get; set; } = new();
 
         public Submissao? Submissao { get; set; }
         public SubmissaoDados? DadosSubmissao { get; set; }
@@ -123,7 +120,7 @@ namespace Eva.Pages.Metroplan.Analista
                 return RedirectToPage(new { submissaoId = SubmissaoId });
             }
 
-            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Não foi possível iniciar a análise.");
+            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "NÃƒÆ’Ã‚Â£o foi possÃƒÆ’Ã‚Â­vel iniciar a anÃƒÆ’Ã‚Â¡lise.");
             await LoadDataAsync();
             return Page();
         }
@@ -143,7 +140,7 @@ namespace Eva.Pages.Metroplan.Analista
                 return RedirectToPage(new { submissaoId = SubmissaoId });
             }
 
-            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Não foi possível aprovar os dados.");
+            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "NÃƒÆ’Ã‚Â£o foi possÃƒÆ’Ã‚Â­vel aprovar os dados.");
             await LoadDataAsync();
             return Page();
         }
@@ -158,7 +155,7 @@ namespace Eva.Pages.Metroplan.Analista
 
             if (string.IsNullOrWhiteSpace(MotivoRejeicaoDados))
             {
-                ModelState.AddModelError(nameof(MotivoRejeicaoDados), "O motivo é obrigatório para rejeitar os dados.");
+                ModelState.AddModelError(nameof(MotivoRejeicaoDados), "O motivo ÃƒÆ’Ã‚Â© obrigatÃƒÆ’Ã‚Â³rio para rejeitar os dados.");
                 await LoadDataAsync();
                 return Page();
             }
@@ -170,7 +167,7 @@ namespace Eva.Pages.Metroplan.Analista
                 return RedirectToPage(new { submissaoId = SubmissaoId });
             }
 
-            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Não foi possível rejeitar os dados.");
+            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "NÃƒÆ’Ã‚Â£o foi possÃƒÆ’Ã‚Â­vel rejeitar os dados.");
             await LoadDataAsync();
             return Page();
         }
@@ -190,7 +187,7 @@ namespace Eva.Pages.Metroplan.Analista
                 return RedirectToPage(new { submissaoId = SubmissaoId });
             }
 
-            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Não foi possível aprovar o documento.");
+            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "NÃƒÆ’Ã‚Â£o foi possÃƒÆ’Ã‚Â­vel aprovar o documento.");
             await LoadDataAsync();
             return Page();
         }
@@ -205,7 +202,7 @@ namespace Eva.Pages.Metroplan.Analista
 
             if (string.IsNullOrWhiteSpace(MotivoRejeicaoDocumento))
             {
-                ModelState.AddModelError(nameof(MotivoRejeicaoDocumento), "O motivo é obrigatório para rejeitar o documento.");
+                ModelState.AddModelError(nameof(MotivoRejeicaoDocumento), "O motivo ÃƒÆ’Ã‚Â© obrigatÃƒÆ’Ã‚Â³rio para rejeitar o documento.");
                 await LoadDataAsync();
                 return Page();
             }
@@ -217,7 +214,7 @@ namespace Eva.Pages.Metroplan.Analista
                 return RedirectToPage(new { submissaoId = SubmissaoId });
             }
 
-            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Não foi possível rejeitar o documento.");
+            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "NÃƒÆ’Ã‚Â£o foi possÃƒÆ’Ã‚Â­vel rejeitar o documento.");
             await LoadDataAsync();
             return Page();
         }
@@ -233,11 +230,11 @@ namespace Eva.Pages.Metroplan.Analista
             var result = await _reviewService.AprovarSubmissaoAsync(SubmissaoId, email);
             if (result.Success)
             {
-                TempData["SuccessMessage"] = result.SuccessMessage ?? "Submissão aprovada.";
+                TempData["SuccessMessage"] = result.SuccessMessage ?? "SubmissÃƒÆ’Ã‚Â£o aprovada.";
                 return RedirectToPage("./Index");
             }
 
-            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Não foi possível aprovar a submissão.");
+            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "NÃƒÆ’Ã‚Â£o foi possÃƒÆ’Ã‚Â­vel aprovar a submissÃƒÆ’Ã‚Â£o.");
             await LoadDataAsync();
             return Page();
         }
@@ -249,15 +246,14 @@ namespace Eva.Pages.Metroplan.Analista
             {
                 return RedirectToPage("/Login");
             }
-
             var result = await _reviewService.RejeitarSubmissaoAsync(SubmissaoId, email, ObservacaoRejeicaoSubmissao);
             if (result.Success)
             {
-                TempData["SuccessMessage"] = result.SuccessMessage ?? "Submissão rejeitada.";
+                TempData["SuccessMessage"] = result.SuccessMessage ?? "SubmissÃƒÆ’Ã‚Â£o rejeitada.";
                 return RedirectToPage("./Index");
             }
 
-            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Não foi possível rejeitar a submissão.");
+            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "NÃƒÆ’Ã‚Â£o foi possÃƒÆ’Ã‚Â­vel rejeitar a submissÃƒÆ’Ã‚Â£o.");
             await LoadDataAsync();
             return Page();
         }
@@ -310,7 +306,10 @@ namespace Eva.Pages.Metroplan.Analista
 
             await LoadEntityAndDraftDataAsync();
             await LoadDocumentosAsync();
-            ComputeDecisionState();
+
+            HasRejectedItems =
+                DadosSubmissao.StatusRevisao == SubmissaoWorkflow.RevisaoRejeitada ||
+                DocumentosRevisao.SelectMany(g => g.Itens).Any(i => i.StatusRevisao == SubmissaoWorkflow.RevisaoRejeitada);
         }
 
         private async Task LoadEntityAndDraftDataAsync()
@@ -325,8 +324,10 @@ namespace Eva.Pages.Metroplan.Analista
                     VeiculoDraft = JsonSerializer.Deserialize<VeiculoVM>(DadosSubmissao!.DadosPropostos, jsonOpts);
                     break;
 
-                case "MOTORISTA":
-                    Motorista = await FindMotoristaAsync(Submissao.EntidadeId);
+                case "MOTORISTA" when int.TryParse(Submissao.EntidadeId, out var motoristaId):
+                    Motorista = await _context.Motoristas.IgnoreQueryFilters()
+                        .Include(m => m.Empresa)
+                        .FirstOrDefaultAsync(m => m.Id == motoristaId);
                     MotoristaDraft = JsonSerializer.Deserialize<MotoristaVM>(DadosSubmissao!.DadosPropostos, jsonOpts);
                     break;
 
@@ -401,88 +402,5 @@ namespace Eva.Pages.Metroplan.Analista
                 .ThenBy(g => g.TipoNome)
                 .ToList();
         }
-
-        private void ComputeDecisionState()
-        {
-            ApprovalBlockingReasons = new List<string>();
-            RejectionBlockingReasons = new List<string>();
-
-            var pendingDocuments = DocumentosRevisao
-                .SelectMany(g => g.Itens)
-                .Any(i => i.StatusRevisao == SubmissaoWorkflow.RevisaoPendente);
-            var rejectedDocuments = DocumentosRevisao
-                .SelectMany(g => g.Itens)
-                .Any(i => i.StatusRevisao == SubmissaoWorkflow.RevisaoRejeitada);
-            var pendingData = DadosSubmissao?.StatusRevisao == SubmissaoWorkflow.RevisaoPendente;
-
-            HasRejectedItems =
-                DadosSubmissao?.StatusRevisao == SubmissaoWorkflow.RevisaoRejeitada ||
-                rejectedDocuments;
-
-            if (pendingData)
-            {
-                ApprovalBlockingReasons.Add("Os dados cadastrais ainda não foram revisados.");
-            }
-
-            if (DadosSubmissao?.StatusRevisao != SubmissaoWorkflow.RevisaoAprovada)
-            {
-                ApprovalBlockingReasons.Add("Os dados cadastrais ainda não foram aprovados.");
-            }
-
-            if (pendingDocuments)
-            {
-                ApprovalBlockingReasons.Add("Ainda existem documentos pendentes de revisão.");
-            }
-
-            if (rejectedDocuments)
-            {
-                ApprovalBlockingReasons.Add("Ainda existem documentos rejeitados nesta submissão.");
-            }
-
-            var obrigatoriosSemAprovacao = DocumentosRevisao
-                .Where(g => g.Obrigatorio)
-                .Where(g => !g.Itens.Any(i => i.StatusRevisao == SubmissaoWorkflow.RevisaoAprovada))
-                .Select(g => g.TipoNome.Replace("_", " "))
-                .ToList();
-
-            if (obrigatoriosSemAprovacao.Any())
-            {
-                ApprovalBlockingReasons.Add($"Faltam aprovações de documentos obrigatórios: {string.Join(", ", obrigatoriosSemAprovacao)}.");
-            }
-
-            CanApproveSubmission = ApprovalBlockingReasons.Count == 0;
-
-            if (pendingData || pendingDocuments)
-            {
-                RejectionBlockingReasons.Add("Revise todos os itens da submissão antes de finalizar a rejeição.");
-            }
-
-            if (DadosSubmissao?.StatusRevisao != SubmissaoWorkflow.RevisaoRejeitada && !rejectedDocuments)
-            {
-                RejectionBlockingReasons.Add("Rejeite os dados ou pelo menos um documento antes de finalizar a rejeição.");
-            }
-
-            CanRejectSubmission = RejectionBlockingReasons.Count == 0;
-        }
-
-        private async Task<Motorista?> FindMotoristaAsync(string entidadeId)
-        {
-            if (int.TryParse(entidadeId, out var motoristaId))
-            {
-                return await _context.Motoristas.IgnoreQueryFilters()
-                    .Include(m => m.Empresa)
-                    .FirstOrDefaultAsync(m => m.Id == motoristaId);
-            }
-
-            var normalizedCpf = NormalizeDigits(entidadeId);
-            return await _context.Motoristas.IgnoreQueryFilters()
-                .Include(m => m.Empresa)
-                .FirstOrDefaultAsync(m =>
-                    m.Cpf == entidadeId ||
-                    (m.Cpf != null && m.Cpf.Replace(".", "").Replace("-", "") == normalizedCpf));
-        }
-
-        private static string NormalizeDigits(string value) =>
-            new(value.Where(char.IsDigit).ToArray());
     }
 }

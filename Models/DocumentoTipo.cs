@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -16,6 +16,9 @@ namespace Eva.Models
 
         [Column("obrigatorio")]
         public bool Obrigatorio { get; set; }
+
+        [Column("permite_multiplos")]
+        public bool PermiteMultiplos { get; set; }
 
         public virtual ICollection<DocumentoTipoVinculo> Vinculos { get; set; } = new List<DocumentoTipoVinculo>();
     }

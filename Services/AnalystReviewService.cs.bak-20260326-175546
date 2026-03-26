@@ -208,16 +208,6 @@ namespace Eva.Services
                 .Where(sd => sd.SubmissaoId == submissaoId && sd.AtivoNaSubmissao)
                 .ToListAsync();
 
-            if (docsAtivos.Any(sd => sd.StatusRevisao == SubmissaoWorkflow.RevisaoPendente))
-            {
-                return ReviewActionResult.Failed("Todos os documentos da submissão precisam ser revisados antes da aprovação final.");
-            }
-
-            if (docsAtivos.Any(sd => sd.StatusRevisao == SubmissaoWorkflow.RevisaoRejeitada))
-            {
-                return ReviewActionResult.Failed("Ainda existem documentos rejeitados na submissão.");
-            }
-
             var tiposObrigatorios = await _context.DocumentoTipoVinculos
                 .Include(v => v.DocumentoTipo)
                 .Where(v => v.EntidadeTipo == submissao.EntidadeTipo && v.DocumentoTipo != null && v.DocumentoTipo.Obrigatorio)
@@ -268,18 +258,23 @@ namespace Eva.Services
             var docsAtivos = await _context.SubmissaoDocumentos
                 .Where(sd => sd.SubmissaoId == submissaoId && sd.AtivoNaSubmissao)
                 .ToListAsync();
-            var possuiPendenciaDados = dados.StatusRevisao == SubmissaoWorkflow.RevisaoPendente;
-            var possuiPendenciaDocumento = docsAtivos.Any(sd => sd.StatusRevisao == SubmissaoWorkflow.RevisaoPendente);
-            var possuiRejeicaoDocumento = docsAtivos.Any(sd => sd.StatusRevisao == SubmissaoWorkflow.RevisaoRejeitada);
 
-            if (possuiPendenciaDados || possuiPendenciaDocumento)
-            {
-                return ReviewActionResult.Failed("Revise todos os itens da submissão antes da rejeição final.");
-            }
+            var tiposObrigatorios = await _context.DocumentoTipoVinculos
+                .Include(v => v.DocumentoTipo)
+                .Where(v => v.EntidadeTipo == submissao.EntidadeTipo && v.DocumentoTipo != null && v.DocumentoTipo.Obrigatorio)
+                .Select(v => v.TipoNome)
+                .ToListAsync();
 
-            if (!possuiRejeicaoDados && !possuiRejeicaoDocumento)
+            var possuiRejeicaoObrigatoria = tiposObrigatorios.Any(tipoObrigatorio =>
             {
-                return ReviewActionResult.Failed("Para rejeitar a submissão, rejeite os dados ou ao menos um documento.");
+                var docsDoTipo = docsAtivos.Where(sd => sd.DocumentoTipoNome == tipoObrigatorio).ToList();
+                return docsDoTipo.Any(sd => sd.StatusRevisao == SubmissaoWorkflow.RevisaoRejeitada) &&
+                       !docsDoTipo.Any(sd => sd.StatusRevisao == SubmissaoWorkflow.RevisaoAprovada);
+            });
+
+            if (!possuiRejeicaoDados && !possuiRejeicaoObrigatoria)
+            {
+                return ReviewActionResult.Failed("Para rejeitar a submissão, rejeite os dados ou ao menos um documento obrigatório.");
             }
 
             submissao.Status = SubmissaoWorkflow.Rejeitada;
@@ -356,10 +351,9 @@ namespace Eva.Services
                 return;
             }
 
-            if (submissao.EntidadeTipo == "MOTORISTA")
+            if (submissao.EntidadeTipo == "MOTORISTA" && int.TryParse(submissao.EntidadeId, out var motoristaId))
             {
-                var live = await FindMotoristaAsync(submissao.EntidadeId)
-                    ?? throw new InvalidOperationException($"Motorista não encontrado para a submissão {submissao.EntidadeId}.");
+                var live = await _context.Motoristas.IgnoreQueryFilters().FirstAsync(m => m.Id == motoristaId);
                 var draft = JsonSerializer.Deserialize<MotoristaVM>(json, JsonOptions);
                 if (draft != null)
                 {
@@ -431,23 +425,6 @@ namespace Eva.Services
 
             await _context.SaveChangesAsync();
         }
-
-        private async Task<Motorista?> FindMotoristaAsync(string entidadeId)
-        {
-            if (int.TryParse(entidadeId, out var motoristaId))
-            {
-                return await _context.Motoristas.IgnoreQueryFilters().FirstOrDefaultAsync(m => m.Id == motoristaId);
-            }
-
-            var normalizedCpf = NormalizeDigits(entidadeId);
-            return await _context.Motoristas.IgnoreQueryFilters()
-                .FirstOrDefaultAsync(m =>
-                    m.Cpf == entidadeId ||
-                    (m.Cpf != null && m.Cpf.Replace(".", "").Replace("-", "") == normalizedCpf));
-        }
-
-        private static string NormalizeDigits(string value) =>
-            new(value.Where(char.IsDigit).ToArray());
 
         private static string? NormalizeEmail(string? email) =>
             string.IsNullOrWhiteSpace(email) ? null : email.Trim().ToLowerInvariant();

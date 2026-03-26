@@ -15,20 +15,20 @@ namespace Eva.Pages.Empresa
     public class EditarVeiculoModel : PageModel
     {
         private readonly EvaDbContext _context;
-        private readonly PendenciaService _pendenciaService;
+        private readonly ISubmissaoService _submissaoService;
         private readonly ArquivoService _arquivoService;
         private readonly ICurrentUserService _currentUserService;
         private readonly IEmpresaEntityEditGuardService _editGuardService;
 
         public EditarVeiculoModel(
             EvaDbContext context,
-            PendenciaService pendenciaService,
+            ISubmissaoService submissaoService,
             ArquivoService arquivoService,
             ICurrentUserService currentUserService,
             IEmpresaEntityEditGuardService editGuardService)
         {
             _context = context;
-            _pendenciaService = pendenciaService;
+            _submissaoService = submissaoService;
             _arquivoService = arquivoService;
             _currentUserService = currentUserService;
             _editGuardService = editGuardService;
@@ -39,27 +39,27 @@ namespace Eva.Pages.Empresa
         [BindProperty] public string? TipoDocumentoUpload { get; set; }
 
         public string? PendenciaStatus { get; set; }
-        public string? RejeicaoMotivo { get; set; }
+        public string? ObservacaoGeralRejeicao { get; set; }
+        public string? MotivoRejeicaoDados { get; set; }
+        public string? FeedbackSucesso { get; set; }
 
-        public List<Documento> Crlvs { get; set; } = new();
-        public List<Documento> Laudos { get; set; } = new();
-        public List<Documento> Apolices { get; set; } = new();
-        public List<Documento> Comprovantes { get; set; } = new();
+        public List<DocumentoEdicaoItemVm> Crlvs { get; set; } = new();
+        public List<DocumentoEdicaoItemVm> Laudos { get; set; } = new();
+        public List<DocumentoEdicaoItemVm> Apolices { get; set; } = new();
+        public List<DocumentoEdicaoItemVm> Comprovantes { get; set; } = new();
 
         public async Task<IActionResult> OnGetAsync(string id)
         {
-            if (string.IsNullOrWhiteSpace(_currentUserService.GetCurrentEmpresaCnpj())) return RedirectToPage("/Login");
-
             var normalizedId = id.ToUpper().Trim();
             var guard = await _editGuardService.CheckVeiculoAsync(normalizedId);
             if (!guard.HasCurrentEmpresa) return RedirectToPage("/Login");
             if (!guard.ExistsAndBelongsToCurrentEmpresa) return NotFound();
 
-            var ticket = await _context.VPendenciasAtuais.FirstOrDefaultAsync(p => p.EntidadeTipo == "VEICULO" && p.EntidadeId == normalizedId);
+            var draft = await _submissaoService.GetDraftAsync("VEICULO", normalizedId);
 
-            if (ticket != null && (ticket.Status == WorkflowValidator.Incompleto || ticket.Status == WorkflowValidator.AguardandoAnalise || ticket.Status == WorkflowValidator.EmAnalise || ticket.Status == WorkflowValidator.Rejeitado) && !string.IsNullOrEmpty(ticket.DadosPropostos))
+            if (draft != null)
             {
-                Input = JsonSerializer.Deserialize<VeiculoVM>(ticket.DadosPropostos, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new VeiculoVM();
+                Input = JsonSerializer.Deserialize<VeiculoVM>(draft.Dados.DadosPropostos, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new VeiculoVM();
                 Input.Placa = normalizedId;
             }
             else
@@ -87,15 +87,17 @@ namespace Eva.Pages.Empresa
 
         private async Task LoadAuxiliaryData(string id)
         {
-            var ticket = await _context.VPendenciasAtuais.FirstOrDefaultAsync(p => p.EntidadeTipo == "VEICULO" && p.EntidadeId == id);
-            PendenciaStatus = ticket?.Status;
-            RejeicaoMotivo = ticket?.Motivo;
+            var snapshot = await _submissaoService.GetStatusSnapshotAsync("VEICULO", id);
+            PendenciaStatus = snapshot.Status;
+            ObservacaoGeralRejeicao = snapshot.ObservacaoGeralRejeicao;
+            MotivoRejeicaoDados = snapshot.MotivoRejeicaoDados;
 
-            var docs = await _context.DocumentoVeiculos.Where(dv => dv.VeiculoPlaca == id).Include(dv => dv.Documento).Select(dv => dv.Documento).ToListAsync();
-            Crlvs = docs.Where(d => d.DocumentoTipoNome == "CRLV").OrderByDescending(d => d.DataUpload).ToList();
-            Laudos = docs.Where(d => d.DocumentoTipoNome == "LAUDO_INSPECAO").OrderByDescending(d => d.DataUpload).ToList();
-            Apolices = docs.Where(d => d.DocumentoTipoNome == "APOLICE_SEGURO").OrderByDescending(d => d.DataUpload).ToList();
-            Comprovantes = docs.Where(d => d.DocumentoTipoNome == "COMPROVANTE_PAGAMENTO").OrderByDescending(d => d.DataUpload).ToList();
+            var docs = await _submissaoService.GetDocumentosParaEdicaoAsync("VEICULO", id);
+
+            Crlvs = docs.Where(d => d.Documento.DocumentoTipoNome == "CRLV").OrderByDescending(d => d.Documento.DataUpload).ThenByDescending(d => d.Documento.Id).ToList();
+            Laudos = docs.Where(d => d.Documento.DocumentoTipoNome == "LAUDO_INSPECAO").OrderByDescending(d => d.Documento.DataUpload).ThenByDescending(d => d.Documento.Id).ToList();
+            Apolices = docs.Where(d => d.Documento.DocumentoTipoNome == "APOLICE_SEGURO").OrderByDescending(d => d.Documento.DataUpload).ThenByDescending(d => d.Documento.Id).ToList();
+            Comprovantes = docs.Where(d => d.Documento.DocumentoTipoNome == "COMPROVANTE_PAGAMENTO").OrderByDescending(d => d.Documento.DataUpload).ThenByDescending(d => d.Documento.Id).ToList();
         }
 
         public async Task<IActionResult> OnPostAsync()
@@ -113,7 +115,51 @@ namespace Eva.Pages.Empresa
             }
 
             var dadosPropostos = JsonSerializer.Serialize(Input);
-            await _pendenciaService.SalvarDadosPropostosAsync("VEICULO", Input.Placa, dadosPropostos);
+            await _submissaoService.SalvarDadosPropostosAsync("VEICULO", Input.Placa, dadosPropostos, _currentUserService.GetCurrentEmail());
+            FeedbackSucesso = "AlteraÃ§Ãµes salvas em ediÃ§Ã£o. Quando terminar, clique em \"Enviar para anÃ¡lise\".";
+            await LoadAuxiliaryData(Input.Placa);
+            return Page();
+        }
+
+        public async Task<IActionResult> OnPostEnviarAsync([FromRoute] string id)
+        {
+            Input.Placa = id;
+            if (!ModelState.IsValid)
+            {
+                await LoadAuxiliaryData(id);
+                return Page();
+            }
+
+            var guard = await _editGuardService.CheckVeiculoAsync(id);
+            if (!guard.HasCurrentEmpresa) return RedirectToPage("/Login");
+            if (!guard.ExistsAndBelongsToCurrentEmpresa) return NotFound();
+            if (guard.IsLocked)
+            {
+                await LoadAuxiliaryData(id);
+                return Page();
+            }
+
+            var dadosPropostos = JsonSerializer.Serialize(Input);
+            await _submissaoService.SalvarDadosPropostosAsync("VEICULO", id, dadosPropostos, _currentUserService.GetCurrentEmail());
+
+            var result = await _submissaoService.EnviarParaAnaliseAsync("VEICULO", id, _currentUserService.GetCurrentEmail());
+            if (!result.Success)
+            {
+                foreach (var error in result.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error);
+                }
+
+                var draft = await _submissaoService.GetDraftAsync("VEICULO", id);
+                if (draft != null)
+                {
+                    Input = JsonSerializer.Deserialize<VeiculoVM>(draft.Dados.DadosPropostos, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new VeiculoVM();
+                    Input.Placa = id;
+                }
+
+                await LoadAuxiliaryData(id);
+                return Page();
+            }
 
             return RedirectToPage("/Empresa/MeusVeiculos");
         }
@@ -127,12 +173,6 @@ namespace Eva.Pages.Empresa
 
             if (UploadArquivo != null && !string.IsNullOrEmpty(TipoDocumentoUpload))
             {
-                var existingId = await _context.DocumentoVeiculos
-                    .Where(dv => dv.VeiculoPlaca == id && dv.Documento.DocumentoTipoNome == TipoDocumentoUpload)
-                    .Select(dv => dv.Documento.Id)
-                    .FirstOrDefaultAsync();
-
-                if (existingId > 0) await _arquivoService.DeletarDocumentoAsync(existingId, "VEICULO", id);
                 await _arquivoService.SalvarDocumentoAsync(UploadArquivo, TipoDocumentoUpload, "VEICULO", id);
             }
 
@@ -148,7 +188,7 @@ namespace Eva.Pages.Empresa
             if (!guard.ExistsAndBelongsToCurrentEmpresa) return NotFound();
             if (guard.IsLocked) return RedirectToPage(new { id });
 
-            await _arquivoService.DeletarDocumentoAsync(docId, "VEICULO", id);
+            await _submissaoService.RemoverDocumentoDoDraftAsync("VEICULO", id, docId, _currentUserService.GetCurrentEmail());
 
             Input.Placa = id;
             await LoadAuxiliaryData(id);

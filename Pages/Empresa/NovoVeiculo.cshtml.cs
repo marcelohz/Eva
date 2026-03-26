@@ -6,8 +6,8 @@ using Eva.Data;
 using Eva.Models;
 using Eva.Models.ViewModels;
 using Eva.Services;
-using Eva.Workflow;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace Eva.Pages.Empresa
 {
@@ -15,13 +15,13 @@ namespace Eva.Pages.Empresa
     public class NovoVeiculoModel : PageModel
     {
         private readonly EvaDbContext _context;
-        private readonly PendenciaService _pendenciaService;
+        private readonly ISubmissaoService _submissaoService;
         private readonly ArquivoService _arquivoService;
 
-        public NovoVeiculoModel(EvaDbContext context, PendenciaService pendenciaService, ArquivoService arquivoService)
+        public NovoVeiculoModel(EvaDbContext context, ISubmissaoService submissaoService, ArquivoService arquivoService)
         {
             _context = context;
-            _pendenciaService = pendenciaService;
+            _submissaoService = submissaoService;
             _arquivoService = arquivoService;
         }
 
@@ -63,21 +63,31 @@ namespace Eva.Pages.Empresa
                 NumeroLugares = Input.NumeroLugares,
                 AnoFabricacao = Input.AnoFabricacao,
                 ModeloAno = Input.ModeloAno
-                // EventualStatus removed! The status is managed via FluxoPendencias
             };
 
             _context.Veiculos.Add(veiculo);
             await _context.SaveChangesAsync();
+
+            var dadosPropostos = JsonSerializer.Serialize(new VeiculoVM
+            {
+                Placa = veiculo.Placa,
+                Modelo = veiculo.Modelo ?? string.Empty,
+                ChassiNumero = veiculo.ChassiNumero,
+                Renavan = veiculo.Renavan,
+                PotenciaMotor = veiculo.PotenciaMotor,
+                VeiculoCombustivelNome = veiculo.VeiculoCombustivelNome,
+                NumeroLugares = veiculo.NumeroLugares,
+                AnoFabricacao = veiculo.AnoFabricacao,
+                ModeloAno = veiculo.ModeloAno
+            });
+            await _submissaoService.SalvarDadosPropostosAsync("VEICULO", veiculo.Placa, dadosPropostos, userEmail);
 
             if (UploadCrlv != null) await _arquivoService.SalvarDocumentoAsync(UploadCrlv, "CRLV", "VEICULO", veiculo.Placa);
             if (UploadLaudo != null) await _arquivoService.SalvarDocumentoAsync(UploadLaudo, "LAUDO_INSPECAO", "VEICULO", veiculo.Placa);
             if (UploadApolice != null) await _arquivoService.SalvarDocumentoAsync(UploadApolice, "APOLICE_SEGURO", "VEICULO", veiculo.Placa);
             if (UploadComprovante != null) await _arquivoService.SalvarDocumentoAsync(UploadComprovante, "COMPROVANTE_PAGAMENTO", "VEICULO", veiculo.Placa);
 
-            // This triggers the workflow and makes it appear in the Analyst's queue!
-            await _pendenciaService.AvancarEntidadeAsync("VEICULO", veiculo.Placa);
-
-            return RedirectToPage("./MeusVeiculos");
+            return RedirectToPage("./EditarVeiculo", new { id = veiculo.Placa });
         }
     }
 }

@@ -3,17 +3,17 @@
     // SAFETY LOCK 1: Prevents the "Inception" bug
     Layout = null;
 
-    bool isLocked = Model.PendenciaStatus == WorkflowStatus.EmAnalise;
+    bool isLocked = SubmissaoWorkflow.EstaBloqueadaParaEmpresa(Model.PendenciaStatus ?? "");
 
-    async Task RenderDocSection(string title, string type, List<Eva.Models.Documento> docs)
+    async Task RenderDocSection(string title, string type, List<Eva.Models.ViewModels.DocumentoEdicaoItemVm> docs)
     {
         <div class="mb-4 pb-3 border-bottom">
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <h6 class="fw-bold text-secondary mb-0">@title</h6>
-                @if (!isLocked && !docs.Any())
+                @if (!isLocked)
                 {
                     <button type="button" class="btn btn-sm btn-outline-primary" onclick="triggerUpload('@type')">
-                        <i class="bi bi-upload"></i> Enviar Novo
+                        <i class="bi bi-upload"></i> @(docs.Any() ? "Substituir" : "Enviar Novo")
                     </button>
                 }
             </div>
@@ -25,8 +25,9 @@
             else
             {
                 <ul class="list-group list-group-flush shadow-sm rounded">
-                    @foreach (var doc in docs)
+                    @foreach (var item in docs)
                     {
+                        var doc = item.Documento;
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             <div class="text-truncate me-2" title="@doc.NomeArquivo">
                                 <i class="bi bi-file-earmark-check text-success me-1"></i>
@@ -34,10 +35,25 @@
                                 <div class="text-muted" style="font-size: 0.75rem">
                                     @doc.DataUpload.ToString("dd/MM/yyyy HH:mm")
                                 </div>
+                                @if (!string.IsNullOrWhiteSpace(item.StatusRevisao))
+                                {
+                                    <div class="mt-2">
+                                        <span class="badge @SubmissaoWorkflow.GetReviewBadgeClass(item.StatusRevisao)">
+                                            @SubmissaoWorkflow.GetReviewDisplayLabel(item.StatusRevisao)
+                                        </span>
+                                    </div>
+                                }
+                                @if (item.StatusRevisao == SubmissaoWorkflow.RevisaoRejeitada && !string.IsNullOrWhiteSpace(item.MotivoRejeicao))
+                                {
+                                    <div class="small text-danger mt-2 preserve-newlines">
+                                        <i class="bi bi-exclamation-triangle-fill me-1"></i>@item.MotivoRejeicao
+                                    </div>
+                                }
                             </div>
                             @if (!isLocked)
                             {
                                 <form id="deleteForm-@doc.Id" method="post" asp-page-handler="DeleteDoc" asp-route-id="@Model.Input.Placa" class="d-inline">
+                                    @Html.AntiForgeryToken()
                                     <input type="hidden" name="docId" value="@doc.Id" />
                                     <button type="button" class="btn btn-link text-danger p-0 border-0" title="Excluir" onclick="evaPerformAsyncAction('deleteForm-@doc.Id', 'doc-section-container')">
                                         <i class="bi bi-trash"></i>

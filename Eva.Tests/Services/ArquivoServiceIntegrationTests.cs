@@ -1,6 +1,7 @@
 using Eva.Models;
 using Eva.Services;
 using Eva.Tests.Infrastructure;
+using Eva.Workflow;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,29 +21,46 @@ public class ArquivoServiceIntegrationTests : IAsyncLifetime
     public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
-    public async Task SalvarDocumentoAsync_deve_salvar_documento_vincular_empresa_e_abrir_fluxo()
+    public async Task SalvarDocumentoAsync_deve_salvar_documento_e_vincular_ao_draft_da_submissao()
     {
         await using var context = _database.CreateDbContext();
         await SeedEmpresaAsync(context, "12345678000199", "empresa@teste.com");
 
-        var pendenciaService = new PendenciaService(context, new TestBackgroundJobClient());
-        var arquivoService = new ArquivoService(context, pendenciaService);
+        var arquivoService = new ArquivoService(context, new SubmissaoService(context));
 
-        var file = CreatePdfFormFile("cartao-cnpj.pdf");
+        var documento = await arquivoService.SalvarDocumentoAsync(
+            CreatePdfFormFile("cartao-cnpj.pdf"),
+            "CARTAO_CNPJ",
+            "EMPRESA",
+            "12345678000199");
 
-        var documento = await arquivoService.SalvarDocumentoAsync(file, "CARTAO_CNPJ", "EMPRESA", "12345678000199");
+        var draft = await context.Submissoes.SingleAsync();
+        var draftDoc = await context.SubmissaoDocumentos.SingleAsync();
 
-        var docPersistido = await context.Documentos.FirstAsync(d => d.Id == documento.Id);
-        var link = await context.DocumentoEmpresas.FirstOrDefaultAsync(de => de.Id == documento.Id);
-        var atual = await context.VPendenciasAtuais.FirstOrDefaultAsync(p => p.EntidadeTipo == "EMPRESA" && p.EntidadeId == "12345678000199");
+        Assert.Equal(SubmissaoWorkflow.EmEdicao, draft.Status);
+        Assert.Equal(documento.Id, draftDoc.DocumentoId);
+        Assert.Equal(SubmissaoWorkflow.RevisaoPendente, draftDoc.StatusRevisao);
+        Assert.True(draftDoc.AtivoNaSubmissao);
+    }
 
-        Assert.Equal("cartao-cnpj.pdf", docPersistido.NomeArquivo);
-        Assert.Equal("application/pdf", docPersistido.ContentType);
-        Assert.NotNull(docPersistido.Hash);
-        Assert.NotNull(link);
-        Assert.Equal("12345678000199", link!.EmpresaCnpj);
-        Assert.NotNull(atual);
-        Assert.Equal("AGUARDANDO_ANALISE", atual!.Status);
+    [Fact]
+    public async Task SalvarDocumentoAsync_deve_manter_multiplos_ativos_para_identidade_socio()
+    {
+        await using var context = _database.CreateDbContext();
+        await SeedEmpresaAsync(context, "12345678000199", "empresa@teste.com");
+
+        var arquivoService = new ArquivoService(context, new SubmissaoService(context));
+
+        await arquivoService.SalvarDocumentoAsync(CreatePdfFormFile("socio-1.pdf"), "IDENTIDADE_SOCIO", "EMPRESA", "12345678000199");
+        await arquivoService.SalvarDocumentoAsync(CreatePdfFormFile("socio-2.pdf"), "IDENTIDADE_SOCIO", "EMPRESA", "12345678000199");
+
+        var docs = await context.SubmissaoDocumentos
+            .Where(sd => sd.DocumentoTipoNome == "IDENTIDADE_SOCIO")
+            .OrderBy(sd => sd.Id)
+            .ToListAsync();
+
+        Assert.Equal(2, docs.Count);
+        Assert.All(docs, d => Assert.True(d.AtivoNaSubmissao));
     }
 
     [Fact]
@@ -51,8 +69,7 @@ public class ArquivoServiceIntegrationTests : IAsyncLifetime
         await using var context = _database.CreateDbContext();
         await SeedEmpresaAsync(context, "12345678000199", "empresa@teste.com");
 
-        var pendenciaService = new PendenciaService(context, new TestBackgroundJobClient());
-        var arquivoService = new ArquivoService(context, pendenciaService);
+        var arquivoService = new ArquivoService(context, new SubmissaoService(context));
 
         var file = CreateFormFile("texto.txt", "text/plain", "arquivo invalido"u8.ToArray());
 
@@ -60,54 +77,6 @@ public class ArquivoServiceIntegrationTests : IAsyncLifetime
             arquivoService.SalvarDocumentoAsync(file, "CARTAO_CNPJ", "EMPRESA", "12345678000199"));
 
         Assert.Equal("Formato de arquivo não suportado. Apenas PDF, JPG e PNG são permitidos.", ex.Message);
-    }
-
-    [Fact]
-    public async Task DeletarDocumentoAsync_deve_remover_documento_e_retornar_entidade_para_incompleto()
-    {
-        await using var context = _database.CreateDbContext();
-        await SeedEmpresaAsync(context, "12345678000199", "empresa@teste.com");
-
-        var pendenciaService = new PendenciaService(context, new TestBackgroundJobClient());
-        var arquivoService = new ArquivoService(context, pendenciaService);
-
-        var documento = await arquivoService.SalvarDocumentoAsync(
-            CreatePdfFormFile("cartao-cnpj.pdf"),
-            "CARTAO_CNPJ",
-            "EMPRESA",
-            "12345678000199");
-
-        await arquivoService.DeletarDocumentoAsync(documento.Id, "EMPRESA", "12345678000199");
-
-        var docRemovido = await context.Documentos.FirstOrDefaultAsync(d => d.Id == documento.Id);
-        var atual = await context.VPendenciasAtuais.FirstAsync(p => p.EntidadeTipo == "EMPRESA" && p.EntidadeId == "12345678000199");
-
-        Assert.Null(docRemovido);
-        Assert.Equal("INCOMPLETO", atual.Status);
-        Assert.Null(atual.Analista);
-    }
-
-    [Fact]
-    public async Task DeletarDocumentoAsync_deve_bloquear_retorno_para_fila_quando_item_esta_com_outro_analista()
-    {
-        await using var context = _database.CreateDbContext();
-        await SeedEmpresaAsync(context, "12345678000199", "empresa@teste.com");
-
-        var pendenciaService = new PendenciaService(context, new TestBackgroundJobClient());
-        var arquivoService = new ArquivoService(context, pendenciaService);
-
-        var documento = await arquivoService.SalvarDocumentoAsync(
-            CreatePdfFormFile("cartao-cnpj.pdf"),
-            "CARTAO_CNPJ",
-            "EMPRESA",
-            "12345678000199");
-
-        await pendenciaService.IniciarAnaliseAsync("EMPRESA", "12345678000199", "analista@metroplan.rs.gov.br");
-
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            arquivoService.DeletarDocumentoAsync(documento.Id, "EMPRESA", "12345678000199"));
-
-        Assert.Equal("Apenas o analista atual pode devolver o item para a fila, ou solicite a um Administrador.", ex.Message);
     }
 
     private static async Task SeedEmpresaAsync(Eva.Data.EvaDbContext context, string cnpj, string email)

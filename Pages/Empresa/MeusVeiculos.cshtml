@@ -72,9 +72,9 @@
                                         @(v.CorPrincipalNome ?? "-")
                                     </td>
                                     <td>
-                                        @if (health.IsLegal)
+                                        @if (health.CurrentStatus == WorkflowStatus.Rejeitado)
                                         {
-                                            <span class="badge bg-success"><i class="bi bi-check-circle"></i> Legalizado</span>
+                                            <span class="badge @WorkflowStatus.GetBadgeClass(health.CurrentStatus)"><i class="bi @WorkflowStatus.GetBadgeIcon(health.CurrentStatus)"></i> @WorkflowStatus.GetDisplayLabel(health.CurrentStatus)</span>
                                         }
                                         else if (health.CurrentStatus == WorkflowStatus.AguardandoAnalise)
                                         {
@@ -84,9 +84,9 @@
                                         {
                                             <span class="badge @WorkflowStatus.GetBadgeClass(health.CurrentStatus)"><i class="bi @WorkflowStatus.GetBadgeIcon(health.CurrentStatus)"></i> @WorkflowStatus.GetDisplayLabel(health.CurrentStatus)</span>
                                         }
-                                        else if (health.CurrentStatus == WorkflowStatus.Rejeitado)
+                                        else if (health.IsLegal)
                                         {
-                                            <span class="badge @WorkflowStatus.GetBadgeClass(health.CurrentStatus)"><i class="bi @WorkflowStatus.GetBadgeIcon(health.CurrentStatus)"></i> @WorkflowStatus.GetDisplayLabel(health.CurrentStatus)</span>
+                                            <span class="badge bg-success"><i class="bi bi-check-circle"></i> Legalizado</span>
                                         }
                                         else if (health.CurrentStatus == WorkflowStatus.Incompleto)
                                         {

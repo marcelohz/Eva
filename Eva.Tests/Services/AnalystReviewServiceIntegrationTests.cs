@@ -1,9 +1,7 @@
 using Eva.Models;
 using Eva.Services;
 using Eva.Tests.Infrastructure;
-using Hangfire;
-using Hangfire.Common;
-using Hangfire.States;
+using Eva.Workflow;
 using Microsoft.EntityFrameworkCore;
 
 namespace Eva.Tests.Services;
@@ -22,98 +20,240 @@ public class AnalystReviewServiceIntegrationTests : IAsyncLifetime
     public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
-    public async Task IniciarAnaliseAsync_deve_bloquear_ticket_para_o_analista()
+    public async Task IniciarAnaliseSubmissaoAsync_deve_bloquear_submissao_para_o_analista()
     {
         await using var context = _database.CreateDbContext();
         await SeedEmpresaAsync(context, "12345678000199", "empresa@teste.com");
 
-        var pendenciaService = new PendenciaService(context, new FakeBackgroundJobClient());
-        await pendenciaService.AvancarEntidadeAsync("EMPRESA", "12345678000199");
+        var submissaoService = new SubmissaoService(context);
+        var submissao = await CriarSubmissaoEmpresaAguardandoAnaliseAsync(context, submissaoService, "12345678000199");
+        var service = new AnalystReviewService(context, new EntityStatusService(context));
 
-        var service = new AnalystReviewService(context, pendenciaService, new EntityStatusService(context));
+        var result = await service.IniciarAnaliseSubmissaoAsync(submissao.Id, "analista@metroplan.rs.gov.br");
 
-        var result = await service.IniciarAnaliseAsync("EMPRESA", "12345678000199", "analista@metroplan.rs.gov.br");
-        var atual = await context.VPendenciasAtuais
-            .FirstAsync(p => p.EntidadeTipo == "EMPRESA" && p.EntidadeId == "12345678000199");
+        var atualizada = await context.Submissoes.FirstAsync(s => s.Id == submissao.Id);
 
         Assert.True(result.Success);
-        Assert.Equal("EM_ANALISE", atual.Status);
-        Assert.Equal("analista@metroplan.rs.gov.br", atual.Analista);
+        Assert.Equal(SubmissaoWorkflow.EmAnalise, atualizada.Status);
+        Assert.Equal("analista@metroplan.rs.gov.br", atualizada.AnalistaAtual);
     }
 
     [Fact]
-    public async Task AprovarAsync_deve_falhar_quando_documento_obrigatorio_estiver_faltando()
+    public async Task AprovarSubmissaoAsync_deve_promover_dados_e_documentos_oficiais()
     {
         await using var context = _database.CreateDbContext();
         await SeedEmpresaAsync(context, "12345678000199", "empresa@teste.com");
 
-        var pendenciaService = new PendenciaService(context, new FakeBackgroundJobClient());
-        await pendenciaService.AvancarEntidadeAsync("EMPRESA", "12345678000199");
-        await pendenciaService.IniciarAnaliseAsync("EMPRESA", "12345678000199", "analista@metroplan.rs.gov.br");
-
-        var service = new AnalystReviewService(context, pendenciaService, new EntityStatusService(context));
-
-        var result = await service.AprovarAsync(
+        var submissaoService = new SubmissaoService(context);
+        await submissaoService.SalvarDadosPropostosAsync(
             "EMPRESA",
             "12345678000199",
-            "analista@metroplan.rs.gov.br",
-            new Dictionary<int, DateOnly?>());
+            """{"cnpj":"12345678000199","nome":"Empresa Corrigida","nomeFantasia":"Empresa Corrigida","email":"empresa@teste.com"}""",
+            "empresa@teste.com");
 
-        Assert.False(result.Success);
-        Assert.Contains("Faltam documentos obrigatórios", result.ErrorMessage);
-    }
+        var documento = await CriarDocumentoAsync(context, "CARTAO_CNPJ");
+        await submissaoService.VincularDocumentoAoDraftAsync("EMPRESA", "12345678000199", documento.Id, "CARTAO_CNPJ", "empresa@teste.com");
+        await submissaoService.EnviarParaAnaliseAsync("EMPRESA", "12345678000199", "empresa@teste.com");
 
-    [Fact]
-    public async Task AprovarAsync_deve_atualizar_validade_do_documento_e_concluir_aprovacao()
-    {
-        await using var context = _database.CreateDbContext();
-        await SeedEmpresaAsync(context, "12345678000199", "empresa@teste.com");
+        var submissao = await context.Submissoes.SingleAsync();
+        var docSub = await context.SubmissaoDocumentos.SingleAsync();
+        var service = new AnalystReviewService(context, new EntityStatusService(context));
 
-        var documento = await AddEmpresaDocumentoAsync(
-            context,
-            "12345678000199",
-            "CARTAO_CNPJ",
-            DateTime.UtcNow.AddDays(-1));
+        await service.IniciarAnaliseSubmissaoAsync(submissao.Id, "analista@metroplan.rs.gov.br");
+        await service.AprovarDadosAsync(submissao.Id, "analista@metroplan.rs.gov.br");
+        await service.AprovarDocumentoAsync(docSub.Id, "analista@metroplan.rs.gov.br", DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)));
 
-        var pendenciaService = new PendenciaService(context, new FakeBackgroundJobClient());
-        await pendenciaService.AvancarEntidadeAsync("EMPRESA", "12345678000199");
-        await pendenciaService.IniciarAnaliseAsync("EMPRESA", "12345678000199", "analista@metroplan.rs.gov.br");
+        var result = await service.AprovarSubmissaoAsync(submissao.Id, "analista@metroplan.rs.gov.br");
 
-        var service = new AnalystReviewService(context, pendenciaService, new EntityStatusService(context));
-        var novaValidade = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30));
-
-        var result = await service.AprovarAsync(
-            "EMPRESA",
-            "12345678000199",
-            "analista@metroplan.rs.gov.br",
-            new Dictionary<int, DateOnly?> { [documento.Id] = novaValidade });
-
-        var docAtualizado = await context.Documentos.FirstAsync(d => d.Id == documento.Id);
-        var atual = await context.VPendenciasAtuais
-            .FirstAsync(p => p.EntidadeTipo == "EMPRESA" && p.EntidadeId == "12345678000199");
+        var empresa = await context.Empresas.IgnoreQueryFilters().FirstAsync(e => e.Cnpj == "12345678000199");
+        var submissaoAprovada = await context.Submissoes.FirstAsync(s => s.Id == submissao.Id);
+        var atual = await context.EntidadeDocumentosAtuais.SingleAsync();
+        var health = await new EntityStatusService(context).GetHealthAsync("EMPRESA", "12345678000199");
 
         Assert.True(result.Success);
-        Assert.Equal("Aprovação concluída com sucesso.", result.SuccessMessage);
-        Assert.Equal(novaValidade, docAtualizado.Validade);
-        Assert.Equal("APROVADO", atual.Status);
+        Assert.Equal(SubmissaoWorkflow.Aprovada, submissaoAprovada.Status);
+        Assert.Equal("Empresa Corrigida", empresa.Nome);
+        Assert.Equal(documento.Id, atual.DocumentoId);
+        Assert.True(health.IsLegal);
     }
 
     [Fact]
-    public async Task RejeitarAsync_deve_exigir_motivo()
+    public async Task RejeitarSubmissaoAsync_deve_exigir_item_rejeitado_antes_da_rejeicao_final()
     {
         await using var context = _database.CreateDbContext();
         await SeedEmpresaAsync(context, "12345678000199", "empresa@teste.com");
 
-        var pendenciaService = new PendenciaService(context, new FakeBackgroundJobClient());
-        await pendenciaService.AvancarEntidadeAsync("EMPRESA", "12345678000199");
-        await pendenciaService.IniciarAnaliseAsync("EMPRESA", "12345678000199", "analista@metroplan.rs.gov.br");
+        var submissaoService = new SubmissaoService(context);
+        var submissao = await CriarSubmissaoEmpresaAguardandoAnaliseAsync(context, submissaoService, "12345678000199");
+        var service = new AnalystReviewService(context, new EntityStatusService(context));
+        var documentoObrigatorio = await context.SubmissaoDocumentos.SingleAsync(sd => sd.DocumentoTipoNome == "CARTAO_CNPJ");
 
-        var service = new AnalystReviewService(context, pendenciaService, new EntityStatusService(context));
+        await service.IniciarAnaliseSubmissaoAsync(submissao.Id, "analista@metroplan.rs.gov.br");
 
-        var result = await service.RejeitarAsync("EMPRESA", "12345678000199", "analista@metroplan.rs.gov.br", "");
+        var falha = await service.RejeitarSubmissaoAsync(submissao.Id, "analista@metroplan.rs.gov.br", "Observacao final");
+        Assert.False(falha.Success);
+
+        await service.RejeitarDadosAsync(submissao.Id, "analista@metroplan.rs.gov.br", "Dados inconsistentes");
+        await service.AprovarDocumentoAsync(documentoObrigatorio.Id, "analista@metroplan.rs.gov.br", null);
+        var sucesso = await service.RejeitarSubmissaoAsync(submissao.Id, "analista@metroplan.rs.gov.br", "Observacao final");
+
+        var rejeitada = await context.Submissoes.FirstAsync(s => s.Id == submissao.Id);
+
+        Assert.True(sucesso.Success);
+        Assert.Equal(SubmissaoWorkflow.Rejeitada, rejeitada.Status);
+        Assert.Equal("Observacao final", rejeitada.ObservacaoAnalista);
+    }
+
+    [Fact]
+    public async Task RejeitarSubmissaoAsync_deve_aceitar_documento_opcional_rejeitado()
+    {
+        await using var context = _database.CreateDbContext();
+        await SeedEmpresaAsync(context, "12345678000199", "empresa@teste.com");
+
+        var submissaoService = new SubmissaoService(context);
+        await submissaoService.SalvarDadosPropostosAsync(
+            "EMPRESA",
+            "12345678000199",
+            """{"cnpj":"12345678000199","nome":"Empresa Teste","nomeFantasia":"Empresa Teste","email":"empresa@teste.com"}""",
+            "empresa@teste.com");
+
+        var cartao = await CriarDocumentoAsync(context, "CARTAO_CNPJ");
+        var identidade = await CriarDocumentoAsync(context, "IDENTIDADE_SOCIO");
+        await submissaoService.VincularDocumentoAoDraftAsync("EMPRESA", "12345678000199", cartao.Id, "CARTAO_CNPJ", "empresa@teste.com");
+        await submissaoService.VincularDocumentoAoDraftAsync("EMPRESA", "12345678000199", identidade.Id, "IDENTIDADE_SOCIO", "empresa@teste.com");
+        await submissaoService.EnviarParaAnaliseAsync("EMPRESA", "12345678000199", "empresa@teste.com");
+
+        var submissao = await context.Submissoes.SingleAsync();
+        var documentos = await context.SubmissaoDocumentos.OrderBy(sd => sd.Id).ToListAsync();
+        var documentoObrigatorio = documentos.First(sd => sd.DocumentoTipoNome == "CARTAO_CNPJ");
+        var documentoOpcional = documentos.First(sd => sd.DocumentoTipoNome == "IDENTIDADE_SOCIO");
+        var service = new AnalystReviewService(context, new EntityStatusService(context));
+
+        await service.IniciarAnaliseSubmissaoAsync(submissao.Id, "analista@metroplan.rs.gov.br");
+        await service.AprovarDadosAsync(submissao.Id, "analista@metroplan.rs.gov.br");
+        await service.AprovarDocumentoAsync(documentoObrigatorio.Id, "analista@metroplan.rs.gov.br", null);
+        await service.RejeitarDocumentoAsync(documentoOpcional.Id, "analista@metroplan.rs.gov.br", "Documento opcional inválido");
+
+        var result = await service.RejeitarSubmissaoAsync(submissao.Id, "analista@metroplan.rs.gov.br", "Observacao final");
+
+        Assert.True(result.Success);
+    }
+
+    [Fact]
+    public async Task AprovarSubmissaoAsync_deve_bloquear_documento_rejeitado_ativo()
+    {
+        await using var context = _database.CreateDbContext();
+        await SeedEmpresaAsync(context, "12345678000199", "empresa@teste.com");
+
+        var submissaoService = new SubmissaoService(context);
+        await submissaoService.SalvarDadosPropostosAsync(
+            "EMPRESA",
+            "12345678000199",
+            """{"cnpj":"12345678000199","nome":"Empresa Teste","nomeFantasia":"Empresa Teste","email":"empresa@teste.com"}""",
+            "empresa@teste.com");
+
+        var cartao = await CriarDocumentoAsync(context, "CARTAO_CNPJ");
+        var identidade = await CriarDocumentoAsync(context, "IDENTIDADE_SOCIO");
+        await submissaoService.VincularDocumentoAoDraftAsync("EMPRESA", "12345678000199", cartao.Id, "CARTAO_CNPJ", "empresa@teste.com");
+        await submissaoService.VincularDocumentoAoDraftAsync("EMPRESA", "12345678000199", identidade.Id, "IDENTIDADE_SOCIO", "empresa@teste.com");
+        await submissaoService.EnviarParaAnaliseAsync("EMPRESA", "12345678000199", "empresa@teste.com");
+
+        var submissao = await context.Submissoes.SingleAsync();
+        var documentos = await context.SubmissaoDocumentos.OrderBy(sd => sd.Id).ToListAsync();
+        var documentoObrigatorio = documentos.First(sd => sd.DocumentoTipoNome == "CARTAO_CNPJ");
+        var documentoOpcional = documentos.First(sd => sd.DocumentoTipoNome == "IDENTIDADE_SOCIO");
+        var service = new AnalystReviewService(context, new EntityStatusService(context));
+
+        await service.IniciarAnaliseSubmissaoAsync(submissao.Id, "analista@metroplan.rs.gov.br");
+        await service.AprovarDadosAsync(submissao.Id, "analista@metroplan.rs.gov.br");
+        await service.AprovarDocumentoAsync(documentoObrigatorio.Id, "analista@metroplan.rs.gov.br", null);
+        await service.RejeitarDocumentoAsync(documentoOpcional.Id, "analista@metroplan.rs.gov.br", "Documento opcional inválido");
+
+        var result = await service.AprovarSubmissaoAsync(submissao.Id, "analista@metroplan.rs.gov.br");
 
         Assert.False(result.Success);
-        Assert.Equal("O motivo é obrigatório para rejeições.", result.ErrorMessage);
+        Assert.Contains("rejeitados", result.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task AprovarSubmissaoAsync_deve_exigir_todos_os_itens_revisados()
+    {
+        await using var context = _database.CreateDbContext();
+        await SeedEmpresaAsync(context, "12345678000199", "empresa@teste.com");
+
+        var submissaoService = new SubmissaoService(context);
+        await submissaoService.SalvarDadosPropostosAsync(
+            "EMPRESA",
+            "12345678000199",
+            """{"cnpj":"12345678000199","nome":"Empresa Teste","nomeFantasia":"Empresa Teste","email":"empresa@teste.com"}""",
+            "empresa@teste.com");
+
+        var cartao = await CriarDocumentoAsync(context, "CARTAO_CNPJ");
+        var identidade = await CriarDocumentoAsync(context, "IDENTIDADE_SOCIO");
+        await submissaoService.VincularDocumentoAoDraftAsync("EMPRESA", "12345678000199", cartao.Id, "CARTAO_CNPJ", "empresa@teste.com");
+        await submissaoService.VincularDocumentoAoDraftAsync("EMPRESA", "12345678000199", identidade.Id, "IDENTIDADE_SOCIO", "empresa@teste.com");
+        await submissaoService.EnviarParaAnaliseAsync("EMPRESA", "12345678000199", "empresa@teste.com");
+
+        var submissao = await context.Submissoes.SingleAsync();
+        var documentoObrigatorio = await context.SubmissaoDocumentos.SingleAsync(sd => sd.DocumentoTipoNome == "CARTAO_CNPJ");
+        var service = new AnalystReviewService(context, new EntityStatusService(context));
+
+        await service.IniciarAnaliseSubmissaoAsync(submissao.Id, "analista@metroplan.rs.gov.br");
+        await service.AprovarDadosAsync(submissao.Id, "analista@metroplan.rs.gov.br");
+        await service.AprovarDocumentoAsync(documentoObrigatorio.Id, "analista@metroplan.rs.gov.br", null);
+
+        var result = await service.AprovarSubmissaoAsync(submissao.Id, "analista@metroplan.rs.gov.br");
+
+        Assert.False(result.Success);
+        Assert.Contains("revisados", result.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task RejeitarSubmissaoAsync_deve_exigir_todos_os_itens_revisados()
+    {
+        await using var context = _database.CreateDbContext();
+        await SeedEmpresaAsync(context, "12345678000199", "empresa@teste.com");
+
+        var submissaoService = new SubmissaoService(context);
+        await submissaoService.SalvarDadosPropostosAsync(
+            "EMPRESA",
+            "12345678000199",
+            """{"cnpj":"12345678000199","nome":"Empresa Teste","nomeFantasia":"Empresa Teste","email":"empresa@teste.com"}""",
+            "empresa@teste.com");
+
+        var cartao = await CriarDocumentoAsync(context, "CARTAO_CNPJ");
+        var identidade = await CriarDocumentoAsync(context, "IDENTIDADE_SOCIO");
+        await submissaoService.VincularDocumentoAoDraftAsync("EMPRESA", "12345678000199", cartao.Id, "CARTAO_CNPJ", "empresa@teste.com");
+        await submissaoService.VincularDocumentoAoDraftAsync("EMPRESA", "12345678000199", identidade.Id, "IDENTIDADE_SOCIO", "empresa@teste.com");
+        await submissaoService.EnviarParaAnaliseAsync("EMPRESA", "12345678000199", "empresa@teste.com");
+
+        var submissao = await context.Submissoes.SingleAsync();
+        var documentoObrigatorio = await context.SubmissaoDocumentos.SingleAsync(sd => sd.DocumentoTipoNome == "CARTAO_CNPJ");
+        var service = new AnalystReviewService(context, new EntityStatusService(context));
+
+        await service.IniciarAnaliseSubmissaoAsync(submissao.Id, "analista@metroplan.rs.gov.br");
+        await service.RejeitarDadosAsync(submissao.Id, "analista@metroplan.rs.gov.br", "Dados inválidos");
+        await service.AprovarDocumentoAsync(documentoObrigatorio.Id, "analista@metroplan.rs.gov.br", null);
+
+        var result = await service.RejeitarSubmissaoAsync(submissao.Id, "analista@metroplan.rs.gov.br", "Observacao final");
+
+        Assert.False(result.Success);
+        Assert.Contains("Revise todos os itens", result.ErrorMessage);
+    }
+
+    private static async Task<Submissao> CriarSubmissaoEmpresaAguardandoAnaliseAsync(Eva.Data.EvaDbContext context, SubmissaoService submissaoService, string cnpj)
+    {
+        await submissaoService.SalvarDadosPropostosAsync(
+            "EMPRESA",
+            cnpj,
+            $"{{\"cnpj\":\"{cnpj}\",\"nome\":\"Empresa Teste\",\"nomeFantasia\":\"Empresa Teste\",\"email\":\"empresa@teste.com\"}}",
+            "empresa@teste.com");
+
+        var documento = await CriarDocumentoAsync(context, "CARTAO_CNPJ");
+        await submissaoService.VincularDocumentoAoDraftAsync("EMPRESA", cnpj, documento.Id, "CARTAO_CNPJ", "empresa@teste.com");
+        await submissaoService.EnviarParaAnaliseAsync("EMPRESA", cnpj, "empresa@teste.com");
+
+        return await context.Submissoes.SingleAsync();
     }
 
     private static async Task SeedEmpresaAsync(Eva.Data.EvaDbContext context, string cnpj, string email)
@@ -140,54 +280,19 @@ public class AnalystReviewServiceIntegrationTests : IAsyncLifetime
         await context.SaveChangesAsync();
     }
 
-    private static async Task<Documento> AddEmpresaDocumentoAsync(
-        Eva.Data.EvaDbContext context,
-        string empresaCnpj,
-        string tipoDocumento,
-        DateTime dataUpload)
+    private static async Task<Documento> CriarDocumentoAsync(Eva.Data.EvaDbContext context, string tipo)
     {
         var documento = new Documento
         {
-            DocumentoTipoNome = tipoDocumento,
+            DocumentoTipoNome = tipo,
             Conteudo = [1, 2, 3],
-            NomeArquivo = $"{tipoDocumento}.pdf",
+            NomeArquivo = $"{tipo}.pdf",
             ContentType = "application/pdf",
-            DataUpload = dataUpload
+            DataUpload = DateTime.UtcNow
         };
 
         context.Documentos.Add(documento);
         await context.SaveChangesAsync();
-
-        context.DocumentoEmpresas.Add(new DocumentoEmpresa
-        {
-            Id = documento.Id,
-            EmpresaCnpj = empresaCnpj
-        });
-
-        await context.SaveChangesAsync();
         return documento;
-    }
-
-    private sealed class FakeBackgroundJobClient : IBackgroundJobClient
-    {
-        public string Create(Job job, IState state) => Guid.NewGuid().ToString();
-
-        public bool ChangeState(string jobId, IState state, string expectedState) => true;
-
-        public bool Delete(string jobId) => true;
-
-        public string Enqueue(Job job) => Guid.NewGuid().ToString();
-
-        public string Schedule(Job job, TimeSpan delay) => Guid.NewGuid().ToString();
-
-        public string Schedule(Job job, DateTimeOffset enqueueAt) => Guid.NewGuid().ToString();
-
-        public string ContinueJobWith(string parentId, Job job) => Guid.NewGuid().ToString();
-
-        public string ContinueJobWith(string parentId, Job job, IState nextState) => Guid.NewGuid().ToString();
-
-        public string ContinueJobWith(string parentId, string queue, Job job, IState nextState) => Guid.NewGuid().ToString();
-
-        public string Requeue(string jobId) => jobId;
     }
 }

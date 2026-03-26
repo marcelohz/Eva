@@ -26,14 +26,19 @@ namespace Eva.Pages.Empresa
 
         public async Task<IActionResult> OnGetAsync()
         {
-            var cnpj = User.FindFirstValue("EmpresaCnpj");
+            var loggedInEmail = User.FindFirstValue(ClaimTypes.Email) ?? User.Identity?.Name;
+            var currentUser = await _context.Usuarios
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(u => u.Email == loggedInEmail && u.Ativo);
+            if (currentUser == null || string.IsNullOrEmpty(currentUser.EmpresaCnpj))
+            {
+                return RedirectToPage("/Login");
+            }
 
-            // We use IgnoreQueryFilters so the admin can see revoked (Ativo = false) users for auditing.
-            // Because we ignore global filters, we MUST manually enforce the multi-tenant isolation (EmpresaCnpj).
             Usuarios = await _context.Usuarios
                 .IgnoreQueryFilters()
-                .Where(u => u.EmpresaCnpj == cnpj)
-                .OrderByDescending(u => u.Ativo) // Put active users at the top, revoked at the bottom
+                .Where(u => u.EmpresaCnpj == currentUser.EmpresaCnpj)
+                .OrderByDescending(u => u.Ativo)
                 .ThenBy(u => u.Nome)
                 .ToListAsync();
 
@@ -43,10 +48,17 @@ namespace Eva.Pages.Empresa
         public async Task<IActionResult> OnPostDeleteAsync(int id)
         {
             var loggedInEmail = User.FindFirstValue(ClaimTypes.Email) ?? User.Identity?.Name;
+            var currentUser = await _context.Usuarios
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(u => u.Email == loggedInEmail && u.Ativo);
+            if (currentUser == null || string.IsNullOrEmpty(currentUser.EmpresaCnpj))
+            {
+                return RedirectToPage("/Login");
+            }
 
             var userToDelete = await _context.Usuarios
                 .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(u => u.Id == id);
+                .FirstOrDefaultAsync(u => u.Id == id && u.EmpresaCnpj == currentUser.EmpresaCnpj);
 
             if (userToDelete != null)
             {

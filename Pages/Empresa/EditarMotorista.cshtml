@@ -2,7 +2,7 @@
 @model Eva.Pages.Empresa.EditarMotoristaModel
 @{
     ViewData["Title"] = "Editar Motorista - Fretamento Eventual";
-    bool isLocked = Model.PendenciaStatus == WorkflowStatus.EmAnalise;
+    bool isLocked = SubmissaoWorkflow.EstaBloqueadaParaEmpresa(Model.PendenciaStatus ?? "");
 }
 
 <div class="container mt-5 mb-5">
@@ -18,45 +18,47 @@
     {
         <div class="alert alert-warning mb-4 shadow-sm" role="alert">
             <i class="bi bi-lock-fill me-2"></i>
-            <strong>Acesso Bloqueado:</strong> Este motorista está em análise por um analista e não pode ser alterado no momento.
+            <strong>Acesso Bloqueado:</strong> Este motorista estÃ¡ em anÃ¡lise por um analista e nÃ£o pode ser alterado no momento.
         </div>
     }
 
-    @if (Model.PendenciaStatus == "REJEITADO" && !string.IsNullOrEmpty(Model.RejeicaoMotivo))
+    @if (Model.PendenciaStatus == SubmissaoWorkflow.Rejeitada && !string.IsNullOrEmpty(Model.ObservacaoGeralRejeicao))
     {
         <div class="alert alert-danger mb-4 shadow-sm" role="alert">
             <i class="bi bi-exclamation-triangle-fill me-2"></i>
-            <strong>Atenção (Cadastro Rejeitado):</strong><span class="preserve-newlines"> @Model.RejeicaoMotivo</span>
+            <strong>RejeiÃ§Ã£o da submissÃ£o:</strong>
+            <div class="mt-2 preserve-newlines"><strong>ObservaÃ§Ã£o geral da rejeiÃ§Ã£o:</strong> @Model.ObservacaoGeralRejeicao</div>
         </div>
     }
+
+    @if (Model.PendenciaStatus == SubmissaoWorkflow.Rejeitada && !string.IsNullOrEmpty(Model.MotivoRejeicaoDados))
+    {
+        <div class="alert alert-warning mb-4 shadow-sm" role="alert">
+            <i class="bi bi-file-earmark-text-fill me-2"></i>
+            <strong>Dados cadastrais rejeitados:</strong>
+            <div class="mt-2 preserve-newlines"><strong>Motivo da rejeiÃ§Ã£o dos dados:</strong> @Model.MotivoRejeicaoDados</div>
+        </div>
+    }
+
+    <div id="page-feedback">
+        @if (!string.IsNullOrWhiteSpace(Model.FeedbackSucesso))
+        {
+            <div class="alert alert-success mb-4 shadow-sm" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i>@Model.FeedbackSucesso
+            </div>
+        }
+    </div>
 
     <div class="row">
         <div class="col-lg-7">
             <div class="card shadow mb-4">
                 <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Dados do Motorista</h5>
-                    @switch (Model.PendenciaStatus)
-                    {
-                        case WorkflowStatus.Incompleto:
-                            <span class="badge @WorkflowStatus.GetBadgeClass(Model.PendenciaStatus) border border-light"><i class="bi @WorkflowStatus.GetBadgeIcon(Model.PendenciaStatus)"></i> @WorkflowStatus.GetDisplayLabel(Model.PendenciaStatus)</span>
-                            break;
-                        case WorkflowStatus.AguardandoAnalise:
-                            <span class="badge @WorkflowStatus.GetBadgeClass(Model.PendenciaStatus) border border-light"><i class="bi @WorkflowStatus.GetBadgeIcon(Model.PendenciaStatus)"></i> @WorkflowStatus.GetDisplayLabel(Model.PendenciaStatus)</span>
-                            break;
-                        case WorkflowStatus.EmAnalise:
-                            <span class="badge @WorkflowStatus.GetBadgeClass(Model.PendenciaStatus) border border-light"><i class="bi @WorkflowStatus.GetBadgeIcon(Model.PendenciaStatus)"></i> @WorkflowStatus.GetDisplayLabel(Model.PendenciaStatus)</span>
-                            break;
-                        case WorkflowStatus.Aprovado:
-                            <span class="badge @WorkflowStatus.GetBadgeClass(Model.PendenciaStatus) border border-light"><i class="bi @WorkflowStatus.GetBadgeIcon(Model.PendenciaStatus)"></i> @WorkflowStatus.GetDisplayLabel(Model.PendenciaStatus)</span>
-                            break;
-                        case WorkflowStatus.Rejeitado:
-                            <span class="badge @WorkflowStatus.GetBadgeClass(Model.PendenciaStatus) border border-light"><i class="bi @WorkflowStatus.GetBadgeIcon(Model.PendenciaStatus)"></i> @WorkflowStatus.GetDisplayLabel(Model.PendenciaStatus)</span>
-                            break;
-                    }
+                    <span class="badge @SubmissaoWorkflow.GetBadgeClass(Model.PendenciaStatus) border border-light"><i class="bi @SubmissaoWorkflow.GetBadgeIcon(Model.PendenciaStatus)"></i> @SubmissaoWorkflow.GetDisplayLabel(Model.PendenciaStatus)</span>
                 </div>
                 <div class="card-body">
                     <form method="post" novalidate>
-                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
                         <input type="hidden" asp-for="Input.Id" />
 
                         <fieldset disabled="@(isLocked ? "disabled" : null)">
@@ -87,7 +89,8 @@
                                 <a href="/Empresa/MeusMotoristas" class="btn btn-outline-secondary">Voltar</a>
                                 @if (!isLocked)
                                 {
-                                    <button type="submit" class="btn btn-primary px-4">Salvar Alterações</button>
+                                    <button type="submit" class="btn btn-primary px-4">Salvar AlteraÃ§Ãµes</button>
+                                    <button type="submit" asp-page-handler="Enviar" class="btn btn-success px-4" onclick="return confirm('Deseja realmente enviar cadastro para anÃ¡lise?\nCertifique-se que todos dados e documentos estÃ£o corretos.');">Enviar para anÃ¡lise</button>
                                 }
                             </div>
                         </fieldset>
@@ -99,7 +102,7 @@
         <div class="col-lg-5">
             <div class="card shadow border-0">
                 <div class="card-header bg-secondary text-white">
-                    <h5 class="mb-0"><i class="bi bi-file-earmark-person me-2"></i>Documentação</h5>
+                    <h5 class="mb-0"><i class="bi bi-file-earmark-person me-2"></i>DocumentaÃ§Ã£o</h5>
                 </div>
                 <div class="card-body bg-light" id="doc-section-container">
                     <partial name="_MotoristaDocs" model="Model" />

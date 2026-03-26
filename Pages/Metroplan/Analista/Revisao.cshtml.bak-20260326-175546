@@ -174,7 +174,7 @@
                         }
                     </div>
 
-                    @if (Model.IsLockedByMe && Model.Submissao?.Status == SubmissaoWorkflow.EmAnalise && Model.DadosSubmissao?.CarregadoDoLive != true)
+                    @if (Model.IsLockedByMe && Model.Submissao?.Status == SubmissaoWorkflow.EmAnalise)
                     {
                         <div class="row g-3 mt-3">
                             <div class="col-md-4">
@@ -206,128 +206,134 @@
                 <div class="card-header bg-secondary text-white">
                     <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>Documentos da submissão</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-0">
                     @if (!Model.DocumentosRevisao.Any())
                     {
                         <div class="p-5 text-center text-muted">Nenhum documento configurado para este tipo de cadastro.</div>
                     }
                     else
                     {
-                        @foreach (var grupo in Model.DocumentosRevisao)
-                        {
-                            <section class="border rounded shadow-sm p-3 mb-4 bg-white">
-                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                                    <div class="d-flex align-items-center flex-wrap gap-2">
-                                        <h6 class="mb-0 fw-bold">@grupo.TipoNome.Replace("_", " ")</h6>
-                                        @if (grupo.Obrigatorio)
-                                        {
-                                            <span class="badge bg-danger">Obrigatório</span>
-                                        }
-                                        @if (grupo.PermiteMultiplos)
-                                        {
-                                            <span class="badge bg-dark">Múltiplos</span>
-                                        }
-                                    </div>
-                                    <span class="text-muted small">@grupo.Itens.Count item(ns)</span>
-                                </div>
+                        <div class="accordion accordion-flush" id="accordionDocumentos">
+                            @for (int i = 0; i < Model.DocumentosRevisao.Count; i++)
+                            {
+                                var grupo = Model.DocumentosRevisao[i];
+                                var collapseId = $"doc-group-{i}";
 
-                                @if (grupo.EstaFaltando)
-                                {
-                                    <div class="alert @(grupo.Obrigatorio ? "alert-danger" : "alert-secondary") mb-0">
-                                        @if (grupo.Obrigatorio)
-                                        {
-                                            <span>Documento obrigatório ainda não enviado nesta submissão.</span>
-                                        }
-                                        else
-                                        {
-                                            <span>Nenhum documento enviado para este tipo.</span>
-                                        }
-                                    </div>
-                                }
-                                else
-                                {
-                                    @foreach (var item in grupo.Itens)
-                                    {
-                                        var statusClass = item.StatusRevisao == SubmissaoWorkflow.RevisaoRejeitada
-                                            ? "border-danger bg-danger-subtle"
-                                            : item.StatusRevisao == SubmissaoWorkflow.RevisaoAprovada
-                                                ? "border-success bg-light"
-                                                : "border-warning bg-warning-subtle";
-
-                                        <div class="border rounded p-3 mb-3 @statusClass">
-                                            <div class="d-flex justify-content-between align-items-start gap-3">
-                                                <div>
-                                                    <div class="d-flex align-items-center gap-2 flex-wrap">
-                                                        <span class="fw-bold">@item.Documento.NomeArquivo</span>
-                                                        <span class="badge @SubmissaoWorkflow.GetReviewBadgeClass(item.StatusRevisao)">
-                                                            @SubmissaoWorkflow.GetReviewDisplayLabel(item.StatusRevisao)
-                                                        </span>
-                                                        @if (item.CarregadoDeDocumentoAtual)
-                                                        {
-                                                            <span class="badge bg-secondary">Carregado do oficial atual</span>
-                                                        }
-                                                    </div>
-                                                    <div class="small text-muted mt-1">
-                                                        Upload em @item.Documento.DataUpload.ToString("dd/MM/yyyy HH:mm")
-                                                        @if (item.ValidadeInformada.HasValue || item.Documento.Validade.HasValue)
-                                                        {
-                                                            <span class="ms-2">Validade: @((item.ValidadeInformada ?? item.Documento.Validade)!.Value.ToString("dd/MM/yyyy"))</span>
-                                                        }
-                                                    </div>
-                                                    @if (!string.IsNullOrWhiteSpace(item.MotivoRejeicao))
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="heading-@collapseId">
+                                        <button class="accordion-button @(i == 0 ? string.Empty : "collapsed")" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId">
+                                            <span class="fw-bold">@grupo.TipoNome.Replace("_", " ")</span>
+                                            @if (grupo.Obrigatorio)
+                                            {
+                                                <span class="badge bg-danger ms-2">Obrigatório</span>
+                                            }
+                                            @if (grupo.PermiteMultiplos)
+                                            {
+                                                <span class="badge bg-dark ms-2">Múltiplos</span>
+                                            }
+                                            <span class="ms-2 text-muted small">@grupo.Itens.Count item(ns)</span>
+                                        </button>
+                                    </h2>
+                                    <div id="@collapseId" class="accordion-collapse collapse @(i == 0 ? "show" : string.Empty)">
+                                        <div class="accordion-body">
+                                            @if (grupo.EstaFaltando)
+                                            {
+                                                <div class="alert @(grupo.Obrigatorio ? "alert-danger" : "alert-secondary") mb-0">
+                                                    @if (grupo.Obrigatorio)
                                                     {
-                                                        <div class="alert alert-danger py-2 px-3 mt-2 mb-0">
-                                                            <strong>Motivo da rejeição:</strong> @item.MotivoRejeicao
-                                                        </div>
+                                                        <span>Documento obrigatório ainda não enviado nesta submissão.</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span>Nenhum documento enviado para este tipo.</span>
                                                     }
                                                 </div>
-                                                <div class="btn-group">
-                                                    <a href="/Metroplan/Analista/Revisao?handler=Visualizar&docId=@item.Documento.Id" target="_blank" class="btn btn-sm btn-outline-primary">
-                                                        <i class="bi bi-eye"></i> Visualizar
-                                                    </a>
-                                                    <a href="/Metroplan/Analista/Revisao?handler=Download&docId=@item.Documento.Id" class="btn btn-sm btn-outline-primary">
-                                                        <i class="bi bi-download"></i> Baixar
-                                                    </a>
-                                                </div>
-                                            </div>
-
-                                            @if (Model.IsLockedByMe &&
-                                                 Model.Submissao?.Status == SubmissaoWorkflow.EmAnalise &&
-                                                 item.StatusRevisao != SubmissaoWorkflow.RevisaoAprovada)
+                                            }
+                                            else
                                             {
-                                                <div class="row g-3 mt-2">
-                                                    <div class="col-md-5">
-                                                        <form method="post" asp-page-handler="AprovarDocumento">
-                                                            <input type="hidden" asp-for="SubmissaoId" />
-                                                            <input type="hidden" asp-for="DocumentoEmAcaoId" value="@item.SubmissaoDocumentoId" />
-                                                            <div class="input-group">
-                                                                <input asp-for="ValidadeDocumento" type="date" class="form-control" />
-                                                                <button type="submit" class="btn btn-success">
-                                                                    <i class="bi bi-check-circle"></i> Aprovar
-                                                                </button>
+                                                foreach (var item in grupo.Itens)
+                                                {
+                                                    var statusClass = item.StatusRevisao == SubmissaoWorkflow.RevisaoRejeitada
+                                                        ? "border-danger bg-danger-subtle"
+                                                        : item.StatusRevisao == SubmissaoWorkflow.RevisaoAprovada
+                                                            ? "border-success bg-light"
+                                                            : "border-warning bg-warning-subtle";
+
+                                                    <div class="border rounded p-3 mb-3 @statusClass">
+                                                        <div class="d-flex justify-content-between align-items-start gap-3">
+                                                            <div>
+                                                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                                    <span class="fw-bold">@item.Documento.NomeArquivo</span>
+                                                                    <span class="badge @SubmissaoWorkflow.GetReviewBadgeClass(item.StatusRevisao)">
+                                                                        @SubmissaoWorkflow.GetReviewDisplayLabel(item.StatusRevisao)
+                                                                    </span>
+                                                                    @if (item.CarregadoDeDocumentoAtual)
+                                                                    {
+                                                                        <span class="badge bg-secondary">Carregado do oficial atual</span>
+                                                                    }
+                                                                </div>
+                                                                <div class="small text-muted mt-1">
+                                                                    Upload em @item.Documento.DataUpload.ToString("dd/MM/yyyy HH:mm")
+                                                                    @if (item.ValidadeInformada.HasValue || item.Documento.Validade.HasValue)
+                                                                    {
+                                                                        <span class="ms-2">Validade: @((item.ValidadeInformada ?? item.Documento.Validade)!.Value.ToString("dd/MM/yyyy"))</span>
+                                                                    }
+                                                                </div>
+                                                                @if (!string.IsNullOrWhiteSpace(item.MotivoRejeicao))
+                                                                {
+                                                                    <div class="alert alert-danger py-2 px-3 mt-2 mb-0">
+                                                                        <strong>Motivo da rejeicao:</strong> @item.MotivoRejeicao
+                                                                    </div>
+                                                                }
                                                             </div>
-                                                        </form>
-                                                    </div>
-                                                    <div class="col-md-7">
-                                                        <form method="post" asp-page-handler="RejeitarDocumento">
-                                                            <input type="hidden" asp-for="SubmissaoId" />
-                                                            <input type="hidden" asp-for="DocumentoEmAcaoId" value="@item.SubmissaoDocumentoId" />
-                                                            <div class="input-group">
-                                                                <input asp-for="MotivoRejeicaoDocumento" class="form-control" placeholder="Motivo da rejeição deste documento" required />
-                                                                <button type="submit" class="btn btn-danger">
-                                                                    <i class="bi bi-x-circle"></i> Rejeitar
-                                                                </button>
+                                                            <div class="btn-group">
+                                                                <a href="/Metroplan/Analista/Revisao?handler=Visualizar&docId=@item.Documento.Id" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                                    <i class="bi bi-eye"></i> Visualizar
+                                                                </a>
+                                                                <a href="/Metroplan/Analista/Revisao?handler=Download&docId=@item.Documento.Id" class="btn btn-sm btn-outline-primary">
+                                                                    <i class="bi bi-download"></i> Baixar
+                                                                </a>
                                                             </div>
-                                                            <span asp-validation-for="MotivoRejeicaoDocumento" class="text-danger small"></span>
-                                                        </form>
+                                                        </div>
+
+                                                        @if (Model.IsLockedByMe && Model.Submissao?.Status == SubmissaoWorkflow.EmAnalise)
+                                                        {
+                                                            <div class="row g-3 mt-2">
+                                                                <div class="col-md-5">
+                                                                    <form method="post" asp-page-handler="AprovarDocumento">
+                                                                        <input type="hidden" asp-for="SubmissaoId" />
+                                                                        <input type="hidden" asp-for="DocumentoEmAcaoId" value="@item.SubmissaoDocumentoId" />
+                                                                        <div class="input-group">
+                                                                            <input asp-for="ValidadeDocumento" type="date" class="form-control" />
+                                                                            <button type="submit" class="btn btn-success">
+                                                                                <i class="bi bi-check-circle"></i> Aprovar
+                                                                            </button>
+                                                                        </div>
+                                                                    </form>
+                                                                </div>
+                                                                <div class="col-md-7">
+                                                                    <form method="post" asp-page-handler="RejeitarDocumento">
+                                                                        <input type="hidden" asp-for="SubmissaoId" />
+                                                                        <input type="hidden" asp-for="DocumentoEmAcaoId" value="@item.SubmissaoDocumentoId" />
+                                                                        <div class="input-group">
+                                                                            <input asp-for="MotivoRejeicaoDocumento" class="form-control" placeholder="Motivo da rejeição deste documento" required />
+                                                                            <button type="submit" class="btn btn-danger">
+                                                                                <i class="bi bi-x-circle"></i> Rejeitar
+                                                                            </button>
+                                                                        </div>
+                                                                        <span asp-validation-for="MotivoRejeicaoDocumento" class="text-danger small"></span>
+                                                                    </form>
+                                                                </div>
+                                                            </div>
+                                                        }
                                                     </div>
-                                                </div>
+                                                }
                                             }
                                         </div>
-                                    }
-                                }
-                            </section>
-                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
                     }
                 </div>
             </div>
@@ -358,7 +364,7 @@
                         <div class="d-grid gap-3">
                             <form method="post" asp-page-handler="AprovarSubmissao">
                                 <input type="hidden" asp-for="SubmissaoId" />
-                                <button type="submit" class="btn btn-success btn-lg w-100" disabled="@(Model.CanApproveSubmission ? null : "disabled")">
+                                <button type="submit" class="btn btn-success btn-lg w-100" disabled="@(Model.HasRejectedItems ? "disabled" : null)" title="@(Model.HasRejectedItems ? "Não é possível aprovar a submissão enquanto houver itens rejeitados." : null)">
                                     <i class="bi bi-check-circle"></i> Aprovar submissão
                                 </button>
                             </form>
@@ -368,8 +374,8 @@
                                 <label asp-for="ObservacaoRejeicaoSubmissao" class="form-label fw-bold">Observação geral da rejeição</label>
                                 <textarea asp-for="ObservacaoRejeicaoSubmissao" class="form-control mb-3" rows="4" placeholder="Opcional. Use para complementar as rejeições dos itens."></textarea>
                                 <span asp-validation-for="ObservacaoRejeicaoSubmissao" class="text-danger small d-block mb-3"></span>
-                                <button type="submit" class="btn btn-danger w-100" disabled="@(Model.CanRejectSubmission ? null : "disabled")">
-                                    <i class="bi bi-x-circle"></i> Finalizar rejeição
+                                <button type="submit" class="btn btn-danger w-100">
+                                    <i class="bi bi-x-circle"></i> Finalizar Rejeição
                                 </button>
                             </form>
                         </div>

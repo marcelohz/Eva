@@ -46,41 +46,52 @@ namespace Eva.Services
                 .Select(v => v.TipoNome)
                 .ToListAsync();
 
-            // 2. Fetch Latest Decisive Statuses (Optimized with Postgres DISTINCT ON)
-            var decisiveStatusesList = await _context.FluxoPendencias
-                .FromSqlInterpolated($@"
-                    SELECT DISTINCT ON (entidade_id) * FROM eventual.fluxo_pendencia
-                    WHERE upper(trim(entidade_tipo)) = {entityTypeSafe}
-                      AND entidade_id = ANY({ids.ToArray()})
-                      AND status IN ('APROVADO', 'REJEITADO')
-                    ORDER BY entidade_id, criado_em DESC")
+            var latestSubmissions = await _context.Submissoes
+                .Where(s => s.EntidadeTipo == entityTypeSafe && ids.Contains(s.EntidadeId))
+                .OrderByDescending(s => s.Id)
                 .ToListAsync();
 
-            var decisiveStatuses = decisiveStatusesList.ToDictionary(f => f.EntidadeId, f => f.Status);
+            var latestSubmissionByEntity = latestSubmissions
+                .GroupBy(s => s.EntidadeId)
+                .ToDictionary(g => g.Key, g => g.First());
 
-            // 2.5 Fetch Absolute Latest Workflow Statuses
-            var currentStatuses = await _context.VPendenciasAtuais
-                .Where(p => p.EntidadeTipo.Trim().ToUpper() == entityTypeSafe && ids.Contains(p.EntidadeId))
-                .ToDictionaryAsync(p => p.EntidadeId, p => p.Status);
+            var latestSubmissionIds = latestSubmissionByEntity.Values.Select(s => s.Id).ToList();
 
-            // 3. Fetch Entity Documents based on Entity Type
-            var entityDocs = await FetchDocumentsForEntitiesAsync(entityTypeSafe, ids);
+            var latestSubmissionData = latestSubmissionIds.Any()
+                ? await _context.SubmissaoDados
+                    .Where(sd => latestSubmissionIds.Contains(sd.SubmissaoId))
+                    .ToDictionaryAsync(sd => sd.SubmissaoId, sd => sd)
+                : new Dictionary<int, SubmissaoDados>();
+
+            var latestSubmissionDocs = latestSubmissionIds.Any()
+                ? await _context.SubmissaoDocumentos
+                    .Where(sd => latestSubmissionIds.Contains(sd.SubmissaoId) && sd.AtivoNaSubmissao)
+                    .ToListAsync()
+                : new List<SubmissaoDocumento>();
+
+            var submissionDocsBySubmission = latestSubmissionDocs
+                .GroupBy(sd => sd.SubmissaoId)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            var currentDocs = await FetchCurrentAcceptedDocumentsAsync(entityTypeSafe, ids);
 
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
-            // 4. Calculate Health for each Entity
             foreach (var id in ids)
             {
+                latestSubmissionByEntity.TryGetValue(id, out var latestSubmission);
+                latestSubmissionData.TryGetValue(latestSubmission?.Id ?? 0, out var latestDados);
+                submissionDocsBySubmission.TryGetValue(latestSubmission?.Id ?? 0, out var latestDocsForEntity);
+
+                var docsForEntity = currentDocs.TryGetValue(id, out var acceptedDocs) && acceptedDocs.Any()
+                    ? acceptedDocs
+                    : new List<Documento>();
+
                 var report = new EntityHealthReport
                 {
-                    AnalystStatus = decisiveStatuses.TryGetValue(id, out var status) ? status : WorkflowStatus.Incompleto
+                    LatestSubmissionStatus = MapSubmissionStatus(latestSubmission?.Status),
+                    LastRejectionReason = BuildLatestRejectionReason(latestSubmission, latestDados, latestDocsForEntity)
                 };
-
-                var rawCurrentStatus = currentStatuses.TryGetValue(id, out var currStatus)
-                    ? currStatus
-                    : WorkflowStatus.Incompleto;
-
-                var docsForEntity = entityDocs.TryGetValue(id, out var docs) ? docs : new List<Documento>();
 
                 foreach (var reqType in mandatoryTypes)
                 {
@@ -100,22 +111,14 @@ namespace Eva.Services
                             report.ExpiredDocs.Add(reqType);
                         }
 
-                        if (doc.AprovadoEm == null)
-                        {
-                            report.PendingDocs.Add(reqType);
-                        }
                     }
                 }
 
-                report.IsLegal = report.AnalystStatus == WorkflowStatus.Aprovado &&
-                                 !report.MissingMandatoryDocs.Any() &&
-                                 !report.ExpiredDocs.Any();
+                report.PendingDocs = BuildPendingRequiredDocs(mandatoryTypes, latestSubmission, latestDocsForEntity);
 
-                report.CurrentStatus = WorkflowStatus.IsPending(rawCurrentStatus)
-                    ? rawCurrentStatus
-                    : report.MissingMandatoryDocs.Any() || report.ExpiredDocs.Any()
-                        ? WorkflowStatus.Incompleto
-                        : rawCurrentStatus;
+                report.IsLegal = !report.MissingMandatoryDocs.Any() && !report.ExpiredDocs.Any();
+                report.AnalystStatus = report.IsLegal ? WorkflowStatus.Aprovado : WorkflowStatus.Incompleto;
+                report.CurrentStatus = BuildCurrentStatus(report.IsLegal, latestSubmission);
 
                 results[id] = report;
             }
@@ -123,42 +126,93 @@ namespace Eva.Services
             return results;
         }
 
-        private async Task<Dictionary<string, List<Documento>>> FetchDocumentsForEntitiesAsync(string entityType, List<string> ids)
+        private static string BuildCurrentStatus(bool isLegal, Submissao? latestSubmission)
         {
-            var dictionary = new Dictionary<string, List<Documento>>();
-
-            switch (entityType)
+            var mappedSubmissionStatus = MapSubmissionStatus(latestSubmission?.Status);
+            if (mappedSubmissionStatus == WorkflowStatus.Rejeitado)
             {
-                case "EMPRESA":
-                    var empDocs = await _context.DocumentoEmpresas
-                        .Include(de => de.Documento)
-                        .Where(de => ids.Contains(de.EmpresaCnpj) && de.Documento != null)
-                        .ToListAsync();
-                    dictionary = empDocs.GroupBy(de => de.EmpresaCnpj)
-                                        .ToDictionary(g => g.Key, g => g.Select(de => de.Documento!).ToList());
-                    break;
-
-                case "VEICULO":
-                    var veiDocs = await _context.DocumentoVeiculos
-                        .Include(dv => dv.Documento)
-                        .Where(dv => ids.Contains(dv.VeiculoPlaca) && dv.Documento != null)
-                        .ToListAsync();
-                    dictionary = veiDocs.GroupBy(dv => dv.VeiculoPlaca)
-                                        .ToDictionary(g => g.Key, g => g.Select(dv => dv.Documento!).ToList());
-                    break;
-
-                case "MOTORISTA":
-                    var intIds = ids.Select(id => int.TryParse(id, out var val) ? val : 0).Where(val => val != 0).ToList();
-                    var motDocs = await _context.DocumentoMotoristas
-                        .Include(dm => dm.Documento)
-                        .Where(dm => intIds.Contains(dm.MotoristaId) && dm.Documento != null)
-                        .ToListAsync();
-                    dictionary = motDocs.GroupBy(dm => dm.MotoristaId.ToString())
-                                        .ToDictionary(g => g.Key, g => g.Select(dm => dm.Documento!).ToList());
-                    break;
+                return WorkflowStatus.Rejeitado;
             }
 
-            return dictionary;
+            if (WorkflowStatus.IsPending(mappedSubmissionStatus))
+            {
+                return mappedSubmissionStatus!;
+            }
+
+            return isLegal ? WorkflowStatus.Aprovado : WorkflowStatus.Incompleto;
         }
+
+        private static string? MapSubmissionStatus(string? status) => status switch
+        {
+            SubmissaoWorkflow.AguardandoAnalise => WorkflowStatus.AguardandoAnalise,
+            SubmissaoWorkflow.EmAnalise => WorkflowStatus.EmAnalise,
+            SubmissaoWorkflow.Rejeitada => WorkflowStatus.Rejeitado,
+            SubmissaoWorkflow.Aprovada => WorkflowStatus.Aprovado,
+            _ => WorkflowStatus.Incompleto
+        };
+
+        private static string? BuildLatestRejectionReason(Submissao? latestSubmission, SubmissaoDados? dados, List<SubmissaoDocumento>? docs)
+        {
+            if (latestSubmission?.Status != SubmissaoWorkflow.Rejeitada)
+            {
+                return null;
+            }
+
+            if (!string.IsNullOrWhiteSpace(latestSubmission.ObservacaoAnalista))
+            {
+                return latestSubmission.ObservacaoAnalista;
+            }
+
+            if (dados?.StatusRevisao == SubmissaoWorkflow.RevisaoRejeitada && !string.IsNullOrWhiteSpace(dados.MotivoRejeicao))
+            {
+                return dados.MotivoRejeicao;
+            }
+
+            return docs?
+                .Where(d => d.StatusRevisao == SubmissaoWorkflow.RevisaoRejeitada && !string.IsNullOrWhiteSpace(d.MotivoRejeicao))
+                .OrderBy(d => d.Id)
+                .Select(d => d.MotivoRejeicao)
+                .FirstOrDefault();
+        }
+
+        private static List<string> BuildPendingRequiredDocs(List<string> mandatoryTypes, Submissao? latestSubmission, List<SubmissaoDocumento>? docs)
+        {
+            if (latestSubmission == null || !SubmissaoWorkflow.EstaBloqueadaParaEmpresa(latestSubmission.Status) || docs == null)
+            {
+                return new List<string>();
+            }
+
+            return mandatoryTypes
+                .Where(tipo =>
+                {
+                    var docsDoTipo = docs.Where(d => d.DocumentoTipoNome == tipo).ToList();
+                    return docsDoTipo.Any() && docsDoTipo.Any(d => d.StatusRevisao == SubmissaoWorkflow.RevisaoPendente);
+                })
+                .Distinct()
+                .ToList();
+        }
+
+        private async Task<Dictionary<string, List<Documento>>> FetchCurrentAcceptedDocumentsAsync(string entityType, List<string> ids)
+        {
+            var rows = await _context.EntidadeDocumentosAtuais
+                .Where(eda => eda.EntidadeTipo == entityType && ids.Contains(eda.EntidadeId))
+                .ToListAsync();
+
+            if (!rows.Any())
+            {
+                return new Dictionary<string, List<Documento>>();
+            }
+
+            var docIds = rows.Select(r => r.DocumentoId).Distinct().ToList();
+            var documentos = await _context.Documentos
+                .Where(d => docIds.Contains(d.Id))
+                .ToDictionaryAsync(d => d.Id, d => d);
+
+            return rows
+                .Where(r => documentos.ContainsKey(r.DocumentoId))
+                .GroupBy(r => r.EntidadeId)
+                .ToDictionary(g => g.Key, g => g.Select(r => documentos[r.DocumentoId]).ToList());
+        }
+
     }
 }

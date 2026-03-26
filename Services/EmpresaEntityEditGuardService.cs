@@ -16,21 +16,18 @@ namespace Eva.Services
 
         private readonly EvaDbContext _context;
         private readonly ICurrentUserService _currentUserService;
-        private readonly PendenciaService _pendenciaService;
 
         public EmpresaEntityEditGuardService(
             EvaDbContext context,
-            ICurrentUserService currentUserService,
-            PendenciaService pendenciaService)
+            ICurrentUserService currentUserService)
         {
             _context = context;
             _currentUserService = currentUserService;
-            _pendenciaService = pendenciaService;
         }
 
         public async Task<EmpresaEntityEditGuardResult> CheckEmpresaAsync(string empresaCnpj)
         {
-            var currentEmpresaCnpj = _currentUserService.GetCurrentEmpresaCnpj();
+            var currentEmpresaCnpj = await GetCurrentEmpresaCnpjAsync();
             if (string.IsNullOrWhiteSpace(currentEmpresaCnpj))
             {
                 return EmpresaEntityEditGuardResult.NoCurrentEmpresa();
@@ -47,13 +44,17 @@ namespace Eva.Services
                 return EmpresaEntityEditGuardResult.Forbidden(currentEmpresaCnpj);
             }
 
-            var status = await _pendenciaService.GetStatusAsync("EMPRESA", empresaCnpj);
+            var status = await _context.Submissoes
+                .Where(s => s.EntidadeTipo == "EMPRESA" && s.EntidadeId == empresaCnpj)
+                .OrderByDescending(s => s.Id)
+                .Select(s => s.Status)
+                .FirstOrDefaultAsync();
             return EmpresaEntityEditGuardResult.FromStatus(currentEmpresaCnpj, status);
         }
 
         public async Task<EmpresaEntityEditGuardResult> CheckVeiculoAsync(string placa)
         {
-            var currentEmpresaCnpj = _currentUserService.GetCurrentEmpresaCnpj();
+            var currentEmpresaCnpj = await GetCurrentEmpresaCnpjAsync();
             if (string.IsNullOrWhiteSpace(currentEmpresaCnpj))
             {
                 return EmpresaEntityEditGuardResult.NoCurrentEmpresa();
@@ -68,13 +69,17 @@ namespace Eva.Services
                 return EmpresaEntityEditGuardResult.NotFound(currentEmpresaCnpj);
             }
 
-            var status = await _pendenciaService.GetStatusAsync("VEICULO", normalizedPlaca);
+            var status = await _context.Submissoes
+                .Where(s => s.EntidadeTipo == "VEICULO" && s.EntidadeId == normalizedPlaca)
+                .OrderByDescending(s => s.Id)
+                .Select(s => s.Status)
+                .FirstOrDefaultAsync();
             return EmpresaEntityEditGuardResult.FromStatus(currentEmpresaCnpj, status, normalizedPlaca);
         }
 
         public async Task<EmpresaEntityEditGuardResult> CheckMotoristaAsync(int motoristaId)
         {
-            var currentEmpresaCnpj = _currentUserService.GetCurrentEmpresaCnpj();
+            var currentEmpresaCnpj = await GetCurrentEmpresaCnpjAsync();
             if (string.IsNullOrWhiteSpace(currentEmpresaCnpj))
             {
                 return EmpresaEntityEditGuardResult.NoCurrentEmpresa();
@@ -88,8 +93,18 @@ namespace Eva.Services
                 return EmpresaEntityEditGuardResult.NotFound(currentEmpresaCnpj);
             }
 
-            var status = await _pendenciaService.GetStatusAsync("MOTORISTA", motoristaId.ToString());
+            var status = await _context.Submissoes
+                .Where(s => s.EntidadeTipo == "MOTORISTA" && s.EntidadeId == motoristaId.ToString())
+                .OrderByDescending(s => s.Id)
+                .Select(s => s.Status)
+                .FirstOrDefaultAsync();
             return EmpresaEntityEditGuardResult.FromStatus(currentEmpresaCnpj, status, motoristaId.ToString());
+        }
+
+        private async Task<string?> GetCurrentEmpresaCnpjAsync()
+        {
+            var user = await _currentUserService.GetCurrentUserAsync();
+            return string.IsNullOrWhiteSpace(user?.EmpresaCnpj) ? null : user.EmpresaCnpj;
         }
     }
 
@@ -113,6 +128,13 @@ namespace Eva.Services
             new(true, false, false, currentEmpresaCnpj, null, null);
 
         public static EmpresaEntityEditGuardResult FromStatus(string currentEmpresaCnpj, string? status, string? entityId = null) =>
-            new(true, true, status == Workflow.WorkflowValidator.EmAnalise, currentEmpresaCnpj, entityId, status);
+            new(
+                true,
+                true,
+                status == Workflow.SubmissaoWorkflow.AguardandoAnalise ||
+                status == Workflow.SubmissaoWorkflow.EmAnalise,
+                currentEmpresaCnpj,
+                entityId,
+                status);
     }
 }

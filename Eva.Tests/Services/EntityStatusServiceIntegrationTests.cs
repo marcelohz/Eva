@@ -1,6 +1,7 @@
 using Eva.Models;
 using Eva.Services;
 using Eva.Tests.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 
 namespace Eva.Tests.Services;
 
@@ -18,147 +19,99 @@ public class EntityStatusServiceIntegrationTests : IAsyncLifetime
     public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
-    public async Task GetHealthAsync_deve_indicar_documento_obrigatorio_faltante_para_empresa()
+    public async Task GetHealthAsync_deve_expor_status_rejeitado_mesmo_com_entidade_ainda_legal()
     {
         await using var context = _database.CreateDbContext();
+        await SeedEmpresaAsync(context, "12345678000199");
 
-        context.Empresas.Add(new Empresa
-        {
-            Cnpj = "12345678000199",
-            Nome = "Empresa Teste"
-        });
+        var submissaoService = new SubmissaoService(context);
+        var reviewService = new AnalystReviewService(context, new EntityStatusService(context));
 
-        await context.SaveChangesAsync();
+        var documentoAprovado = await CriarDocumentoAsync(context, "CARTAO_CNPJ");
+        await submissaoService.VincularDocumentoAoDraftAsync("EMPRESA", "12345678000199", documentoAprovado.Id, "CARTAO_CNPJ", "empresa@teste.com");
+        await submissaoService.EnviarParaAnaliseAsync("EMPRESA", "12345678000199", "empresa@teste.com");
 
-        var service = new EntityStatusService(context);
+        var submissaoAprovada = await context.Submissoes.SingleAsync();
+        var docSubAprovado = await context.SubmissaoDocumentos.SingleAsync();
+        await reviewService.IniciarAnaliseSubmissaoAsync(submissaoAprovada.Id, "analista@metroplan.rs.gov.br");
+        await reviewService.AprovarDadosAsync(submissaoAprovada.Id, "analista@metroplan.rs.gov.br");
+        await reviewService.AprovarDocumentoAsync(docSubAprovado.Id, "analista@metroplan.rs.gov.br", DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)));
+        await reviewService.AprovarSubmissaoAsync(submissaoAprovada.Id, "analista@metroplan.rs.gov.br");
 
-        var health = await service.GetHealthAsync("EMPRESA", "12345678000199");
+        await submissaoService.SalvarDadosPropostosAsync(
+            "EMPRESA",
+            "12345678000199",
+            """{"cnpj":"12345678000199","nome":"Empresa Rejeitada","nomeFantasia":"Empresa Rejeitada","email":"empresa@teste.com"}""",
+            "empresa@teste.com");
+        await submissaoService.EnviarParaAnaliseAsync("EMPRESA", "12345678000199", "empresa@teste.com");
 
-        Assert.False(health.IsLegal);
-        Assert.Contains("CARTAO_CNPJ", health.MissingMandatoryDocs);
-        Assert.Equal("INCOMPLETO", health.AnalystStatus);
-        Assert.Equal("INCOMPLETO", health.CurrentStatus);
-    }
+        var submissaoRejeitada = await context.Submissoes.OrderByDescending(s => s.Id).FirstAsync();
+        await reviewService.IniciarAnaliseSubmissaoAsync(submissaoRejeitada.Id, "analista@metroplan.rs.gov.br");
+        await reviewService.RejeitarDadosAsync(submissaoRejeitada.Id, "analista@metroplan.rs.gov.br", "Dados inválidos");
+        await reviewService.RejeitarSubmissaoAsync(submissaoRejeitada.Id, "analista@metroplan.rs.gov.br", "Última tentativa rejeitada");
 
-    [Fact]
-    public async Task GetHealthAsync_deve_considerar_empresa_legal_quando_aprovada_e_com_documento_obrigatorio_aprovado()
-    {
-        await using var context = _database.CreateDbContext();
-
-        context.Empresas.Add(new Empresa
-        {
-            Cnpj = "12345678000199",
-            Nome = "Empresa Teste"
-        });
-
-        await context.SaveChangesAsync();
-
-        var fluxo = new FluxoPendencia
-        {
-            EntidadeTipo = "EMPRESA",
-            EntidadeId = "12345678000199",
-            Status = "APROVADO",
-            Analista = "analista@metroplan.rs.gov.br",
-            CriadoEm = DateTime.UtcNow
-        };
-
-        context.FluxoPendencias.Add(fluxo);
-        await context.SaveChangesAsync();
-
-        var documento = new Documento
-        {
-            DocumentoTipoNome = "CARTAO_CNPJ",
-            Conteudo = [1, 2, 3],
-            NomeArquivo = "cartao-cnpj.pdf",
-            ContentType = "application/pdf",
-            DataUpload = DateTime.UtcNow,
-            AprovadoEm = DateTime.UtcNow,
-            FluxoPendenciaId = fluxo.Id
-        };
-
-        context.Documentos.Add(documento);
-        await context.SaveChangesAsync();
-
-        context.DocumentoEmpresas.Add(new DocumentoEmpresa
-        {
-            Id = documento.Id,
-            EmpresaCnpj = "12345678000199"
-        });
-
-        await context.SaveChangesAsync();
-
-        var service = new EntityStatusService(context);
-
-        var health = await service.GetHealthAsync("EMPRESA", "12345678000199");
+        var health = await new EntityStatusService(context).GetHealthAsync("EMPRESA", "12345678000199");
 
         Assert.True(health.IsLegal);
-        Assert.Empty(health.MissingMandatoryDocs);
-        Assert.Empty(health.ExpiredDocs);
-        Assert.Equal("APROVADO", health.AnalystStatus);
-        Assert.Equal("APROVADO", health.CurrentStatus);
+        Assert.Equal(global::Eva.Workflow.WorkflowStatus.Rejeitado, health.CurrentStatus);
+        Assert.Equal("Última tentativa rejeitada", health.LastRejectionReason);
     }
 
     [Fact]
-    public async Task GetHealthAsync_deve_bloquear_veiculo_com_documento_obrigatorio_vencido()
+    public async Task GetHealthAsync_deve_expor_status_pendente_quando_houver_submissao_aguardando_analise()
     {
         await using var context = _database.CreateDbContext();
+        await SeedEmpresaAsync(context, "12345678000199");
 
+        var submissaoService = new SubmissaoService(context);
+        var documentoAprovado = await CriarDocumentoAsync(context, "CARTAO_CNPJ");
+        await submissaoService.VincularDocumentoAoDraftAsync("EMPRESA", "12345678000199", documentoAprovado.Id, "CARTAO_CNPJ", "empresa@teste.com");
+        await submissaoService.EnviarParaAnaliseAsync("EMPRESA", "12345678000199", "empresa@teste.com");
+
+        var health = await new EntityStatusService(context).GetHealthAsync("EMPRESA", "12345678000199");
+
+        Assert.Equal(global::Eva.Workflow.WorkflowStatus.AguardandoAnalise, health.CurrentStatus);
+        Assert.False(health.IsLegal);
+        Assert.Contains("CARTAO_CNPJ", health.PendingDocs);
+    }
+
+    private static async Task SeedEmpresaAsync(Eva.Data.EvaDbContext context, string cnpj)
+    {
         context.Empresas.Add(new Empresa
         {
-            Cnpj = "12345678000199",
-            Nome = "Empresa Teste"
+            Cnpj = cnpj,
+            Nome = "Empresa Teste",
+            NomeFantasia = "Empresa Teste",
+            Email = "empresa@teste.com"
         });
 
-        context.Veiculos.Add(new Veiculo
+        context.Usuarios.Add(new Usuario
         {
-            Placa = "ABC1D23",
-            EmpresaCnpj = "12345678000199",
-            Modelo = "Ônibus"
+            PapelNome = "EMPRESA",
+            Email = "empresa@teste.com",
+            Nome = "Empresa Teste",
+            EmpresaCnpj = cnpj,
+            Senha = "hash",
+            Ativo = true,
+            EmailValidado = true
         });
 
         await context.SaveChangesAsync();
+    }
 
-        var fluxo = new FluxoPendencia
-        {
-            EntidadeTipo = "VEICULO",
-            EntidadeId = "ABC1D23",
-            Status = "APROVADO",
-            Analista = "analista@metroplan.rs.gov.br",
-            CriadoEm = DateTime.UtcNow
-        };
-
-        context.FluxoPendencias.Add(fluxo);
-        await context.SaveChangesAsync();
-
+    private static async Task<Documento> CriarDocumentoAsync(Eva.Data.EvaDbContext context, string tipo)
+    {
         var documento = new Documento
         {
-            DocumentoTipoNome = "CRLV",
+            DocumentoTipoNome = tipo,
             Conteudo = [1, 2, 3],
-            NomeArquivo = "crlv.pdf",
+            NomeArquivo = $"{tipo}.pdf",
             ContentType = "application/pdf",
-            DataUpload = DateTime.UtcNow,
-            AprovadoEm = DateTime.UtcNow.AddDays(-30),
-            Validade = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1)),
-            FluxoPendenciaId = fluxo.Id
+            DataUpload = DateTime.UtcNow
         };
 
         context.Documentos.Add(documento);
         await context.SaveChangesAsync();
-
-        context.DocumentoVeiculos.Add(new DocumentoVeiculo
-        {
-            Id = documento.Id,
-            VeiculoPlaca = "ABC1D23"
-        });
-
-        await context.SaveChangesAsync();
-
-        var service = new EntityStatusService(context);
-
-        var health = await service.GetHealthAsync("VEICULO", "ABC1D23");
-
-        Assert.False(health.IsLegal);
-        Assert.Contains("CRLV", health.ExpiredDocs);
-        Assert.Equal("APROVADO", health.AnalystStatus);
+        return documento;
     }
 }
