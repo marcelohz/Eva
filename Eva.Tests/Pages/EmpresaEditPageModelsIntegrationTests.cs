@@ -94,8 +94,9 @@ public class EmpresaEditPageModelsIntegrationTests : IAsyncLifetime
         var submissaoService = new SubmissaoService(context);
         var arquivoService = new ArquivoService(context, submissaoService);
         var guardService = new EmpresaEntityEditGuardService(context, currentUserService);
+        var entityStatusService = new EntityStatusService(context);
 
-        var page = new EditarEmpresaModel(context, submissaoService, arquivoService, currentUserService, guardService);
+        var page = new EditarEmpresaModel(context, submissaoService, arquivoService, currentUserService, guardService, entityStatusService);
         InitializePageModel(page, httpContext);
         return page;
     }

@@ -2,25 +2,27 @@
 
 <tr>
     <td class="fw-bold text-dark">@Model.Entidade.Nome</td>
-    
+
     <td>
-        <span class="badge @WorkflowStatus.GetBadgeClass(Model.Entidade.StatusGeral) rounded-pill">
-            @WorkflowStatus.GetDisplayLabel(Model.Entidade.StatusGeral)
+        <span class="badge @WorkflowStatus.GetBadgeClass(Model.Entidade.SituacaoOperacional) rounded-pill">
+            @WorkflowStatus.GetDisplayLabel(Model.Entidade.SituacaoOperacional)
         </span>
-        @if (Model.Entidade.PossuiTentativaRejeitada)
-        {
-            <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill ms-1">Última tentativa rejeitada</span>
-        }
     </td>
 
     <td>
-        @if (Model.Entidade.StatusGeral == WorkflowStatus.Aprovado && !Model.Entidade.PossuiTentativaRejeitada)
+        <span class="badge @SubmissaoWorkflow.GetBadgeClass(Model.Entidade.UltimaSubmissao) rounded-pill">
+            @SubmissaoWorkflow.GetDisplayLabel(Model.Entidade.UltimaSubmissao)
+        </span>
+    </td>
+
+    <td>
+        @if (Model.Entidade.SituacaoOperacional == WorkflowStatus.Aprovado && !Model.Entidade.PossuiTentativaRejeitada)
         {
-            <span class="text-muted small"><i class="bi bi-check2"></i> @WorkflowStatus.GetConformidadeHint(Model.Entidade.StatusGeral)</span>
+            <span class="text-muted small"><i class="bi bi-check2"></i> @WorkflowStatus.GetConformidadeHint(Model.Entidade.SituacaoOperacional)</span>
         }
-        else if (WorkflowStatus.IsPending(Model.Entidade.StatusGeral))
+        else if (Model.Entidade.UltimaSubmissao == SubmissaoWorkflow.AguardandoAnalise || Model.Entidade.UltimaSubmissao == SubmissaoWorkflow.EmAnalise)
         {
-            <span class="text-muted small"><i class="bi bi-hourglass-split"></i> @WorkflowStatus.GetConformidadeHint(Model.Entidade.StatusGeral)</span>
+            <span class="text-muted small"><i class="bi bi-hourglass-split"></i> @SubmissaoWorkflow.GetDisplayLabel(Model.Entidade.UltimaSubmissao)</span>
         }
         else
         {
@@ -28,14 +30,14 @@
                 @if (!string.IsNullOrEmpty(Model.Entidade.MotivoRejeicao))
                 {
                     <div class="text-danger small preserve-newlines">
-                        <strong>Motivo da última rejeição:</strong> @Model.Entidade.MotivoRejeicao
+                        <strong>Motivo da &uacute;ltima rejei&ccedil;&atilde;o:</strong> @Model.Entidade.MotivoRejeicao
                     </div>
                 }
-                
+
                 <div class="d-flex flex-wrap gap-1">
                     @foreach (var doc in Model.Entidade.DocumentosEmAnalise)
                     {
-                        <span class="badge bg-info text-dark border"><i class="bi bi-hourglass-split"></i> Em análise: @doc</span>
+                        <span class="badge bg-info text-dark border"><i class="bi bi-hourglass-split"></i> Em an&aacute;lise: @doc</span>
                     }
                     @foreach (var doc in Model.Entidade.DocumentosFaltantes)
                     {
@@ -61,5 +63,3 @@
         }
     </td>
 </tr>
-
-

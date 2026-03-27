@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dados da Empresa - Fretamento Eventual</title>
+    <link rel="stylesheet" href="/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/css/site.css?v=vkBUIphqQ8a-hQO4u66PqErXhcxR0Hrl8X4pxw_IDns" />
+</head>
+<body>
+
+    <header b-75u5ah6irl>
+        <nav b-75u5ah6irl class="navbar navbar-expand-lg navbar-light app-navbar border-bottom box-shadow mb-3">
+            <div b-75u5ah6irl class="container navbar-shell">
+                <a class="navbar-logo-link" aria-label="Página inicial" href="/">
+                    <img src="/images/logo-metroplan.png?v=hQOWTMrb1nxClbxhtFGcTP4J28fkBVYm_d8yVqZQaxI" alt="Metroplan" class="header-logo header-logo-metroplan" />
+                </a>
+
+                <div b-75u5ah6irl class="navbar-center">
+                    <button b-75u5ah6irl class="navbar-toggler ms-auto app-navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar"
+                            aria-expanded="false" aria-label="Toggle navigation">
+                        <span b-75u5ah6irl class="navbar-toggler-icon"></span>
+                    </button>
+                    <div b-75u5ah6irl class="navbar-collapse collapse" id="mainNavbar">
+                        <div b-75u5ah6irl class="navbar-menu-wrap">
+                            <ul b-75u5ah6irl class="navbar-nav flex-grow-1 justify-content-lg-center">
+
+                                    <li b-75u5ah6irl class="nav-item">
+                                        <a b-75u5ah6irl class="nav-link app-nav-link" href="/Empresa/MinhaEmpresa">Painel</a>
+                                    </li>
+                                    <li b-75u5ah6irl class="nav-item">
+                                        <a b-75u5ah6irl class="nav-link app-nav-link" href="/Empresa/MeusVeiculos">Veículos</a>
+                                    </li>
+                                    <li b-75u5ah6irl class="nav-item">
+                                        <a b-75u5ah6irl class="nav-link app-nav-link" href="/Empresa/MeusMotoristas">Motoristas</a>
+                                    </li>
+                                    <li b-75u5ah6irl class="nav-item">
+                                        <a b-75u5ah6irl class="nav-link app-nav-link" href="/Empresa/MinhasViagens">Viagens</a>
+                                    </li>
+                                    <li b-75u5ah6irl class="nav-item">
+                                        <a b-75u5ah6irl class="nav-link app-nav-link" href="/Empresa/EditarEmpresa">Empresa</a>
+                                    </li>
+                                        <li b-75u5ah6irl class="nav-item">
+                                            <a b-75u5ah6irl class="nav-link app-nav-link" href="/Empresa/MeusUsuarios">Usuários</a>
+                                        </li>
+
+
+                            </ul>
+
+                            <ul b-75u5ah6irl class="navbar-nav navbar-user-menu">
+                                    <li b-75u5ah6irl class="nav-item">
+                                        <span b-75u5ah6irl class="nav-link app-nav-user">Olá, net</span>
+                                    </li>
+                                    <li b-75u5ah6irl class="nav-item">
+                                        <a b-75u5ah6irl class="nav-link app-nav-link" href="/Logout">Sair</a>
+                                    </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <a class="navbar-logo-link" aria-label="Página inicial" href="/">
+                    <img src="/images/brasao-rs.png?v=T6YZBFKIUR3FnLza8ev2x4cd4lrVfoBtBbiUaNXpEyo" alt="Brasão do Rio Grande do Sul" class="header-logo header-logo-rs" />
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <div b-75u5ah6irl class="container">
+        <main b-75u5ah6irl role="main" class="pb-3">
+            
+<div class="container mt-5 mb-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/Empresa/MinhaEmpresa">Painel</a></li>
+            <li class="breadcrumb-item active">Editar Empresa</li>
+        </ol>
+    </nav>
+
+
+        <div class="alert alert-danger mb-4 shadow-sm" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <strong>Rejeição da submissão:</strong>
+            <div class="mt-2 preserve-newlines"><strong>Observação geral da rejeição:</strong> Submiss&#xC3;&#xA3;o da empresa rejeitada no live flow</div>
+        </div>
+
+
+    <div id="page-feedback">
+    </div>
+
+    <div class="row">
+        <div class="col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center gap-3">
+                    <h5 class="mb-0">Dados Cadastrais</h5>
+                    <div class="d-flex flex-column align-items-end gap-1">
+                        <div class="small text-white-50">Situação Operacional</div>
+                        <span class="badge bg-success border border-light"><i class="bi bi-check-circle"></i> Aprovado</span>
+                        <div class="small text-white-50 mt-1">Última Submissão</div>
+                        <span class="badge bg-danger border border-light"><i class="bi bi-x-circle"></i> Rejeitada</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        
+                        <input type="hidden" data-val="true" data-val-required="The Cnpj field is required." id="Input_Cnpj" name="Input.Cnpj" value="3333333331313" />
+
+                        <fieldset>
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label fw-bold" for="Input_Cnpj">CNPJ</label>
+                                    <input class="form-control bg-light" readonly type="text" id="Input_Cnpj" name="Input.Cnpj" value="3333333331313" />
+                                </div>
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label fw-bold" for="Input_Nome">Razão Social</label>
+                                    <input class="form-control" type="text" data-val="true" data-val-required="A Raz&#xE3;o Social &#xE9; obrigat&#xF3;ria" id="Input_Nome" name="Input.Nome" value="EMPRESA MARMADUKE? STOU CALMO APROVADO 20260327142925" />
+                                </div>
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label fw-bold" for="Input_NomeFantasia">Nome Fantasia</label>
+                                    <input class="form-control" type="text" id="Input_NomeFantasia" name="Input.NomeFantasia" value="EMPRESA MARMADUKE? STOU CALMO APROVADO 20260327142925" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold" for="Input_Email">E-mail</label>
+                                    <input type="email" class="form-control" data-val="true" data-val-email="E-mail em formato inv&#xE1;lido" id="Input_Email" name="Input.Email" value="NET@NET" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold" for="Input_Telefone">Telefone</label>
+                                    <input class="form-control" type="text" id="Input_Telefone" name="Input.Telefone" value="" />
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label fw-bold" for="Input_Cep">CEP</label>
+                                    <input class="form-control" type="text" id="Input_Cep" name="Input.Cep" value="" />
+                                </div>
+                                <div class="col-md-8 mb-3">
+                                    <label class="form-label fw-bold" for="Input_Endereco">Endereço</label>
+                                    <input class="form-control" type="text" id="Input_Endereco" name="Input.Endereco" value="" />
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label fw-bold" for="Input_EnderecoNumero">Número</label>
+                                    <input class="form-control" type="text" id="Input_EnderecoNumero" name="Input.EnderecoNumero" value="" />
+                                </div>
+                                <div class="col-md-8 mb-3">
+                                    <label class="form-label fw-bold" for="Input_EnderecoComplemento">Complemento</label>
+                                    <input class="form-control" type="text" id="Input_EnderecoComplemento" name="Input.EnderecoComplemento" value="" />
+                                </div>
+                                <div class="col-md-5 mb-3">
+                                    <label class="form-label fw-bold" for="Input_Bairro">Bairro</label>
+                                    <input class="form-control" type="text" id="Input_Bairro" name="Input.Bairro" value="" />
+                                </div>
+                                <div class="col-md-5 mb-3">
+                                    <label class="form-label fw-bold" for="Input_Cidade">Cidade</label>
+                                    <input class="form-control" type="text" id="Input_Cidade" name="Input.Cidade" value="" />
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <label class="form-label fw-bold" for="Input_Estado">UF</label>
+                                    <input class="form-control" type="text" id="Input_Estado" name="Input.Estado" value="" />
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-end gap-2 mt-4 border-top pt-3">
+                                <a href="/Empresa/MinhaEmpresa" class="btn btn-outline-secondary">Voltar</a>
+                                    <button type="submit" class="btn btn-primary px-4">Salvar Alterações</button>
+                                    <button type="submit" class="btn btn-success px-4" onclick="return confirm('Deseja realmente enviar cadastro para análise?\nCertifique-se que todos dados e documentos estão corretos.');" formaction="/Empresa/EditarEmpresa?handler=Enviar">Enviar para análise</button>
+                            </div>
+                        </fieldset>
+                    <input name="__RequestVerificationToken" type="hidden" value="CfDJ8Pob1z1Cgh5Kq6qsPIaUHCZhB4X-ca0bPG6QzTk0LkfbwHiSM6TXIUjd11TF2pC0IeFY-_P9N5iZDlouYNbKKrMZRKwOCgYUplVdeNFK4sIAGKGZ-KeaeC34SE3ItJesZ18SSOnbj8cHI_68F2-uND7MNSIwXAOYUTdj9bmNJuaIi9ermq29U06j3qFp3Qn_9w" /></form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card shadow border-0">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-file-earmark-pdf me-2"></i>Documentação</h5>
+                </div>
+                <div class="card-body bg-light" id="doc-section-container">
+                    
+        <div class="mb-4 pb-3 border-bottom">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="fw-bold text-secondary mb-0">Cart&#xE3;o CNPJ</h6>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="triggerUpload('CARTAO_CNPJ')">
+                        <i class="bi bi-upload"></i> Substituir
+                    </button>
+            </div>
+
+                <ul class="list-group list-group-flush shadow-sm rounded">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div class="text-truncate me-2" title="eva-live-d09145f0e6274b3c83e76380d4bf5807-company-20260327142925.pdf">
+                                <i class="bi bi-file-earmark-check text-success me-1"></i>
+                                <small class="fw-bold">eva-live-d09145f0e6274b3c83e76380d4bf5807-company-20260327142925.pdf</small>
+                                <div class="text-muted" style="font-size: 0.75rem">
+                                    27/03/2026 14:29
+                                </div>
+                                    <div class="mt-2">
+                                        <span class="badge bg-danger">
+                                            Rejeitado
+                                        </span>
+                                    </div>
+                                    <div class="small text-danger mt-2 preserve-newlines">
+                                        <i class="bi bi-exclamation-triangle-fill me-1"></i>Documento da empresa rejeitado no live flow
+                                    </div>
+                            </div>
+                                <form id="deleteForm-138" method="post" class="d-inline" action="/Empresa/EditarEmpresa?handler=DeleteDoc">
+                                    
+                                    <input type="hidden" name="id" value="138" />
+                                    <button type="button" class="btn btn-link text-danger p-0 border-0" title="Excluir" onclick="evaPerformAsyncAction('deleteForm-138', 'doc-section-container')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                <input name="__RequestVerificationToken" type="hidden" value="CfDJ8Pob1z1Cgh5Kq6qsPIaUHCZhB4X-ca0bPG6QzTk0LkfbwHiSM6TXIUjd11TF2pC0IeFY-_P9N5iZDlouYNbKKrMZRKwOCgYUplVdeNFK4sIAGKGZ-KeaeC34SE3ItJesZ18SSOnbj8cHI_68F2-uND7MNSIwXAOYUTdj9bmNJuaIi9ermq29U06j3qFp3Qn_9w" /></form>
+                        </li>
+                </ul>
+        </div>
+        <div class="mb-4 pb-3 border-bottom">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="fw-bold text-secondary mb-0">Contrato Social</h6>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="triggerUpload('CONTRATO_SOCIAL')">
+                        <i class="bi bi-upload"></i> Substituir
+                    </button>
+            </div>
+
+                <ul class="list-group list-group-flush shadow-sm rounded">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div class="text-truncate me-2" title="Materia1226148.pdf">
+                                <i class="bi bi-file-earmark-check text-success me-1"></i>
+                                <small class="fw-bold">Materia1226148.pdf</small>
+                                <div class="text-muted" style="font-size: 0.75rem">
+                                    26/03/2026 18:22
+                                </div>
+                                    <div class="mt-2">
+                                        <span class="badge bg-success">
+                                            Aprovado
+                                        </span>
+                                    </div>
+                            </div>
+                                <form id="deleteForm-134" method="post" class="d-inline" action="/Empresa/EditarEmpresa?handler=DeleteDoc">
+                                    
+                                    <input type="hidden" name="id" value="134" />
+                                    <button type="button" class="btn btn-link text-danger p-0 border-0" title="Excluir" onclick="evaPerformAsyncAction('deleteForm-134', 'doc-section-container')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                <input name="__RequestVerificationToken" type="hidden" value="CfDJ8Pob1z1Cgh5Kq6qsPIaUHCZhB4X-ca0bPG6QzTk0LkfbwHiSM6TXIUjd11TF2pC0IeFY-_P9N5iZDlouYNbKKrMZRKwOCgYUplVdeNFK4sIAGKGZ-KeaeC34SE3ItJesZ18SSOnbj8cHI_68F2-uND7MNSIwXAOYUTdj9bmNJuaIi9ermq29U06j3qFp3Qn_9w" /></form>
+                        </li>
+                </ul>
+        </div>
+        <div class="mb-4 pb-3 border-bottom">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="fw-bold text-secondary mb-0">Identidade dos S&#xF3;cios</h6>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="triggerUpload('IDENTIDADE_SOCIO')">
+                        <i class="bi bi-upload"></i> Enviar Novo
+                    </button>
+            </div>
+
+                <div class="text-muted small fst-italic ms-1"><i class="bi bi-exclamation-circle"></i> Pendente de envio</div>
+        </div>
+        <div class="mb-4 pb-3 border-bottom">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="fw-bold text-secondary mb-0">Alvar&#xE1;</h6>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="triggerUpload('ALVARA')">
+                        <i class="bi bi-upload"></i> Enviar Novo
+                    </button>
+            </div>
+
+                <div class="text-muted small fst-italic ms-1"><i class="bi bi-exclamation-circle"></i> Pendente de envio</div>
+        </div>
+        <div class="mb-4 pb-3 border-bottom">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="fw-bold text-secondary mb-0">CNAE Fiscal</h6>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="triggerUpload('CNAE_FISCAL')">
+                        <i class="bi bi-upload"></i> Enviar Novo
+                    </button>
+            </div>
+
+                <div class="text-muted small fst-italic ms-1"><i class="bi bi-exclamation-circle"></i> Pendente de envio</div>
+        </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form id="uploadForm" method="post" enctype="multipart/form-data" style="display:none" action="/Empresa/EditarEmpresa?handler=Upload">
+    <input type="hidden" id="tipoDocInput" name="TipoDocumentoUpload" value="" />
+    <input type="file" id="fileInput" accept=".pdf" onchange="evaPerformAsyncAction('uploadForm', 'doc-section-container')" name="UploadArquivo" />
+<input name="__RequestVerificationToken" type="hidden" value="CfDJ8Pob1z1Cgh5Kq6qsPIaUHCZhB4X-ca0bPG6QzTk0LkfbwHiSM6TXIUjd11TF2pC0IeFY-_P9N5iZDlouYNbKKrMZRKwOCgYUplVdeNFK4sIAGKGZ-KeaeC34SE3ItJesZ18SSOnbj8cHI_68F2-uND7MNSIwXAOYUTdj9bmNJuaIi9ermq29U06j3qFp3Qn_9w" /></form>
+
+
+        </main>
+    </div>
+
+    <footer b-75u5ah6irl class="border-top footer text-muted">
+        <div b-75u5ah6irl class="container text-center app-footer-copy">
+            <div b-75u5ah6irl>&copy; 2026 - METROPLAN</div>
+            <div b-75u5ah6irl>Fretamento Eventual</div>
+            <div b-75u5ah6irl class="app-version">v0.1.60</div>
+        </div>
+    </footer>
+
+    <script src="/lib/jquery/dist/jquery.min.js"></script>
+    <script src="/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/site.js?v=cIlWst4QlElQGB9vYlQM2vYglUDrYcsnyncJJLwbDG8"></script>
+
+    
+    <script src="/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+<script src="/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+
+<script>
+    /* Force jQuery Validation to use Portuguese defaults if no message is provided */
+    if ($.validator) {
+        $.extend($.validator.messages, {
+            required: "Este campo é obrigatório.",
+            remote: "Por favor, corrija este campo.",
+            email: "Por favor, forneça um endereço de email válido.",
+            url: "Por favor, forneça uma URL válida.",
+            date: "Por favor, forneça uma data válida.",
+            number: "Por favor, forneça um número válido.",
+            digits: "Por favor, forneça somente dígitos.",
+            equalTo: "Por favor, forneça o mesmo valor novamente.",
+            maxlength: $.validator.format("Por favor, forneça não mais que {0} caracteres."),
+            minlength: $.validator.format("Por favor, forneça ao menos {0} caracteres."),
+            rangelength: $.validator.format("Por favor, forneça um valor entre {0} e {1} caracteres de comprimento."),
+            range: $.validator.format("Por favor, forneça um valor entre {0} e {1}."),
+            max: $.validator.format("Por favor, forneça um valor menor ou igual a {0}."),
+            min: $.validator.format("Por favor, forneça um valor maior ou igual a {0}.")
+        });
+    }
+</script>
+    <script>
+        function triggerUpload(type) {
+            evaTriggerUpload(type, 'tipoDocInput', 'fileInput');
+        }
+    </script>
+
+</body>
+</html>

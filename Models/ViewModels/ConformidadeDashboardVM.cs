@@ -19,8 +19,8 @@ namespace Eva.Models.ViewModels
         public string Id { get; set; } = string.Empty;
         public string Nome { get; set; } = string.Empty;
 
-        // Expected values: APROVADO, REJEITADO, INCOMPLETO, AGUARDANDO_ANALISE, EM_ANALISE
-        public string StatusGeral { get; set; } = string.Empty;
+        public string SituacaoOperacional { get; set; } = WorkflowStatus.Incompleto;
+        public string UltimaSubmissao { get; set; } = string.Empty;
 
         // Populated if an analyst explicitly rejected the entity
         public string? MotivoRejeicao { get; set; }
@@ -31,7 +31,7 @@ namespace Eva.Models.ViewModels
         public List<string> DocumentosEmAnalise { get; set; } = new List<string>();
 
         // Determines if this entity is prevented from participating in new trips
-        public bool IsBlocked => StatusGeral == WorkflowStatus.Incompleto ||
+        public bool IsBlocked => SituacaoOperacional == WorkflowStatus.Incompleto ||
                                  DocumentosFaltantes.Any() ||
                                  DocumentosVencidos.Any();
     }

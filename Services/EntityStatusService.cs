@@ -89,7 +89,7 @@ namespace Eva.Services
 
                 var report = new EntityHealthReport
                 {
-                    LatestSubmissionStatus = MapSubmissionStatus(latestSubmission?.Status),
+                    LatestSubmissionStatus = latestSubmission?.Status,
                     LastRejectionReason = BuildLatestRejectionReason(latestSubmission, latestDados, latestDocsForEntity)
                 };
 
@@ -117,7 +117,7 @@ namespace Eva.Services
                 report.PendingDocs = BuildPendingRequiredDocs(mandatoryTypes, latestSubmission, latestDocsForEntity);
 
                 report.IsLegal = !report.MissingMandatoryDocs.Any() && !report.ExpiredDocs.Any();
-                report.AnalystStatus = report.IsLegal ? WorkflowStatus.Aprovado : WorkflowStatus.Incompleto;
+                report.OperationalStatus = report.IsLegal ? WorkflowStatus.Aprovado : WorkflowStatus.Incompleto;
                 report.CurrentStatus = BuildCurrentStatus(report.IsLegal, latestSubmission);
 
                 results[id] = report;

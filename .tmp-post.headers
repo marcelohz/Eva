@@ -1,0 +1,10 @@
+HTTP/1.1 302 Found
+Content-Length: 0
+Date: Fri, 27 Mar 2026 17:42:41 GMT
+Server: Kestrel
+Cache-Control: no-cache,no-store
+Expires: Thu, 01 Jan 1970 00:00:00 GMT
+Location: /Empresa/MinhaEmpresa
+Pragma: no-cache
+Set-Cookie: Eva_Auth_Session=CfDJ8Pob1z1Cgh5Kq6qsPIaUHCYPGYYoWo-iM_NMBHOAkadqja9EdWuWUHBB_OFOHRb12vgKnosU9LL4tcWtWcAt1YJqlRLJYSquGiDQzNi8zm2paByWVQvGMd0iH5BrbndBYTrfo5NeTgl3TLd8mweZ3f1SsKqia4IgkETg_IPP380qFydUcty-HsbUnhiKoYv-o-ZgLXo8AmVvQwl_WgwzCJsyQzt-qw_JPBJCJi9yhibLH8grm8MRF3GGwEM6EYmddEnn3WjThI2Q-L0veb6xK_G4QJJwtxV9YjodIC72x6JhrLhAHRdUsxCbYI33AOHbCrEBVM0S793glPDRg8adOUSI2oqTdGNIODqRBqO2Oo5ojBG_vJ4UWBj3v78c04muGBuyKcc9FMxXq-_x3nzh05aY5XiSoBxCjtYD5fH_d5HraGJ80P2LcYLWt87STgf37WDSEqB4kLmhtCq6UepyxB9jxgHk6S8YTp0gVctMju0_lmQw9MndexVSDw8lBrHv4eF9l5nOv9ZmDOSBQNrzQWeMZ6DsEUFzT_yFYZlONO3wPt6tcDYD6SneRuVOCWCp2j_lUxU6BOTPtayiYv8AihBXtYDuO5iLr4qPf41GheI88TJ1Bx6bFp0LLBDJXxuEuvB5BKoibCHIt0eOw-FuYFhc2y0ez7hKeU0Sc3JJcBvh; expires=Sat, 28 Mar 2026 05:42:41 GMT; path=/; samesite=lax; httponly
+

@@ -19,19 +19,22 @@ namespace Eva.Pages.Empresa
         private readonly ArquivoService _arquivoService;
         private readonly ICurrentUserService _currentUserService;
         private readonly IEmpresaEntityEditGuardService _editGuardService;
+        private readonly IEntityStatusService _entityStatusService;
 
         public EditarEmpresaModel(
             EvaDbContext context,
             ISubmissaoService submissaoService,
             ArquivoService arquivoService,
             ICurrentUserService currentUserService,
-            IEmpresaEntityEditGuardService editGuardService)
+            IEmpresaEntityEditGuardService editGuardService,
+            IEntityStatusService entityStatusService)
         {
             _context = context;
             _submissaoService = submissaoService;
             _arquivoService = arquivoService;
             _currentUserService = currentUserService;
             _editGuardService = editGuardService;
+            _entityStatusService = entityStatusService;
         }
 
         [BindProperty] public EmpresaVM Input { get; set; } = new();
@@ -39,6 +42,7 @@ namespace Eva.Pages.Empresa
         [BindProperty] public string? TipoDocumentoUpload { get; set; }
 
         public string? PendenciaStatus { get; set; }
+        public string OperationalStatus { get; set; } = WorkflowStatus.Incompleto;
         public string? ObservacaoGeralRejeicao { get; set; }
         public string? MotivoRejeicaoDados { get; set; }
         public string? FeedbackSucesso { get; set; }
@@ -89,6 +93,9 @@ namespace Eva.Pages.Empresa
 
         private async Task LoadAuxiliaryData(string cnpj)
         {
+            var health = await _entityStatusService.GetHealthAsync("EMPRESA", cnpj);
+            OperationalStatus = health.OperationalStatus;
+
             var snapshot = await _submissaoService.GetStatusSnapshotAsync("EMPRESA", cnpj);
             PendenciaStatus = snapshot.Status;
             ObservacaoGeralRejeicao = snapshot.ObservacaoGeralRejeicao;
@@ -119,7 +126,7 @@ namespace Eva.Pages.Empresa
 
             var dadosPropostos = JsonSerializer.Serialize(Input);
             await _submissaoService.SalvarDadosPropostosAsync("EMPRESA", Input.Cnpj, dadosPropostos, _currentUserService.GetCurrentEmail());
-            FeedbackSucesso = "AlteraÃ§Ãµes salvas em ediÃ§Ã£o. Quando terminar, clique em \"Enviar para anÃ¡lise\".";
+            FeedbackSucesso = "Alterações salvas em edição. Quando terminar, clique em \"Enviar para análise\".";
             await LoadAuxiliaryData(Input.Cnpj);
             return Page();
         }

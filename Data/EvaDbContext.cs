@@ -30,9 +30,6 @@ namespace Eva.Data
             Veiculos = Set<Veiculo>();
             Motoristas = Set<Motorista>();
             Documentos = Set<Documento>();
-            DocumentoEmpresas = Set<DocumentoEmpresa>();
-            DocumentoVeiculos = Set<DocumentoVeiculo>();
-            DocumentoMotoristas = Set<DocumentoMotorista>();
             Submissoes = Set<Submissao>();
             SubmissaoDados = Set<SubmissaoDados>();
             SubmissaoDocumentos = Set<SubmissaoDocumento>();
@@ -56,9 +53,6 @@ namespace Eva.Data
         public DbSet<Veiculo> Veiculos { get; set; }
         public DbSet<Motorista> Motoristas { get; set; }
         public DbSet<Documento> Documentos { get; set; }
-        public DbSet<DocumentoEmpresa> DocumentoEmpresas { get; set; }
-        public DbSet<DocumentoVeiculo> DocumentoVeiculos { get; set; }
-        public DbSet<DocumentoMotorista> DocumentoMotoristas { get; set; }
         public DbSet<Submissao> Submissoes { get; set; }
         public DbSet<SubmissaoDados> SubmissaoDados { get; set; }
         public DbSet<SubmissaoDocumento> SubmissaoDocumentos { get; set; }

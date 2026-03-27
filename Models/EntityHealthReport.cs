@@ -9,7 +9,14 @@ namespace Eva.Models
         public bool IsLegal { get; set; }
 
         // Official operational status derived from the currently accepted state.
-        public string AnalystStatus { get; set; } = WorkflowStatus.Incompleto;
+        public string OperationalStatus { get; set; } = WorkflowStatus.Incompleto;
+
+        // Backward-compatible alias kept while older code paths are phased out.
+        public string AnalystStatus
+        {
+            get => OperationalStatus;
+            set => OperationalStatus = value;
+        }
 
         // UI-facing status combining the official state with the latest submission state.
         public string CurrentStatus { get; set; } = WorkflowStatus.Incompleto;

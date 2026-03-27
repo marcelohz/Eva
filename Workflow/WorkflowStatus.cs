@@ -13,8 +13,8 @@ namespace Eva.Workflow
 
         public static string GetDisplayLabel(string? status) => status switch
         {
-            AguardandoAnalise => "Aguardando Análise",
-            EmAnalise => "Em Análise",
+            AguardandoAnalise => "Aguardando An\u00E1lise",
+            EmAnalise => "Em An\u00E1lise",
             Aprovado => "Aprovado",
             Rejeitado => "Rejeitado",
             Incompleto or null => "Incompleto",
@@ -23,10 +23,10 @@ namespace Eva.Workflow
 
         public static string GetConformidadeHint(string? status) => status switch
         {
-            AguardandoAnalise => "Aguardando análise da Metroplan",
-            EmAnalise => "Em análise pela Metroplan",
-            Aprovado => "Operação Regular",
-            _ => "Pendência de cadastro ou documentação"
+            AguardandoAnalise => "Aguardando an\u00E1lise da Metroplan",
+            EmAnalise => "Em an\u00E1lise pela Metroplan",
+            Aprovado => "Opera\u00E7\u00E3o Regular",
+            _ => "Pend\u00EAncia de cadastro ou documenta\u00E7\u00E3o"
         };
 
         public static string GetBadgeClass(string? status) => status switch

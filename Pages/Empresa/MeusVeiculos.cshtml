@@ -32,7 +32,8 @@
                             <th>Modelo / Marca</th>
                             <th>Lugares</th>
                             <th>Cor</th>
-                            <th>Status</th>
+                            <th>Situação Operacional</th>
+                            <th>Última Submissão</th>
                             <th class="text-end pe-4">Ações</th>
                         </tr>
                     </thead>
@@ -40,7 +41,7 @@
                         @if (Model.Veiculos == null || !Model.Veiculos.Any())
                         {
                             <tr>
-                                <td colspan="6" class="text-center py-5 text-muted">
+                                <td colspan="7" class="text-center py-5 text-muted">
                                     <i class="bi bi-truck display-4 d-block mb-2"></i>
                                     Nenhum veículo encontrado.
                                 </td>
@@ -72,29 +73,16 @@
                                         @(v.CorPrincipalNome ?? "-")
                                     </td>
                                     <td>
-                                        @if (health.CurrentStatus == WorkflowStatus.Rejeitado)
+                                        <span class="badge @WorkflowStatus.GetBadgeClass(health.OperationalStatus)"><i class="bi @WorkflowStatus.GetBadgeIcon(health.OperationalStatus)"></i> @WorkflowStatus.GetDisplayLabel(health.OperationalStatus)</span>
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrWhiteSpace(health.LatestSubmissionStatus))
                                         {
-                                            <span class="badge @WorkflowStatus.GetBadgeClass(health.CurrentStatus)"><i class="bi @WorkflowStatus.GetBadgeIcon(health.CurrentStatus)"></i> @WorkflowStatus.GetDisplayLabel(health.CurrentStatus)</span>
-                                        }
-                                        else if (health.CurrentStatus == WorkflowStatus.AguardandoAnalise)
-                                        {
-                                            <span class="badge @WorkflowStatus.GetBadgeClass(health.CurrentStatus)"><i class="bi @WorkflowStatus.GetBadgeIcon(health.CurrentStatus)"></i> @WorkflowStatus.GetDisplayLabel(health.CurrentStatus)</span>
-                                        }
-                                        else if (health.CurrentStatus == WorkflowStatus.EmAnalise)
-                                        {
-                                            <span class="badge @WorkflowStatus.GetBadgeClass(health.CurrentStatus)"><i class="bi @WorkflowStatus.GetBadgeIcon(health.CurrentStatus)"></i> @WorkflowStatus.GetDisplayLabel(health.CurrentStatus)</span>
-                                        }
-                                        else if (health.IsLegal)
-                                        {
-                                            <span class="badge bg-success"><i class="bi bi-check-circle"></i> Legalizado</span>
-                                        }
-                                        else if (health.CurrentStatus == WorkflowStatus.Incompleto)
-                                        {
-                                            <span class="badge @WorkflowStatus.GetBadgeClass(WorkflowStatus.Incompleto)"><i class="bi @WorkflowStatus.GetBadgeIcon(WorkflowStatus.Incompleto)"></i> @WorkflowStatus.GetDisplayLabel(WorkflowStatus.Incompleto)</span>
+                                            <span class="badge @SubmissaoWorkflow.GetBadgeClass(health.LatestSubmissionStatus)"><i class="bi @SubmissaoWorkflow.GetBadgeIcon(health.LatestSubmissionStatus)"></i> @SubmissaoWorkflow.GetDisplayLabel(health.LatestSubmissionStatus)</span>
                                         }
                                         else
                                         {
-                                            <span class="badge bg-secondary"><i class="bi bi-question-circle"></i> @WorkflowStatus.GetDisplayLabel(health.CurrentStatus)</span>
+                                            <span class="badge bg-secondary"><i class="bi bi-circle"></i> Sem submissão</span>
                                         }
                                     </td>
                                     <td class="text-end pe-4">

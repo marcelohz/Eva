@@ -79,7 +79,8 @@ namespace Eva.Services
             {
                 Id = id,
                 Nome = string.IsNullOrWhiteSpace(nome) ? "N/A" : nome,
-                StatusGeral = health.CurrentStatus ?? WorkflowStatus.Incompleto,
+                SituacaoOperacional = health.OperationalStatus ?? WorkflowStatus.Incompleto,
+                UltimaSubmissao = health.LatestSubmissionStatus ?? string.Empty,
                 MotivoRejeicao = health.LastRejectionReason,
                 DocumentosFaltantes = health.MissingMandatoryDocs?.ToList() ?? new List<string>(),
                 DocumentosVencidos = health.ExpiredDocs?.ToList() ?? new List<string>(),

@@ -20,12 +20,12 @@ namespace Eva.Workflow
 
         public static string GetDisplayLabel(string? status) => status switch
         {
-            EmEdicao => "Em edição",
-            AguardandoAnalise => "Aguardando análise",
-            EmAnalise => "Em análise",
+            EmEdicao => "Em edi\u00E7\u00E3o",
+            AguardandoAnalise => "Aguardando an\u00E1lise",
+            EmAnalise => "Em an\u00E1lise",
             Aprovada => "Aprovada",
             Rejeitada => "Rejeitada",
-            _ => "Sem submissão"
+            _ => "Sem submiss\u00E3o"
         };
 
         public static string GetBadgeClass(string? status) => status switch
@@ -53,7 +53,7 @@ namespace Eva.Workflow
             RevisaoPendente => "Pendente",
             RevisaoAprovada => "Aprovado",
             RevisaoRejeitada => "Rejeitado",
-            _ => "Sem revisão"
+            _ => "Sem revis\u00E3o"
         };
 
         public static string GetReviewBadgeClass(string? status) => status switch

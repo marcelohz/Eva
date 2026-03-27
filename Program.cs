@@ -116,6 +116,17 @@ try
 
     var app = builder.Build();
 
+    using (var scope = app.Services.CreateScope())
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<EvaDbContext>();
+        await dbContext.Database.ExecuteSqlRawAsync(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS ux_submissao_open_per_entity
+                ON eventual.submissao (entidade_tipo, entidade_id)
+                WHERE status IN ('EM_EDICAO', 'AGUARDANDO_ANALISE', 'EM_ANALISE');
+            """);
+    }
+
     // --- MIDDLEWARE PIPELINE ---
 
     app.UseRequestLocalization();

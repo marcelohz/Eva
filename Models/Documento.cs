@@ -39,8 +39,5 @@ namespace Eva.Models
 
         [Column("validade")]
         public DateOnly? Validade { get; set; }
-
-        [Column("aprovado_em")]
-        public DateTime? AprovadoEm { get; set; }
     }
 }

@@ -1021,3 +1021,8 @@ Esse documento deve ser tratado como fonte de verdade do desenho acordado durant
 - `Company reject flow`: OK
 - `Motorista reject, fix, approve`: OK
 - `Veiculo create and approve`: OK
+# Archived Notice
+
+This document is historical context only.
+
+Do not treat it as authoritative implementation guidance. It may contain obsolete decisions, outdated schema notes, or workflow instructions that were later changed in the project.

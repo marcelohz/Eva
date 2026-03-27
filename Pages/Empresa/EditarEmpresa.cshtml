@@ -17,7 +17,7 @@
     {
         <div class="alert alert-warning mb-4 shadow-sm" role="alert">
             <i class="bi bi-lock-fill me-2"></i>
-            <strong>Acesso Bloqueado:</strong> O cadastro da empresa estÃ¡ em anÃ¡lise por um analista e nÃ£o pode ser alterado no momento.
+            <strong>Acesso Bloqueado:</strong> O cadastro da empresa está em análise por um analista e não pode ser alterado no momento.
         </div>
     }
 
@@ -25,8 +25,8 @@
     {
         <div class="alert alert-danger mb-4 shadow-sm" role="alert">
             <i class="bi bi-exclamation-triangle-fill me-2"></i>
-            <strong>RejeiÃ§Ã£o da submissÃ£o:</strong>
-            <div class="mt-2 preserve-newlines"><strong>ObservaÃ§Ã£o geral da rejeiÃ§Ã£o:</strong> @Model.ObservacaoGeralRejeicao</div>
+            <strong>Rejeição da submissão:</strong>
+            <div class="mt-2 preserve-newlines"><strong>Observação geral da rejeição:</strong> @Model.ObservacaoGeralRejeicao</div>
         </div>
     }
 
@@ -35,7 +35,7 @@
         <div class="alert alert-warning mb-4 shadow-sm" role="alert">
             <i class="bi bi-file-earmark-text-fill me-2"></i>
             <strong>Dados cadastrais rejeitados:</strong>
-            <div class="mt-2 preserve-newlines"><strong>Motivo da rejeiÃ§Ã£o dos dados:</strong> @Model.MotivoRejeicaoDados</div>
+            <div class="mt-2 preserve-newlines"><strong>Motivo da rejeição dos dados:</strong> @Model.MotivoRejeicaoDados</div>
         </div>
     }
 
@@ -51,9 +51,14 @@
     <div class="row">
         <div class="col-lg-7">
             <div class="card shadow mb-4">
-                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center gap-3">
                     <h5 class="mb-0">Dados Cadastrais</h5>
-                    <span class="badge @SubmissaoWorkflow.GetBadgeClass(Model.PendenciaStatus) border border-light"><i class="bi @SubmissaoWorkflow.GetBadgeIcon(Model.PendenciaStatus)"></i> @SubmissaoWorkflow.GetDisplayLabel(Model.PendenciaStatus)</span>
+                    <div class="d-flex flex-column align-items-end gap-1">
+                        <div class="small text-white-50">Situação Operacional</div>
+                        <span class="badge @WorkflowStatus.GetBadgeClass(Model.OperationalStatus) border border-light"><i class="bi @WorkflowStatus.GetBadgeIcon(Model.OperationalStatus)"></i> @WorkflowStatus.GetDisplayLabel(Model.OperationalStatus)</span>
+                        <div class="small text-white-50 mt-1">Última Submissão</div>
+                        <span class="badge @SubmissaoWorkflow.GetBadgeClass(Model.PendenciaStatus) border border-light"><i class="bi @SubmissaoWorkflow.GetBadgeIcon(Model.PendenciaStatus)"></i> @SubmissaoWorkflow.GetDisplayLabel(Model.PendenciaStatus)</span>
+                    </div>
                 </div>
                 <div class="card-body">
                     <form method="post" novalidate>
@@ -67,7 +72,7 @@
                                     <input asp-for="Input.Cnpj" class="form-control bg-light" readonly />
                                 </div>
                                 <div class="col-md-12 mb-3">
-                                    <label asp-for="Input.Nome" class="form-label fw-bold">RazÃ£o Social</label>
+                                    <label asp-for="Input.Nome" class="form-label fw-bold">Razão Social</label>
                                     <input asp-for="Input.Nome" class="form-control" />
                                 </div>
                                 <div class="col-md-12 mb-3">
@@ -87,11 +92,11 @@
                                     <input asp-for="Input.Cep" class="form-control" />
                                 </div>
                                 <div class="col-md-8 mb-3">
-                                    <label asp-for="Input.Endereco" class="form-label fw-bold">EndereÃ§o</label>
+                                    <label asp-for="Input.Endereco" class="form-label fw-bold">Endereço</label>
                                     <input asp-for="Input.Endereco" class="form-control" />
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label asp-for="Input.EnderecoNumero" class="form-label fw-bold">NÃºmero</label>
+                                    <label asp-for="Input.EnderecoNumero" class="form-label fw-bold">Número</label>
                                     <input asp-for="Input.EnderecoNumero" class="form-control" />
                                 </div>
                                 <div class="col-md-8 mb-3">
@@ -116,8 +121,8 @@
                                 <a href="/Empresa/MinhaEmpresa" class="btn btn-outline-secondary">Voltar</a>
                                 @if (!isLocked)
                                 {
-                                    <button type="submit" class="btn btn-primary px-4">Salvar AlteraÃ§Ãµes</button>
-                                    <button type="submit" asp-page-handler="Enviar" class="btn btn-success px-4" onclick="return confirm('Deseja realmente enviar cadastro para anÃ¡lise?\nCertifique-se que todos dados e documentos estÃ£o corretos.');">Enviar para anÃ¡lise</button>
+                                    <button type="submit" class="btn btn-primary px-4">Salvar Alterações</button>
+                                    <button type="submit" asp-page-handler="Enviar" class="btn btn-success px-4" onclick="return confirm('Deseja realmente enviar cadastro para análise?\nCertifique-se que todos dados e documentos estão corretos.');">Enviar para análise</button>
                                 }
                             </div>
                         </fieldset>
@@ -129,7 +134,7 @@
         <div class="col-lg-5">
             <div class="card shadow border-0">
                 <div class="card-header bg-secondary text-white">
-                    <h5 class="mb-0"><i class="bi bi-file-earmark-pdf me-2"></i>DocumentaÃ§Ã£o</h5>
+                    <h5 class="mb-0"><i class="bi bi-file-earmark-pdf me-2"></i>Documentação</h5>
                 </div>
                 <div class="card-body bg-light" id="doc-section-container">
                     <partial name="_EmpresaDocs" model="Model" />
@@ -153,5 +158,3 @@
         }
     </script>
 }
-
-

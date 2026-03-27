@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Central de Conformidade - Fretamento Eventual</title>
+    <link rel="stylesheet" href="/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/css/site.css?v=vkBUIphqQ8a-hQO4u66PqErXhcxR0Hrl8X4pxw_IDns" />
+</head>
+<body>
+
+    <header b-75u5ah6irl>
+        <nav b-75u5ah6irl class="navbar navbar-expand-lg navbar-light app-navbar border-bottom box-shadow mb-3">
+            <div b-75u5ah6irl class="container navbar-shell">
+                <a class="navbar-logo-link" aria-label="Página inicial" href="/">
+                    <img src="/images/logo-metroplan.png?v=hQOWTMrb1nxClbxhtFGcTP4J28fkBVYm_d8yVqZQaxI" alt="Metroplan" class="header-logo header-logo-metroplan" />
+                </a>
+
+                <div b-75u5ah6irl class="navbar-center">
+                    <button b-75u5ah6irl class="navbar-toggler ms-auto app-navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar"
+                            aria-expanded="false" aria-label="Toggle navigation">
+                        <span b-75u5ah6irl class="navbar-toggler-icon"></span>
+                    </button>
+                    <div b-75u5ah6irl class="navbar-collapse collapse" id="mainNavbar">
+                        <div b-75u5ah6irl class="navbar-menu-wrap">
+                            <ul b-75u5ah6irl class="navbar-nav flex-grow-1 justify-content-lg-center">
+
+                                    <li b-75u5ah6irl class="nav-item">
+                                        <a b-75u5ah6irl class="nav-link app-nav-link" href="/Empresa/MinhaEmpresa">Painel</a>
+                                    </li>
+                                    <li b-75u5ah6irl class="nav-item">
+                                        <a b-75u5ah6irl class="nav-link app-nav-link" href="/Empresa/MeusVeiculos">Veículos</a>
+                                    </li>
+                                    <li b-75u5ah6irl class="nav-item">
+                                        <a b-75u5ah6irl class="nav-link app-nav-link" href="/Empresa/MeusMotoristas">Motoristas</a>
+                                    </li>
+                                    <li b-75u5ah6irl class="nav-item">
+                                        <a b-75u5ah6irl class="nav-link app-nav-link" href="/Empresa/MinhasViagens">Viagens</a>
+                                    </li>
+                                    <li b-75u5ah6irl class="nav-item">
+                                        <a b-75u5ah6irl class="nav-link app-nav-link" href="/Empresa/EditarEmpresa">Empresa</a>
+                                    </li>
+                                        <li b-75u5ah6irl class="nav-item">
+                                            <a b-75u5ah6irl class="nav-link app-nav-link" href="/Empresa/MeusUsuarios">Usuários</a>
+                                        </li>
+
+
+                            </ul>
+
+                            <ul b-75u5ah6irl class="navbar-nav navbar-user-menu">
+                                    <li b-75u5ah6irl class="nav-item">
+                                        <span b-75u5ah6irl class="nav-link app-nav-user">Olá, net</span>
+                                    </li>
+                                    <li b-75u5ah6irl class="nav-item">
+                                        <a b-75u5ah6irl class="nav-link app-nav-link" href="/Logout">Sair</a>
+                                    </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <a class="navbar-logo-link" aria-label="Página inicial" href="/">
+                    <img src="/images/brasao-rs.png?v=T6YZBFKIUR3FnLza8ev2x4cd4lrVfoBtBbiUaNXpEyo" alt="Brasão do Rio Grande do Sul" class="header-logo header-logo-rs" />
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <div b-75u5ah6irl class="container">
+        <main b-75u5ah6irl role="main" class="pb-3">
+            
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <div>
+            <h1 class="h2">Central de Conformidade</h1>
+            <p class="text-muted">Acompanhe e resolva pend&ecirc;ncias de cadastro e documenta&ccedil;&atilde;o.</p>
+        </div>
+        <a href="/Empresa/MinhaEmpresa" class="btn btn-outline-secondary">Voltar ao Painel</a>
+    </div>
+
+        <div class="alert alert-danger shadow-sm mb-4">
+            <i class="bi bi-exclamation-octagon-fill me-2"></i> <strong>A&ccedil;&atilde;o Necess&aacute;ria:</strong> Existem pend&ecirc;ncias que impedem o uso de seus recursos em novas viagens. Resolva os itens destacados abaixo.
+        </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 text-primary"><i class="bi bi-building me-2"></i> Documenta&ccedil;&atilde;o da Empresa</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Entidade</th>
+                            <th>Situa&ccedil;&atilde;o Operacional</th>
+                            <th>&Uacute;ltima Submiss&atilde;o</th>
+                            <th>O que precisa ser feito?</th>
+                            <th class="text-end">A&ccedil;&atilde;o</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                            
+<tr>
+    <td class="fw-bold text-dark">EMPRESA MARMADUKE? STOU CALMO APROVADO 20260327142925</td>
+
+    <td>
+        <span class="badge bg-success rounded-pill">
+            Aprovado
+        </span>
+    </td>
+
+    <td>
+        <span class="badge bg-danger rounded-pill">
+            Rejeitada
+        </span>
+    </td>
+
+    <td>
+            <div class="d-flex flex-column gap-1">
+                    <div class="text-danger small preserve-newlines">
+                        <strong>Motivo da &uacute;ltima rejei&ccedil;&atilde;o:</strong> Submiss&#xC3;&#xA3;o da empresa rejeitada no live flow
+                    </div>
+
+                <div class="d-flex flex-wrap gap-1">
+                </div>
+            </div>
+    </td>
+
+    <td class="text-end">
+            <a href="/Empresa/EditarEmpresa" class="btn btn-sm btn-outline-primary">Acessar</a>
+    </td>
+</tr>
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 text-primary"><i class="bi bi-truck me-2"></i> Frota de Ve&iacute;culos</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Ve&iacute;culo (Placa)</th>
+                            <th>Situa&ccedil;&atilde;o Operacional</th>
+                            <th>&Uacute;ltima Submiss&atilde;o</th>
+                            <th>O que precisa ser feito?</th>
+                            <th class="text-end">A&ccedil;&atilde;o</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                            
+<tr>
+    <td class="fw-bold text-dark">model (NNN8888)</td>
+
+    <td>
+        <span class="badge bg-warning text-dark rounded-pill">
+            Incompleto
+        </span>
+    </td>
+
+    <td>
+        <span class="badge bg-secondary rounded-pill">
+            Sem submiss&#xE3;o
+        </span>
+    </td>
+
+    <td>
+            <div class="d-flex flex-column gap-1">
+
+                <div class="d-flex flex-wrap gap-1">
+                        <span class="badge bg-warning text-dark border"><i class="bi bi-file-earmark-x"></i> Falta: CRLV</span>
+                </div>
+            </div>
+    </td>
+
+    <td class="text-end">
+            <a href="/Empresa/EditarVeiculo/NNN8888" class="btn btn-sm btn-danger">Resolver</a>
+    </td>
+</tr>
+
+                            
+<tr>
+    <td class="fw-bold text-dark">uo uo (SSS5555)</td>
+
+    <td>
+        <span class="badge bg-warning text-dark rounded-pill">
+            Incompleto
+        </span>
+    </td>
+
+    <td>
+        <span class="badge bg-secondary rounded-pill">
+            Sem submiss&#xE3;o
+        </span>
+    </td>
+
+    <td>
+            <div class="d-flex flex-column gap-1">
+
+                <div class="d-flex flex-wrap gap-1">
+                        <span class="badge bg-warning text-dark border"><i class="bi bi-file-earmark-x"></i> Falta: CRLV</span>
+                </div>
+            </div>
+    </td>
+
+    <td class="text-end">
+            <a href="/Empresa/EditarVeiculo/SSS5555" class="btn btn-sm btn-danger">Resolver</a>
+    </td>
+</tr>
+
+                            
+<tr>
+    <td class="fw-bold text-dark">aaaaahhhh (YPI0000)</td>
+
+    <td>
+        <span class="badge bg-warning text-dark rounded-pill">
+            Incompleto
+        </span>
+    </td>
+
+    <td>
+        <span class="badge bg-secondary rounded-pill">
+            Sem submiss&#xE3;o
+        </span>
+    </td>
+
+    <td>
+            <div class="d-flex flex-column gap-1">
+
+                <div class="d-flex flex-wrap gap-1">
+                        <span class="badge bg-warning text-dark border"><i class="bi bi-file-earmark-x"></i> Falta: CRLV</span>
+                </div>
+            </div>
+    </td>
+
+    <td class="text-end">
+            <a href="/Empresa/EditarVeiculo/YPI0000" class="btn btn-sm btn-danger">Resolver</a>
+    </td>
+</tr>
+
+                            
+<tr>
+    <td class="fw-bold text-dark">marcopolo (PPP9999)</td>
+
+    <td>
+        <span class="badge bg-warning text-dark rounded-pill">
+            Incompleto
+        </span>
+    </td>
+
+    <td>
+        <span class="badge bg-secondary rounded-pill">
+            Sem submiss&#xE3;o
+        </span>
+    </td>
+
+    <td>
+            <div class="d-flex flex-column gap-1">
+
+                <div class="d-flex flex-wrap gap-1">
+                        <span class="badge bg-warning text-dark border"><i class="bi bi-file-earmark-x"></i> Falta: CRLV</span>
+                </div>
+            </div>
+    </td>
+
+    <td class="text-end">
+            <a href="/Empresa/EditarVeiculo/PPP9999" class="btn btn-sm btn-danger">Resolver</a>
+    </td>
+</tr>
+
+                            
+<tr>
+    <td class="fw-bold text-dark">modelito (NNN7444)</td>
+
+    <td>
+        <span class="badge bg-warning text-dark rounded-pill">
+            Incompleto
+        </span>
+    </td>
+
+    <td>
+        <span class="badge bg-secondary rounded-pill">
+            Sem submiss&#xE3;o
+        </span>
+    </td>
+
+    <td>
+            <div class="d-flex flex-column gap-1">
+
+                <div class="d-flex flex-wrap gap-1">
+                        <span class="badge bg-warning text-dark border"><i class="bi bi-file-earmark-x"></i> Falta: CRLV</span>
+                </div>
+            </div>
+    </td>
+
+    <td class="text-end">
+            <a href="/Empresa/EditarVeiculo/NNN7444" class="btn btn-sm btn-danger">Resolver</a>
+    </td>
+</tr>
+
+                            
+<tr>
+    <td class="fw-bold text-dark">ford models (XXX5656)</td>
+
+    <td>
+        <span class="badge bg-warning text-dark rounded-pill">
+            Incompleto
+        </span>
+    </td>
+
+    <td>
+        <span class="badge bg-secondary rounded-pill">
+            Sem submiss&#xE3;o
+        </span>
+    </td>
+
+    <td>
+            <div class="d-flex flex-column gap-1">
+
+                <div class="d-flex flex-wrap gap-1">
+                        <span class="badge bg-warning text-dark border"><i class="bi bi-file-earmark-x"></i> Falta: CRLV</span>
+                </div>
+            </div>
+    </td>
+
+    <td class="text-end">
+            <a href="/Empresa/EditarVeiculo/XXX5656" class="btn btn-sm btn-danger">Resolver</a>
+    </td>
+</tr>
+
+                            
+<tr>
+    <td class="fw-bold text-dark">BABADUKE SIM (YYY8787)</td>
+
+    <td>
+        <span class="badge bg-warning text-dark rounded-pill">
+            Incompleto
+        </span>
+    </td>
+
+    <td>
+        <span class="badge bg-secondary rounded-pill">
+            Sem submiss&#xE3;o
+        </span>
+    </td>
+
+    <td>
+            <div class="d-flex flex-column gap-1">
+
+                <div class="d-flex flex-wrap gap-1">
+                        <span class="badge bg-warning text-dark border"><i class="bi bi-file-earmark-x"></i> Falta: CRLV</span>
+                </div>
+            </div>
+    </td>
+
+    <td class="text-end">
+            <a href="/Empresa/EditarVeiculo/YYY8787" class="btn btn-sm btn-danger">Resolver</a>
+    </td>
+</tr>
+
+                            
+<tr>
+    <td class="fw-bold text-dark">Codex Veiculo 20260326142626 (RCC7739)</td>
+
+    <td>
+        <span class="badge bg-success rounded-pill">
+            Aprovado
+        </span>
+    </td>
+
+    <td>
+        <span class="badge bg-success rounded-pill">
+            Aprovada
+        </span>
+    </td>
+
+    <td>
+            <span class="text-muted small"><i class="bi bi-check2"></i> Opera&#xE7;&#xE3;o Regular</span>
+    </td>
+
+    <td class="text-end">
+            <a href="/Empresa/EditarVeiculo/RCC7739" class="btn btn-sm btn-outline-primary">Acessar</a>
+    </td>
+</tr>
+
+                            
+<tr>
+    <td class="fw-bold text-dark">nooooooooooooo!!!!!!!!!!!!!!!!!!!!!!!! (EEE3333)</td>
+
+    <td>
+        <span class="badge bg-success rounded-pill">
+            Aprovado
+        </span>
+    </td>
+
+    <td>
+        <span class="badge bg-danger rounded-pill">
+            Rejeitada
+        </span>
+    </td>
+
+    <td>
+            <div class="d-flex flex-column gap-1">
+                    <div class="text-danger small preserve-newlines">
+                        <strong>Motivo da &uacute;ltima rejei&ccedil;&atilde;o:</strong> bah
+                    </div>
+
+                <div class="d-flex flex-wrap gap-1">
+                </div>
+            </div>
+    </td>
+
+    <td class="text-end">
+            <a href="/Empresa/EditarVeiculo/EEE3333" class="btn btn-sm btn-outline-primary">Acessar</a>
+    </td>
+</tr>
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 text-primary"><i class="bi bi-person-vcard me-2"></i> Motoristas</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nome do Motorista</th>
+                            <th>Situa&ccedil;&atilde;o Operacional</th>
+                            <th>&Uacute;ltima Submiss&atilde;o</th>
+                            <th>O que precisa ser feito?</th>
+                            <th class="text-end">A&ccedil;&atilde;o</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                            
+<tr>
+    <td class="fw-bold text-dark">jo&#xE3;o v&#xE1;lido siiim</td>
+
+    <td>
+        <span class="badge bg-warning text-dark rounded-pill">
+            Incompleto
+        </span>
+    </td>
+
+    <td>
+        <span class="badge bg-secondary rounded-pill">
+            Sem submiss&#xE3;o
+        </span>
+    </td>
+
+    <td>
+            <div class="d-flex flex-column gap-1">
+
+                <div class="d-flex flex-wrap gap-1">
+                        <span class="badge bg-warning text-dark border"><i class="bi bi-file-earmark-x"></i> Falta: CNH</span>
+                </div>
+            </div>
+    </td>
+
+    <td class="text-end">
+            <a href="/Empresa/EditarMotorista/5" class="btn btn-sm btn-danger">Resolver</a>
+    </td>
+</tr>
+
+                            
+<tr>
+    <td class="fw-bold text-dark">joseh</td>
+
+    <td>
+        <span class="badge bg-warning text-dark rounded-pill">
+            Incompleto
+        </span>
+    </td>
+
+    <td>
+        <span class="badge bg-secondary rounded-pill">
+            Sem submiss&#xE3;o
+        </span>
+    </td>
+
+    <td>
+            <div class="d-flex flex-column gap-1">
+
+                <div class="d-flex flex-wrap gap-1">
+                        <span class="badge bg-warning text-dark border"><i class="bi bi-file-earmark-x"></i> Falta: CNH</span>
+                </div>
+            </div>
+    </td>
+
+    <td class="text-end">
+            <a href="/Empresa/EditarMotorista/2" class="btn btn-sm btn-danger">Resolver</a>
+    </td>
+</tr>
+
+                            
+<tr>
+    <td class="fw-bold text-dark">manuelito boas-novas</td>
+
+    <td>
+        <span class="badge bg-warning text-dark rounded-pill">
+            Incompleto
+        </span>
+    </td>
+
+    <td>
+        <span class="badge bg-secondary rounded-pill">
+            Sem submiss&#xE3;o
+        </span>
+    </td>
+
+    <td>
+            <div class="d-flex flex-column gap-1">
+
+                <div class="d-flex flex-wrap gap-1">
+                        <span class="badge bg-warning text-dark border"><i class="bi bi-file-earmark-x"></i> Falta: CNH</span>
+                </div>
+            </div>
+    </td>
+
+    <td class="text-end">
+            <a href="/Empresa/EditarMotorista/4" class="btn btn-sm btn-danger">Resolver</a>
+    </td>
+</tr>
+
+                            
+<tr>
+    <td class="fw-bold text-dark">Codex Motorista 20260326140930</td>
+
+    <td>
+        <span class="badge bg-warning text-dark rounded-pill">
+            Incompleto
+        </span>
+    </td>
+
+    <td>
+        <span class="badge bg-warning text-dark rounded-pill">
+            Em edi&#xE7;&#xE3;o
+        </span>
+    </td>
+
+    <td>
+            <div class="d-flex flex-column gap-1">
+
+                <div class="d-flex flex-wrap gap-1">
+                        <span class="badge bg-warning text-dark border"><i class="bi bi-file-earmark-x"></i> Falta: CNH</span>
+                </div>
+            </div>
+    </td>
+
+    <td class="text-end">
+            <a href="/Empresa/EditarMotorista/7" class="btn btn-sm btn-danger">Resolver</a>
+    </td>
+</tr>
+
+                            
+<tr>
+    <td class="fw-bold text-dark">Codex Motorista 20260327142925</td>
+
+    <td>
+        <span class="badge bg-warning text-dark rounded-pill">
+            Incompleto
+        </span>
+    </td>
+
+    <td>
+        <span class="badge bg-warning text-dark rounded-pill">
+            Em edi&#xE7;&#xE3;o
+        </span>
+    </td>
+
+    <td>
+            <div class="d-flex flex-column gap-1">
+
+                <div class="d-flex flex-wrap gap-1">
+                        <span class="badge bg-warning text-dark border"><i class="bi bi-file-earmark-x"></i> Falta: CNH</span>
+                </div>
+            </div>
+    </td>
+
+    <td class="text-end">
+            <a href="/Empresa/EditarMotorista/9" class="btn btn-sm btn-danger">Resolver</a>
+    </td>
+</tr>
+
+                            
+<tr>
+    <td class="fw-bold text-dark">jos&#xE9; antunes gabarito HONESTO e de f&#xE9;</td>
+
+    <td>
+        <span class="badge bg-success rounded-pill">
+            Aprovado
+        </span>
+    </td>
+
+    <td>
+        <span class="badge bg-success rounded-pill">
+            Aprovada
+        </span>
+    </td>
+
+    <td>
+            <span class="text-muted small"><i class="bi bi-check2"></i> Opera&#xE7;&#xE3;o Regular</span>
+    </td>
+
+    <td class="text-end">
+            <a href="/Empresa/EditarMotorista/3" class="btn btn-sm btn-outline-primary">Acessar</a>
+    </td>
+</tr>
+
+                            
+<tr>
+    <td class="fw-bold text-dark">Codex Motorista 20260326142626 aprovado</td>
+
+    <td>
+        <span class="badge bg-success rounded-pill">
+            Aprovado
+        </span>
+    </td>
+
+    <td>
+        <span class="badge bg-success rounded-pill">
+            Aprovada
+        </span>
+    </td>
+
+    <td>
+            <span class="text-muted small"><i class="bi bi-check2"></i> Opera&#xE7;&#xE3;o Regular</span>
+    </td>
+
+    <td class="text-end">
+            <a href="/Empresa/EditarMotorista/8" class="btn btn-sm btn-outline-primary">Acessar</a>
+    </td>
+</tr>
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+        </main>
+    </div>
+
+    <footer b-75u5ah6irl class="border-top footer text-muted">
+        <div b-75u5ah6irl class="container text-center app-footer-copy">
+            <div b-75u5ah6irl>&copy; 2026 - METROPLAN</div>
+            <div b-75u5ah6irl>Fretamento Eventual</div>
+            <div b-75u5ah6irl class="app-version">v0.1.60</div>
+        </div>
+    </footer>
+
+    <script src="/lib/jquery/dist/jquery.min.js"></script>
+    <script src="/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/site.js?v=cIlWst4QlElQGB9vYlQM2vYglUDrYcsnyncJJLwbDG8"></script>
+
+    
+</body>
+</html>

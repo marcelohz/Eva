@@ -3,6 +3,7 @@ using Eva.Services;
 using Eva.Tests.Infrastructure;
 using Eva.Workflow;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace Eva.Tests.Services;
 
@@ -98,6 +99,89 @@ public class SubmissaoServiceIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task GetOrCreateDraftAsync_deve_bloquear_novo_draft_quando_houver_submissao_aguardando_analise()
+    {
+        await using var context = _database.CreateDbContext();
+        await SeedEmpresaAsync(context, "12345678000199", "empresa@teste.com");
+
+        context.Submissoes.Add(new Submissao
+        {
+            EntidadeTipo = "EMPRESA",
+            EntidadeId = "12345678000199",
+            Status = SubmissaoWorkflow.AguardandoAnalise,
+            CriadoEm = DateTime.UtcNow,
+            AtualizadoEm = DateTime.UtcNow,
+            SubmetidoEm = DateTime.UtcNow
+        });
+        await context.SaveChangesAsync();
+
+        var service = new SubmissaoService(context);
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.GetOrCreateDraftAsync("EMPRESA", "12345678000199", "empresa@teste.com"));
+
+        Assert.Contains("submissão em aberto", ex.Message);
+        Assert.Contains(SubmissaoWorkflow.AguardandoAnalise, ex.Message);
+    }
+
+    [Fact]
+    public async Task GetOrCreateDraftAsync_deve_bloquear_novo_draft_quando_houver_submissao_em_analise()
+    {
+        await using var context = _database.CreateDbContext();
+        await SeedEmpresaAsync(context, "12345678000199", "empresa@teste.com");
+
+        context.Submissoes.Add(new Submissao
+        {
+            EntidadeTipo = "EMPRESA",
+            EntidadeId = "12345678000199",
+            Status = SubmissaoWorkflow.EmAnalise,
+            CriadoEm = DateTime.UtcNow,
+            AtualizadoEm = DateTime.UtcNow,
+            SubmetidoEm = DateTime.UtcNow,
+            AnalistaAtual = "analista@metroplan.rs.gov.br"
+        });
+        await context.SaveChangesAsync();
+
+        var service = new SubmissaoService(context);
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.GetOrCreateDraftAsync("EMPRESA", "12345678000199", "empresa@teste.com"));
+
+        Assert.Contains("submissão em aberto", ex.Message);
+        Assert.Contains(SubmissaoWorkflow.EmAnalise, ex.Message);
+    }
+
+    [Fact]
+    public async Task Banco_deve_impedir_duas_submissoes_abertas_para_a_mesma_entidade()
+    {
+        await using var context = _database.CreateDbContext();
+        await SeedEmpresaAsync(context, "12345678000199", "empresa@teste.com");
+
+        context.Submissoes.Add(new Submissao
+        {
+            EntidadeTipo = "EMPRESA",
+            EntidadeId = "12345678000199",
+            Status = SubmissaoWorkflow.EmEdicao,
+            CriadoEm = DateTime.UtcNow,
+            AtualizadoEm = DateTime.UtcNow
+        });
+        await context.SaveChangesAsync();
+
+        context.Submissoes.Add(new Submissao
+        {
+            EntidadeTipo = "EMPRESA",
+            EntidadeId = "12345678000199",
+            Status = SubmissaoWorkflow.AguardandoAnalise,
+            CriadoEm = DateTime.UtcNow,
+            AtualizadoEm = DateTime.UtcNow,
+            SubmetidoEm = DateTime.UtcNow
+        });
+
+        var ex = await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
+        var postgresException = Assert.IsType<PostgresException>(ex.InnerException);
+
+        Assert.Equal("ux_submissao_open_per_entity", postgresException.ConstraintName);
+    }
+
+    [Fact]
     public async Task GetDocumentosParaEdicaoAsync_deve_expor_status_e_motivo_do_documento_rejeitado_na_ultima_submissao()
     {
         await using var context = _database.CreateDbContext();
@@ -179,6 +263,66 @@ public class SubmissaoServiceIntegrationTests : IAsyncLifetime
         var docEdicao = Assert.Single(documentos);
         Assert.Equal(SubmissaoWorkflow.RevisaoAprovada, docEdicao.StatusRevisao);
         Assert.True(docEdicao.CarregadoDeDocumentoAtual);
+    }
+
+    [Fact]
+    public async Task GetOrCreateDraftAsync_deve_permitir_novo_draft_apos_submissao_aprovada()
+    {
+        await using var context = _database.CreateDbContext();
+        await SeedEmpresaAsync(context, "12345678000199", "empresa@teste.com");
+
+        var submissaoService = new SubmissaoService(context);
+        var reviewService = new AnalystReviewService(context, new EntityStatusService(context));
+
+        var cartao = await CriarDocumentoAsync(context, "CARTAO_CNPJ");
+        await submissaoService.VincularDocumentoAoDraftAsync("EMPRESA", "12345678000199", cartao.Id, "CARTAO_CNPJ", "empresa@teste.com");
+        await submissaoService.EnviarParaAnaliseAsync("EMPRESA", "12345678000199", "empresa@teste.com");
+
+        var submissaoAprovada = await context.Submissoes.SingleAsync();
+        var docSub = await context.SubmissaoDocumentos.SingleAsync();
+        await reviewService.IniciarAnaliseSubmissaoAsync(submissaoAprovada.Id, "analista@metroplan.rs.gov.br");
+        await reviewService.AprovarDadosAsync(submissaoAprovada.Id, "analista@metroplan.rs.gov.br");
+        await reviewService.AprovarDocumentoAsync(docSub.Id, "analista@metroplan.rs.gov.br", DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)));
+        await reviewService.AprovarSubmissaoAsync(submissaoAprovada.Id, "analista@metroplan.rs.gov.br");
+
+        var novoDraft = await submissaoService.GetOrCreateDraftAsync("EMPRESA", "12345678000199", "empresa@teste.com");
+
+        Assert.Equal(SubmissaoWorkflow.EmEdicao, novoDraft.Submissao.Status);
+        Assert.Equal(2, await context.Submissoes.CountAsync());
+        Assert.Equal(1, await context.Submissoes.CountAsync(s =>
+            s.EntidadeTipo == "EMPRESA" &&
+            s.EntidadeId == "12345678000199" &&
+            (s.Status == SubmissaoWorkflow.EmEdicao || s.Status == SubmissaoWorkflow.AguardandoAnalise || s.Status == SubmissaoWorkflow.EmAnalise)));
+    }
+
+    [Fact]
+    public async Task GetOrCreateDraftAsync_deve_permitir_novo_draft_apos_submissao_rejeitada()
+    {
+        await using var context = _database.CreateDbContext();
+        await SeedEmpresaAsync(context, "12345678000199", "empresa@teste.com");
+
+        var submissaoService = new SubmissaoService(context);
+        var reviewService = new AnalystReviewService(context, new EntityStatusService(context));
+
+        var cartao = await CriarDocumentoAsync(context, "CARTAO_CNPJ");
+        await submissaoService.VincularDocumentoAoDraftAsync("EMPRESA", "12345678000199", cartao.Id, "CARTAO_CNPJ", "empresa@teste.com");
+        await submissaoService.EnviarParaAnaliseAsync("EMPRESA", "12345678000199", "empresa@teste.com");
+
+        var submissaoRejeitada = await context.Submissoes.SingleAsync();
+        var docSub = await context.SubmissaoDocumentos.SingleAsync();
+        await reviewService.IniciarAnaliseSubmissaoAsync(submissaoRejeitada.Id, "analista@metroplan.rs.gov.br");
+        await reviewService.RejeitarDadosAsync(submissaoRejeitada.Id, "analista@metroplan.rs.gov.br", "Dados invalidos");
+        await reviewService.AprovarDocumentoAsync(docSub.Id, "analista@metroplan.rs.gov.br", DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)));
+        await reviewService.RejeitarSubmissaoAsync(submissaoRejeitada.Id, "analista@metroplan.rs.gov.br", "Corrigir dados");
+
+        var novoDraft = await submissaoService.GetOrCreateDraftAsync("EMPRESA", "12345678000199", "empresa@teste.com");
+
+        Assert.Equal(SubmissaoWorkflow.EmEdicao, novoDraft.Submissao.Status);
+        Assert.Equal(2, await context.Submissoes.CountAsync());
+        Assert.Equal(1, await context.Submissoes.CountAsync(s =>
+            s.EntidadeTipo == "EMPRESA" &&
+            s.EntidadeId == "12345678000199" &&
+            (s.Status == SubmissaoWorkflow.EmEdicao || s.Status == SubmissaoWorkflow.AguardandoAnalise || s.Status == SubmissaoWorkflow.EmAnalise)));
     }
 
     private static async Task SeedEmpresaAsync(Eva.Data.EvaDbContext context, string cnpj, string email)
