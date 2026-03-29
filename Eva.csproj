@@ -1,7 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
-	<PropertyGroup>
-		<SatelliteResourceLanguages>pt-br</SatelliteResourceLanguages>
-	</PropertyGroup>
+<Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
@@ -21,7 +18,7 @@
     <PackageReference Include="MailKit" Version="4.15.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0">
       <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <IncludeAssets>runtime; build; native; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
@@ -34,7 +31,39 @@
     <EmbeddedResource Remove="Eva.Tests\**\*" />
     <None Remove="Eva.Tests\**\*" />
     <Content Remove="Eva.Tests\**\*" />
+    <None Remove="artifacts\**\*" />
+    <Content Remove="artifacts\**\*" />
   </ItemGroup>
+
+  <Target Name="ExcludeGeneratedNoiseFromPublish" BeforeTargets="CopyFilesToPublishDirectory">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
+                             Condition="$([System.String]::Copy('%(ResolvedFileToPublish.RelativePath)').StartsWith('artifacts\\', System.StringComparison.OrdinalIgnoreCase))" />
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
+                             Condition="$([System.String]::Copy('%(ResolvedFileToPublish.RelativePath)').StartsWith('BuildHost-net472\\', System.StringComparison.OrdinalIgnoreCase))" />
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
+                             Condition="$([System.String]::Copy('%(ResolvedFileToPublish.RelativePath)').StartsWith('BuildHost-netcore\\', System.StringComparison.OrdinalIgnoreCase))" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="ExcludeSatelliteResourcesFromPublish"
+          AfterTargets="_ComputeResolvedCopyLocalPublishAssets"
+          BeforeTargets="ComputeResolvedFilesToPublishList">
+    <ItemGroup>
+      <_ResolvedCopyLocalPublishAssets Remove="@(_ResolvedCopyLocalPublishAssets)"
+                                       Condition="'%(_ResolvedCopyLocalPublishAssets.AssetType)' == 'resources'" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="RemoveEmptyPublishDirectories"
+          AfterTargets="Publish"
+          Condition="'$(PublishDir)' != '' and Exists('$(PublishDir)')">
+    <ItemGroup>
+      <_EmptyPublishDirectories Include="$(PublishDir)**\*"
+                               Condition="$([System.IO.Directory]::Exists('%(Identity)')) and $([System.IO.Directory]::GetFileSystemEntries('%(Identity)').Length) == 0" />
+    </ItemGroup>
+    <RemoveDir Directories="@(_EmptyPublishDirectories)" />
+  </Target>
 
   <Target Name="SetGitVersion" BeforeTargets="GetAssemblyVersion">
     <Exec Command="git rev-list --count HEAD" ConsoleToMsBuild="true" IgnoreExitCode="true" StandardOutputImportance="Low">
